@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+
+<link rel="icon" href="text_deal_favicon.ico" type="image/x-icon">
+
+<head>
+    <style>
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        textarea {
+            width: 500px;
+            height: 550px;
+            padding: 10px;
+        }
+        .swap-btn {
+            align-self: center;
+            padding: 12px;
+            margin: 0 10px;
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            cursor: pointer;
+        }
+        .buttons {
+            margin: 10px 0;
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 8px 16px;
+            cursor: pointer;
+        }
+        /* button {
+            padding: 8px 16px;
+            cursor: pointer;
+            background: #f0f0f0;
+            border: 1px solid #2e2727;
+            transition: all 0.3s;
+        } */
+        /* 清空按钮特殊样式 */
+        button.clear-btn {
+            background: #f0f0f0;
+            border-color: #238625;
+            color: #000000;
+        }
+        button.clear-btn:hover {
+            background: #f7fbcc;
+            border-color: #22ca24;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="buttons">
+        <button onclick="processText('removeEmptyLines')">去除空行</button>
+        <button onclick="processText('removeSpaces')">去除空格</button>
+        <button onclick="processText('removeAllLineBreaks')">去除所有换行</button>
+        <button onclick="processText('removeInterruptedBreaks')">去除中断换行</button>
+        <button title="横排转成竖排"
+                onclick="processText('verticalLayout')">-- → |</button>
+        <button title="竖排转成横排"
+                onclick="processText('horizontalLayout')">| → --</button>
+        <button title="80 01 02 00 → 0x80, 0x01, 0x02, 0x00"
+                onclick="processText('hexFormat')">添加0x格式</button>
+        <button title="0x80, 0x01, 0x02, 0x00 → 80 01 02 00"
+                onclick="processText('hexReverse')">移除0x格式</button>
+        <button onclick="clearInput()" class="clear-btn">清空原文</button>
+    </div>
+    
+    <div class="container">
+        <textarea id="input" placeholder="输入原文..." autocomplete="off"></textarea>
+        <button class="swap-btn" onclick="swapText()">⇄</button>
+        <textarea id="output" placeholder="处理结果..." autocomplete="off"></textarea>
+    </div>
+
+    <script>
+        // 加载本地存储内容
+        window.onload = function() {
+            const savedInput = localStorage.getItem('textInput');
+            const savedOutput = localStorage.getItem('textOutput');
+            if(savedInput) document.getElementById('input').value = savedInput;
+            if(savedOutput) document.getElementById('output').value = savedOutput;
+        }
+
+        // 实时保存输入内容
+        document.getElementById('input').addEventListener('input', function() {
+            localStorage.setItem('textInput', this.value);
+        });
+        document.getElementById('output').addEventListener('input', function() {
+            localStorage.setItem('textOutput', this.value);
+        });
+
+        function swapText() {
+            const inputElem = document.getElementById('input');
+            const outputElem = document.getElementById('output');
+            
+            // 交换文本框内容
+            [inputElem.value, outputElem.value] = [outputElem.value, inputElem.value];
+            
+            // 同步更新本地存储
+            localStorage.setItem('textInput', inputElem.value);
+            localStorage.setItem('textOutput', outputElem.value);
+        }
+
+        function processText(action) {
+            const input = document.getElementById('input').value;
+            let output = input; // 保留原始输入内容
+
+            switch(action) {
+                case 'removeEmptyLines':
+                    output = input.split('\n').filter(line => line.trim() !== '').join('\n');
+                    break;
+                case 'removeSpaces':
+                    // output = input.replace(/\s+/g, '');
+                    output = input.replace(/ /g, '');
+                    break;
+                case 'removeAllLineBreaks':
+                    output = input.replace(/\n/g, '');
+                    break;
+                case 'removeInterruptedBreaks':
+                    output = input.replace(/([^\.!\?。！？\”’\]）】])[\r\n]+/g, '$1');
+                    break;
+                case 'verticalLayout':
+                    output = input.split(/[ ,?	]+/).join('\n');
+                    break;
+                case 'horizontalLayout':
+                    output = input.split('\n')
+                        .filter(line => line.trim() !== '')
+                        .join(' ');
+                    break;
+                case 'hexFormat':
+                    output = input
+                        .replace(/\s+/g, '')                       // 删除所有空白
+                        .replace(/[^0-9A-Fa-f]/g, '')              // 非16进制字符都删掉
+                        .match(/.{2}/g)                            // 按两个字符分组
+                        ?.map(byte => `0x${byte.toUpperCase()}`)   // 转成0xXX格式
+                        .join(', ') || '';                         // 合并，若无则返回空
+                    break;
+
+                case 'hexReverse':
+                    output = input.replace(/0x/g, '')
+                        .split(/,\s*/)
+                        .map(hex => hex.padStart(2, '0'))
+                        .join(' ');
+                    break;
+            }
+            
+            document.getElementById('output').value = output;
+            localStorage.setItem('textOutput', output);
+        }
+
+        function clearInput() {
+            document.getElementById('input').value = '';
+            localStorage.removeItem('textInput');
+        }
+    </script>
+</body>
+</html>

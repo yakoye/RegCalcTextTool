@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<link rel="icon" href="favicon.ico" type="image/x-icon">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="Generator" content="EditPlus®">
+	<meta name="Author" content="">
+	<meta name="Keywords" content="">
+	<meta name="Description" content="">
+	<title>64位寄存器计算工具</title>
+</head>
+
+<style>
+/* 统一输入框样式 */
+textarea, input[type="text"] {
+    font-family: monospace;
+    padding: 5px;
+    border: 1px solid #999;
+    margin: 3px 0;
+}
+
+textarea {
+    vertical-align: top;
+}
+
+#truncateWarning {
+	color: #ff4444;
+	font-size: 12px;
+	margin-top: 2px;
+	display: none; /* 默认隐藏 */
+}
+
+</style>
+
+<body>
+	<br> <!-- 换行 -->
+	<table align="center" border="1">
+		<tr>
+			<td>
+				<table align="center">
+					<tr align="center">
+						<td><h3>64位寄存器计算工具</h3></td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+
+		<tr>
+			<td>
+				<table align="center">
+					<tr align="center">
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td>63</td>
+						<td>62</td>
+						<td>61</td>
+						<td>60&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td>59</td>
+						<td>58</td>
+						<td>57</td>
+						<td>56&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td>55</td>
+						<td>54</td>
+						<td>53</td>
+						<td>52&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td>51</td>
+						<td>50</td>
+						<td>49</td>
+						<td>48</td>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+					</tr>
+					<tr align="center">
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td><input type="button" value="0" onclick="set_button_value( '00')" id="00"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '01')" id="01"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '02')" id="02"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '03')" id="03">&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td><input type="button" value="0" onclick="set_button_value( '04')" id="04"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '05')" id="05"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '06')" id="06"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '07')" id="07">&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td><input type="button" value="0" onclick="set_button_value( '08')" id="08"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '09')" id="09"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '10')" id="10"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '11')" id="11">&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td><input type="button" value="0" onclick="set_button_value( '12')" id="12"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '13')" id="13"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '14')" id="14"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '15')" id="15"></td>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+					</tr>
+					<!-- <tr align="center">						
+						<td></td>
+						<td></td>
+						<td></td>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+					</tr> -->
+					<tr align="center">
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td>47</td>
+						<td>46</td>
+						<td>45</td>
+						<td>44&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td>43</td>
+						<td>42</td>
+						<td>41</td>
+						<td>40&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td>39</td>
+						<td>38</td>
+						<td>37</td>
+						<td>36&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td>35</td>
+						<td>34</td>
+						<td>33</td>
+						<td>32</td>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+					</tr>
+					<tr align="center">
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td><input type="button" value="0" onclick="set_button_value( '16')" id="16"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '17')" id="17"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '18')" id="18"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '19')" id="19">&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td><input type="button" value="0" onclick="set_button_value( '20')" id="20"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '21')" id="21"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '22')" id="22"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '23')" id="23">&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td><input type="button" value="0" onclick="set_button_value( '24')" id="24"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '25')" id="25"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '26')" id="26"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '27')" id="27">&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td><input type="button" value="0" onclick="set_button_value( '28')" id="28"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '29')" id="29"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '30')" id="30"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '31')" id="31"></td>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+					</tr>
+					<tr align="center">						
+						<td></td>
+						<td></td>
+						<td></td>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+					</tr>
+					<tr align="center">
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td>31</td>
+						<td>30</td>
+						<td>29</td>
+						<td>28&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td>27</td>
+						<td>26</td>
+						<td>25</td>
+						<td>24&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td>23</td>
+						<td>22</td>
+						<td>21</td>
+						<td>20&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td>19</td>
+						<td>18</td>
+						<td>17</td>
+						<td>16</td>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+					</tr>
+					<tr align="center">
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td><input type="button" value="0" onclick="set_button_value( '32')" id="32"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '33')" id="33"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '34')" id="34"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '35')" id="35">&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td><input type="button" value="0" onclick="set_button_value( '36')" id="36"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '37')" id="37"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '38')" id="38"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '39')" id="39">&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td><input type="button" value="0" onclick="set_button_value( '40')" id="40"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '41')" id="41"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '42')" id="42"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '43')" id="43">&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td><input type="button" value="0" onclick="set_button_value( '44')" id="44"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '45')" id="45"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '46')" id="46"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '47')" id="47"></td>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+					</tr>
+					<!-- <tr align="center">						
+						<td></td>
+						<td></td>
+						<td></td>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+					</tr> -->
+					<tr align="center">
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td>15</td>
+						<td>14</td>
+						<td>13</td>
+						<td>12&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td>11</td>
+						<td>10</td>
+						<td>9</td>
+						<td>8&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td>7</td>
+						<td>6</td>
+						<td>5</td>
+						<td>4&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td>3</td>
+						<td>2</td>
+						<td>1</td>
+						<td>0</td>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+					</tr>
+					<tr align="center">
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td><input type="button" value="0" onclick="set_button_value( '48')" id="48"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '49')" id="49"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '50')" id="50"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '51')" id="51">&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td><input type="button" value="0" onclick="set_button_value( '52')" id="52"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '53')" id="53"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '54')" id="54"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '55')" id="55">&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td><input type="button" value="0" onclick="set_button_value( '56')" id="56"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '57')" id="57"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '58')" id="58"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '59')" id="59">&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td><input type="button" value="0" onclick="set_button_value( '60')" id="60"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '61')" id="61"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '62')" id="62"></td>
+						<td><input type="button" value="0" onclick="set_button_value( '63')" id="63"></td>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+					</tr>
+					
+				</table>
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<table>
+					<tr>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;十六进制：<input type="text" name="hex" id="hex" style="width:260px;" placeholder="0x0"
+							oninput="set_text_value('hex')"></td>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="text" name="human" id="human" style="width:55px;"  placeholder="数据大小" oninput="set_text_value('human')"></td>
+					</tr>
+					<tr>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;十&nbsp; 进&nbsp; 制：<input type="text" name="dec" id="dec" value="0" style="width:260px;" placeholder="0"
+							oninput="set_text_value('dec')"></td>
+					</tr>
+					<tr>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;二&nbsp; 进&nbsp; 制：<textarea name="bin" id="bin" style="width:260px; height:32px;" placeholder="0"
+							oninput="set_text_value('bin')"></textarea></td>
+					</tr>
+					<tr>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;位域编辑：<input type="text" id="bitRange" style="width:48px;" placeholder="21:10" oninput="handleBitRangeChange()">
+							<input type="text" id="subHex" placeholder="0x0" style="width:80px;" oninput="updateFromSubHex()">
+							<input type="text" id="subDec" style="width:100px;" oninput="updateFromSubDec()"></td>
+							<td style="text-align: right; padding-right: 5px"><input type="button" value="清空数字" onclick="clean_value()" id="clean"></td>
+					</tr>
+					<tr>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;位移操作：<input type="text" id="shiftLeft" style="width:32px;text-align: center;" placeholder="1" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+							<button onclick="handleShift('left')" title="左移操作">&lt;&lt;</button>
+							&nbsp;&nbsp;&nbsp;&nbsp;
+							<button onclick="handleShift('right')" title="右移操作">&gt;&gt;</button>
+							<input type="text" id="shiftRight" style="width:32px;text-align: center;" placeholder="1" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+						</td>
+					</tr>
+					<tr>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+					</tr>
+					  <!-- 第一行：计算输入 -->
+					<tr>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;计&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;算：<input type="text" id="calcInput" style="width:260px;" 
+							placeholder="输入表达式，如 0x43+10" onkeypress="handleEnterKey(event)">
+						</td>
+						<td><button onclick="calculate()">计算</button></td>
+					</tr>
+					
+					<!-- 第二行：结果输出 -->
+					<tr>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;结&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;果：<input type="text" id="calcResult" style="width:260px;" readonly></td>
+						<td>
+							<button onclick="setResultFormat('hex')">16</button>
+							<button onclick="setResultFormat('dec')">10</button>
+							<button onclick="setResultFormat('bin')">2</button>
+						</td>
+					</tr>
+					
+					<!-- 第三行：截断提示 -->
+					<tr>
+						<td colspan="3" style="text-align: center; padding-top: 8px;">
+							<span id="truncateWarning" style="color: red; display: none;">注意：结果已被截断为128位无符号整数</span>
+						</td>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
+</body>
+</html>
+
+<script>
+	let isProgrammatic = false;
+	const units = ['', 'K', 'M', 'G', 'T', 'P', 'E'];
+
+	function clearAll() {
+		document.getElementById("bin").value = "";
+		document.getElementById("dec").value = "";
+		document.getElementById("hex").value = "";
+		document.getElementById("human").value = "";
+	}
+
+	function clean_value() {
+		document.getElementById("hex").value = "";
+		document.getElementById("bin").value = "";
+		document.getElementById("dec").value = "";
+		document.getElementById("human").value = "";
+		document.getElementById('bitRange').value = "";
+		document.getElementById('subHex').value = "";
+		document.getElementById('subDec').value = "";
+		document.getElementById('shiftLeft').value = "";
+		document.getElementById('shiftRight').value = "";
+		document.getElementById('calcInput').value = "";
+		document.getElementById('calcResult').value = "";
+		clearSubFields();
+
+		for (i = 0; i < 64; i++) {
+			if (i < 10) {
+				id = "0" + i;
+				document.getElementById(id).value = "0";
+				document.getElementById(id).style.color = "Black"
+			}
+			else {
+				document.getElementById(i).value = "0";
+				document.getElementById(i).style.color = "Black"
+			}
+		}
+	}
+
+	function str_to_bin() {
+		var bin_arr = [];
+		var flag = 0;
+		var bin_str;
+		var hex_str;
+		for (i = 0; i < 64; i++) {
+			if (i < 10) {
+				id = "0" + i;
+				bin_arr[i] = document.getElementById(id).value;
+			}
+			else {
+				bin_arr[i] = document.getElementById(i).value;
+			}
+		}
+
+		for (i = 0; i < 64; i++) {
+			if (bin_arr[i] == 1) {
+				flag = i;
+				break;
+			}
+		}
+
+		document.getElementById("bin").value = "";
+		for (i = flag; i < 64; i++) {
+			document.getElementById("bin").value = document.getElementById("bin").value + bin_arr[i];
+		}
+
+		bin_str = document.getElementById("bin").value;
+		document.getElementById("dec").value = BigInt('0b' + bin_str).toString(10);
+		document.getElementById("hex").value = '0X' + BigInt('0b' + bin_str).toString(16).toUpperCase();
+		document.getElementById("bin").value = bin_str;
+		const num = BigInt('0b' + bin_str);
+        document.getElementById("human").value = convertToHumanReadable(num);
+
+		updateBitRange();
+	}
+
+	function set_button_value(id) {
+		if (document.getElementById(id).value == 0) {
+			document.getElementById(id).value = 1;
+			document.getElementById(id).style.color = "Red"
+		}
+		else if (document.getElementById(id).value == 1) {
+			document.getElementById(id).value = 0;
+			document.getElementById(id).style.color = "Black"
+		}
+		str_to_bin();
+	}
+
+	function calcBinShow(value)
+	{
+		bin_str = document.getElementById("bin").value;
+
+		// console.log( bin_str.length );
+		// console.log(bin_str);
+		// console.log( bin_str.charAt(0) );
+		// console.log( bin_str.charAt(1) );
+		// console.log( bin_str.charAt(2) );
+		// console.log( bin_str.charAt(3) );
+
+		let bits = Array.from({length: 64}, ()=>'0');
+		if (bin_str) {
+			for (let i = 0; i < bin_str.length; i++) {
+				bits[63 - i] = bin_str[bin_str.length -1 -i];
+			}
+		}
+		
+		for (let bitIndex = 0; bitIndex < 64; bitIndex++) {
+			const bitVal = bits[bitIndex];
+			const btnId = bitIndex <10 ? `0${bitIndex}` : bitIndex;
+			const btn = document.getElementById(btnId.toString());
+			btn.value = bitVal;
+			btn.style.color = (bitVal === '1') ? 'Red' : 'Black';
+		}
+		updateBitRange();
+		updateSubFields();
+	}
+
+	function validateNumber(str, base) {
+		try {
+			const num = parseInt(str, base);
+			if (isNaN(num)) return false;
+			if (num > 0xFFFFFFFFFFFFFFFF) { // 64位溢出检查
+				alert("数值超出64位范围！");
+				return false;
+			}
+			return true;
+		} catch {
+			return false;
+		}
+	}
+
+	function convertToHumanReadable(number) {
+		if (number === 0n) return '0';
+		
+		let value = number;
+		let unitIndex = 0;
+		let remainder = 0n;
+		
+		while (value >= 1024n && unitIndex < units.length - 1) {
+			remainder = value % 1024n;
+			value = value / 1024n;
+			unitIndex++;
+		}
+		
+		if (unitIndex === 0) return value.toString() + units[unitIndex];
+		
+		const decimal = Number(remainder * 1000n / 1024n) / 1000;
+		const result = Number(value) + decimal;
+		return result.toFixed(1).replace(/\.?0+$/, '') + units[unitIndex];
+	}
+
+	// 修改后的解析函数（支持小数）
+	function parseHumanReadable(input) {
+		const regex = /^([\d.]+)([KMGTPE]?)$/i;
+		const match = input.match(regex);
+		if (!match) return null;
+
+		const num = parseFloat(match[1]);
+		const unit = match[2].toUpperCase();
+		const exponent = units.indexOf(unit);
+
+		const result = num * Math.pow(1024, exponent);
+		if (result > 0xFFFFFFFFFFFFFFFF) {
+			alert("数值超出64位范围！");
+			return null;
+		}
+		return BigInt(Math.round(result));
+	}
+
+	function handleBitRangeChange() {
+		// if (isProgrammatic) return;
+		updateSubFields();
+	}
+
+	function updateSubFields() {
+		try {
+			const range = document.getElementById('bitRange').value.replace(/[^\d:~-]/g, '');
+			// console.log("range:", range);
+			const [hi, lo] = range.split(/[:~-]/).map(Number).sort((a,b) => b-a);
+			if (lo === undefined || hi === undefined) return;
+			if (hi < lo) [hi, lo] = [lo, hi];
+			if (hi > 63 || lo < 0 || hi === lo || lo === undefined) return;
+			// console.log(hi, lo);
+			// const fullValue = BigInt(document.getElementById('hex').value.replace('0X','') || '0', 16);
+			// console.log(fullValue);
+
+			const hexInput = document.getElementById('hex').value;
+			console.log(hexInput);
+			const hexValue = hexInput.replace(/^0x/gi, ''); // 去除所有0x/0X前缀
+			if (!/^[0-9a-f]*$/i.test(hexValue)) { // 验证是否为合法十六进制
+				throw new Error("Invalid hex value");
+			}
+			const fullValue = hexValue ? BigInt(`0x${hexValue}`) : 0n;
+			const bitWidth = hi - lo + 1;
+
+			const mask = (1n << BigInt(hi - lo + 1)) - 1n;
+			const subValue = (fullValue >> BigInt(lo)) & mask;
+			// console.log(subValue);
+
+			isProgrammatic = true;
+			document.getElementById('subHex').value = '0x' + subValue.toString(16).toUpperCase();
+			document.getElementById('subDec').value = subValue.toString();
+			isProgrammatic = false;
+		} catch(e) {
+			console.error("Error:", e.message);
+			clearSubFields();
+		}
+	}
+
+	function updateFromSubField(type) {
+		if (isProgrammatic) return;
+		
+		try {
+			const range = document.getElementById('bitRange').value.replace(/[^\d:~-]/g, '');
+			const [hi, lo] = range.split(/[:~-]/).map(Number).sort((a,b) => b-a);
+			// tpmVal = document.getElementById(type === 'hex' ? 'subHex' : 'subDec').value.replace(type === 'hex' ? /^0x/i : /[^\d]/g, ''), type === 'hex' ? 16 : 10;
+			let tpmVal;
+			let base;
+			if (type === 'hex') {
+				// 处理十六进制输入
+				const hexInput = document.getElementById('subHex').value;
+				// 移除开头的 0x/0X 前缀，并过滤非十六进制字符（0-9, a-f, A-F）
+				tpmVal = hexInput.replace(/^0x/i, '').replace(/[^0-9a-f]/gi, '');
+				base = 16;
+			} else {
+				// 处理十进制输入
+				const decInput = document.getElementById('subDec').value;
+				// 移除非数字字符（只保留 0-9）
+				tpmVal = decInput.replace(/[^\d]/g, '');
+				base = 10;
+			}
+
+			// const subValue = BigInt(parseInt(tpmVal, base));
+			// const subValue = BigInt(tpmVal);
+			let subValue;
+			try {
+				if (base === 16) {
+					// 直接添加 0x 前缀构造 BigInt
+					subValue = BigInt(`0x${tpmVal}`);
+				} else {
+					// 十进制直接转换
+					subValue = BigInt(tpmVal);
+				}
+			} catch (e) {
+				// 处理非法输入（如过大的数字）
+				throw new Error(`无效的 ${type} 输入: ${tpmVal}`);
+			}
+			
+			// let fullValue = BigInt(document.getElementById('hex').value.replace('0X','') || '0', 16);
+			let hexInput = document.getElementById('hex').value.trim().toUpperCase();
+			if (hexInput === "") {
+				hexInput = "0X0"; // 默认值
+			}
+			else if (!hexInput.startsWith('0X')) {
+				hexInput = '0X' + hexInput;
+			}
+			let fullValue = BigInt(hexInput);
+			const mask = (1n << BigInt(hi - lo + 1)) - 1n;
+			
+			// 清除原bit位
+			fullValue &= ~(mask << BigInt(lo));
+			// 设置新值
+			fullValue |= (subValue & mask) << BigInt(lo);
+
+			document.getElementById('hex').value = '0X' + fullValue.toString(16).toUpperCase();
+			set_text_value('hex');
+		} catch {
+			clearSubFields();
+		}
+	}
+
+	function clearSubFields() {
+		isProgrammatic = true;
+		document.getElementById('subHex').value = '';
+		document.getElementById('subDec').value = '';
+		isProgrammatic = false;
+	}
+
+	function updateBitRange() {
+		const rangeInput = document.getElementById('bitRange').value;
+		const match = rangeInput.match(/^(\d+)[:~-](\d+)$/);
+		if (!match) return;
+
+		let hi = parseInt(match[1]), lo = parseInt(match[2]);
+		if (hi < lo) [hi, lo] = [lo, hi]; // 确保高位在前
+		if (hi > 63 || lo < 0) return;
+
+		const fullValue = BigInt(document.getElementById('hex').value);
+		const mask = (1n << BigInt(hi - lo + 1)) - 1n;
+		const subValue = (fullValue >> BigInt(lo)) & mask;
+
+		document.getElementById('subHex').value = '0x' + subValue.toString(16).toUpperCase();
+		document.getElementById('subDec').value = subValue.toString(10);
+	}
+
+	function updateFromSubHex() {
+		const value = document.getElementById('subHex').value;
+		if (value) set_text_value('hex', true);
+	}
+
+	function updateFromSubDec() {
+		const value = document.getElementById('subDec').value;
+		if (value) set_text_value('dec', true);
+	}
+
+	function handleShift(direction) {
+		try {
+			// 获取对应方向的输入值
+			const inputId = `shift${direction === 'left' ? 'Left' : 'Right'}`;
+			const shiftInput = document.getElementById(inputId).value;
+			let shiftValue = shiftInput;
+			// 验证输入有效性
+			if (!shiftValue) {
+				// alert("请输入位移位数！");
+				shiftValue = "1";
+				// return;
+			}
+			const shiftAmount = parseInt(shiftValue);
+			if (isNaN(shiftAmount) || shiftAmount < 0 || shiftAmount > 63) {
+				alert("请输入0-63之间的有效数字！");
+				//document.getElementById(inputId).value = "";
+				return;
+			}
+
+			// 安全获取当前值
+			// let hexInput = document.getElementById('hex').value;
+			let hexInput = document.getElementById('hex').value.trim().toUpperCase();
+			if (hexInput === "") {
+				hexInput = "0X0"; // 默认值
+			}
+			else if (!hexInput.startsWith('0X')) {
+				hexInput = '0X' + hexInput;
+			}
+			let currentValue = BigInt(hexInput);
+
+			// 执行位移操作
+			if (direction === 'left') {
+				currentValue = (currentValue << BigInt(shiftAmount)) & 0xFFFFFFFFFFFFFFFFn;
+			} else {
+				currentValue = currentValue >> BigInt(shiftAmount);
+			}
+
+			// 更新主值并触发刷新
+			document.getElementById('hex').value = '0X' + currentValue.toString(16).toUpperCase();
+			set_text_value('hex');
+			
+			// 清空位移输入框
+			//document.getElementById(inputId).value = "";
+		} catch(e) {
+			console.error("位移操作失败:", e);
+			alert("发生位移操作错误，请检查输入值！");
+		}
+	}
+
+	// 修改updateFromSubHex和updateFromSubDec函数
+	function updateFromSubHex() {
+		if (isProgrammatic) return;
+		updateFromSubField('hex');
+	}
+
+	function updateFromSubDec() {
+		if (isProgrammatic) return;
+		updateFromSubField('dec');
+	}
+	function set_text_value(id, isSubField = false) {
+
+		if (isSubField) {
+			document.getElementById(id === 'hex' ? 'subHex' : 'subDec').value = value;
+			return;
+		}
+
+		var hex_str, bin_str, dec_str;
+        let value = document.getElementById(id).value;
+
+		switch (id) {
+			case 'hex':
+				value = value.replace(/[^0-9a-fA-FxX]/g, '');
+				break;
+			case 'dec':
+				value = value.replace(/[^0-9]/g, '');
+				break;
+			case 'bin':
+				value = value.replace(/[^01]/g, '');
+				break;
+			case 'human':
+                value = value.replace(/[^0-9.KMGTPE]/gi, '').toUpperCase();
+                break;
+		}
+		document.getElementById(id).value = value;
+
+		if ( id === "bin") {
+			bin_str = value;
+			try {
+				if ("" === bin_str || "NaN" === bin_str) {
+					clearAll();
+					calcBinShow(value);
+    				return;
+				}
+				if (!validateNumber(bin_str, 2)) {
+					return;
+				}
+				document.getElementById("bin").value = bin_str;
+				document.getElementById("dec").value = BigInt('0b' + bin_str).toString(10);
+				document.getElementById("hex").value = '0X' + BigInt('0b' + bin_str).toString(16).toUpperCase();
+				const num = BigInt('0b' + bin_str);
+            	document.getElementById("human").value = convertToHumanReadable(num);
+			} catch (e) {
+				calcBinShow(value);
+				return;
+			}
+		}
+		else if (id === "hex") {
+			hex_str = value;
+			document.getElementById("hex").value = hex_str;
+			hex_str = hex_str.trim(); // 去除首尾可能的空格
+			// 检查开头是否有 "0x" 或 "0X"，并处理字符串
+			if (!hex_str.startsWith('0x') && !hex_str.startsWith('0X')) {
+				hex_str = '0X' + hex_str; // 没有前缀时添加 '0X'
+			}
+
+			try {
+				if (hex_str === "0X" || hex_str === "") { // 空或纯前缀
+					clearAll();
+					calcBinShow(value);
+					return;
+				}
+				if (!validateNumber(hex_str, 16)) {
+					return;
+				}
+				dec_str = BigInt(hex_str).toString(10);
+				if ("" === dec_str || "NaN" === dec_str) {
+					calcBinShow(value);
+					return
+				}
+				document.getElementById("dec").value = dec_str;
+				document.getElementById("bin").value = BigInt(hex_str).toString(2);
+				const num = BigInt(hex_str);
+            	document.getElementById("human").value = convertToHumanReadable(num);
+			} catch (e) {
+				calcBinShow(value);
+				return;
+			}
+		}
+		else if (id === "dec") {
+			dec_str = value;
+			try {
+				if ("NaN" === dec_str || "" === dec_str) {
+					clearAll();
+					calcBinShow(value);
+    				return;
+				}
+				if (!validateNumber(dec_str, 10)) {
+					return;
+				}
+				document.getElementById("dec").value = dec_str; // 清理后的值
+				document.getElementById("bin").value = BigInt(dec_str).toString(2);
+				document.getElementById("hex").value = '0X' + BigInt(dec_str).toString(16).toUpperCase();
+				const num = BigInt(dec_str);
+            	document.getElementById("human").value = convertToHumanReadable(num);
+			} catch (e) {
+				calcBinShow(value);
+				return;
+			}
+		}
+		else if (id === "human") {
+            if (value === "") {
+                clean_value();
+                return;
+            }
+
+            const humanValue = parseHumanReadable(value);
+            if (humanValue === null) {
+                //alert("输入格式错误或超出范围！");
+				clean_value();
+                return;
+            }
+
+            document.getElementById("hex").value = '0X' + humanValue.toString(16).toUpperCase();
+            document.getElementById("dec").value = humanValue.toString(10);
+            document.getElementById("bin").value = humanValue.toString(2);
+            calcBinShow(humanValue.toString(2));
+            return;
+        }
+		calcBinShow(value);
+	}
+
+	let g_originalResult = 0n;
+	let g_currentResult = 0n;
+	let g_resultFormat = 'hex';
+	// Enter 键处理
+	function handleEnterKey(event) {
+		if (event.key === 'Enter') {
+			event.preventDefault();
+			calculate();
+		}
+	}
+
+	function setResultFormat(format) {
+		g_resultFormat = format;
+		updateResultDisplay();
+	}
+
+	function updateResultDisplay() {
+		const resultElement = document.getElementById('calcResult');
+		if (typeof g_currentResult !== 'bigint') {
+			resultElement.value = '';
+			return;
+		}
+
+		let displayValue;
+		switch (g_resultFormat) {
+			case 'hex':
+			displayValue = '0x' + g_currentResult.toString(16).toUpperCase();
+			break;
+			case 'dec':
+			displayValue = g_currentResult.toString();
+			break;
+			case 'bin':
+			displayValue = '0b' + g_currentResult.toString(2);
+			break;
+			default:
+			displayValue = g_currentResult.toString();
+		}
+		// resultElement.value = displayValue;
+		document.getElementById('calcResult').value = displayValue;
+	}
+
+	function calculate() {
+		const inputElement = document.getElementById('calcInput');
+		// const resultElement = document.getElementById('calcResult');
+		const warningElement = document.getElementById('truncateWarning');
+		
+		try {
+			// 1. 输入预处理
+			const rawInput = inputElement.value.trim().replace(/\s+/g, ''); // 移除所有空格
+			warningElement.style.display = 'none'; // 每次计算先隐藏提示
+			if (!rawInput) {
+				resultElement.value = '';
+				return;
+			}
+
+			// 2. 操作符数量校验（最多2个）
+			const operators = rawInput.match(/(\*\*|<<|>>|[\+\-\*/%&|\^~])/g) || [];
+				if (operators.length > 2) {
+					throw new Error("操作符数量不能超过2个");
+				}
+
+			// 3. 进制转换处理
+			const convertInput = (input) => {
+				// 先处理十六进制和二进制，再处理十进制
+				let processed = input
+					// 处理十六进制（0x... → 十进制BigInt）
+					.replace(/0x([0-9a-fA-F]+)/g, (_, hex) => `${BigInt(`0x${hex}`)}n`)
+					// 处理二进制（0b... → 十进制BigInt）
+					.replace(/0b([01]+)/g, (_, bin) => `${BigInt(`0b${bin}`)}n`)
+					// 处理十进制数字（确保未被处理的数字添加n）
+					.replace(/(\b\d+\b)(?![n])/g, (m) => `${m}n`); // 使用 \b 确保匹配完整数字
+
+				return processed;
+			};
+
+			const convertedExpression = convertInput(rawInput);
+
+			// 4. 安全表达式检查（仅允许合法字符）
+			if (!/^[\dn()+\-*/%&|^~<>]*$/.test(convertedExpression)) {
+				throw new Error("包含非法字符");
+			}
+
+			// 5. 执行计算
+			const result = eval(convertedExpression); // 原始结果（可能超过64位）
+			// 执行计算并检测截断
+			if (typeof result !== 'bigint') {
+				throw new Error("计算结果不是整数");
+			}
+
+			// 6. 限制为64位无符号整数
+			g_originalResult = result;
+			g_currentResult = BigInt.asUintN(128, result); // 确保赋值给 只保留低 128 位
+			// 显示截断提示（当原始结果不等于截断结果时）
+			// if (g_originalResult !== g_currentResult) {
+			// 	warningElement.style.display = 'inline';
+			// }
+			if (g_originalResult !== g_currentResult) {
+				document.getElementById('truncateWarning').style.display = 'inline';
+			} else {
+				document.getElementById('truncateWarning').style.display = 'none';
+			}
+			updateResultDisplay(); // 计算完成后立即更新显示
+		} catch (e) {
+			resultElement.value = '';
+			alert(`计算错误: ${e.message}`);
+		}
+		}
+
+	function window_onload() 
+	{
+    	document.getElementById("hex").value = "";
+		document.getElementById("bin").value = "";
+		document.getElementById("dec").value = "";
+	}
+	window.onload = window_onload;
+</script>
