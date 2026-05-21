@@ -1,7 +1,11 @@
 # RegCalcTextTool
 **RegCalcTextTool**, RegCalc is a 64 bit register calculator + text formatter 
 
-工具首页：[这里](https://yakoye.github.io/RegCalcTextTool/)
+使用方法：
+
+- 方法1：直接点击[这里](https://yakoye.github.io/RegCalcTextTool/RegCalcTextTool.html)，在线使用
+
+- 方法2：下载RegCalcTextTool.html，打开，离线使用
 
 **RegCalcTextTool**：[RegCalcTextTool.html](https://yakoye.github.io/RegCalcTextTool/RegCalcTextTool.html)（推荐）
 
@@ -11,7 +15,7 @@
 
 文本处理：[TextFormatter.html](https://yakoye.github.io/RegCalcTextTool/TextFormatter.html)
 
-
+工具首页：[这里](https://yakoye.github.io/RegCalcTextTool/)
 
 Refer：
 
