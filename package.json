@@ -5,8 +5,9 @@
   "description": "Static RegCalc and TextFormatter tool for Cloudflare Pages and GitHub Pages.",
   "scripts": {
     "build": "node scripts/build-static.js",
-    "preview": "npm run build && npx wrangler pages dev dist",
-    "deploy:cloudflare": "npm run build && npx wrangler pages deploy dist"
+    "preview": "npm run build && npx wrangler dev",
+    "deploy:cloudflare": "npm run build && npx wrangler deploy",
+    "deploy:pages": "npm run build && npx wrangler pages deploy dist"
   },
   "devDependencies": {}
 }

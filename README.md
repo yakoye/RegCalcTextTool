@@ -15,12 +15,12 @@ RegCalcTextTool 是一个静态网页工具，主要包含：
 
 ![Show](./img/Show.jpg)
 
-## Cloudflare Workers & Pages 部署
+## Cloudflare Workers 部署
 
-推荐使用 Cloudflare Pages 的 GitHub 集成：
+如果在 Cloudflare 的 `Workers & Pages` 中选择 `Import a repository` 创建 Worker，使用下面配置：
 
 1. 在 Cloudflare Dashboard 进入 `Workers & Pages`。
-2. 选择 `Create application`，创建 `Pages` 项目并连接这个 GitHub 仓库。
+2. 选择 `Create application`，通过 `Import a repository` 连接这个 GitHub 仓库。
 3. Framework preset 选择 `None`。
 4. Build command 填写：
 
@@ -39,18 +39,42 @@ dist
 仓库已包含 `wrangler.toml`：
 
 ```toml
-name = "reg-calc-text-tool"
-pages_build_output_dir = "dist"
+name = "regcalctexttool"
 compatibility_date = "2026-06-08"
+
+[assets]
+directory = "./dist"
 ```
 
-如果想在本地直接用 Wrangler 部署：
+注意：Cloudflare Workers Git 集成要求 Dashboard 里的 Worker 名称和 `wrangler.toml` 里的 `name` 完全一致。当前配置已按你的 Cloudflare 项目名 `regcalctexttool` 设置。
+
+如果想在本地直接用 Wrangler 部署到 Worker：
 
 ```bash
 npm run deploy:cloudflare
 ```
 
 Cloudflare 会发布 `dist` 目录中的静态文件，入口仍然是 `/` 或 `/RegCalcTextTool.html`。
+
+## Cloudflare Pages 备选部署
+
+如果你后续改用 Cloudflare Pages 项目，而不是 Worker 项目，也可以继续使用同一个构建命令：
+
+```bash
+npm run build
+```
+
+Pages 的 Build output directory 填写：
+
+```text
+dist
+```
+
+本地手动上传 Pages 可用：
+
+```bash
+npm run deploy:pages
+```
 
 ## GitHub Pages 部署
 

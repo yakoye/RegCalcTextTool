@@ -1,3 +1,5 @@
-name = "reg-calc-text-tool"
-pages_build_output_dir = "dist"
+name = "regcalctexttool"
 compatibility_date = "2026-06-08"
+
+[assets]
+directory = "./dist"
