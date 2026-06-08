@@ -24,12 +24,12 @@
             display: flex;
             border-bottom: 2px solid #dedede;
             background: #ededed;
-            height: 40px;
+            height: 34px;
             align-items: flex-end;
             padding-left: 24px;
         }
         .tab {
-            padding: 8px 32px 8px 32px;
+            padding: 5px 28px 6px 28px;
             margin-right: 4px;
             border: 1px solid #dedede;
             border-bottom: none;
@@ -37,7 +37,7 @@
             background: #e5e5e5;
             cursor: pointer;
             color: #888;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
             position: relative;
             top: 2px;
@@ -99,6 +99,47 @@
             font-size: 14px;
             line-height: 1.2;
         }
+        #regcalc-ui .regcalc-title-table {
+            margin: 4px auto 5px;
+        }
+        #regcalc-ui .regcalc-title-table td {
+            line-height: 1.1;
+        }
+        #regcalc-ui .regcalc-bit-table {
+            border-spacing: 1px 0;
+            font-size: 14px;
+        }
+        #regcalc-ui .regcalc-bit-table td {
+            padding: 0 1px;
+            line-height: 1;
+            vertical-align: bottom;
+        }
+        #regcalc-ui .regcalc-bit-label td {
+            padding-top: 0;
+            padding-bottom: 1px;
+        }
+        #regcalc-ui .regcalc-bit-label-small-gap td {
+            padding-top: 4px;
+        }
+        #regcalc-ui .regcalc-bit-label-mid-gap td {
+            padding-top: 12px;
+        }
+        #regcalc-ui .regcalc-bit-button td {
+            padding-top: 0;
+            padding-bottom: 0;
+            vertical-align: top;
+        }
+        #regcalc-ui .regcalc-bit-table input[type="button"] {
+            margin-top: 0;
+            padding-top: 1px;
+            padding-bottom: 1px;
+        }
+        #regcalc-ui .regcalc-bit-spacer td {
+            height: 0;
+            padding: 0;
+            line-height: 0;
+            font-size: 0;
+        }
         #regcalc-ui .regcalc-form-table {
             border-spacing: 3px 3px;
         }
@@ -131,19 +172,23 @@
             width: var(--regcalc-field-width) !important;
         }
         #regcalc-ui #regcalc_human {
-            width: 70px !important;
+            width: 80px !important;
         }
-        #regcalc-ui #regcalc_bitRange,
-        #regcalc-ui #regcalc_bitRange1 {
+        #regcalc-ui .regcalc-bit-range {
             width: 54px !important;
         }
-        #regcalc-ui #regcalc_subHex,
-        #regcalc-ui #regcalc_subHex1 {
+        #regcalc-ui .regcalc-sub-hex {
             width: 86px !important;
         }
-        #regcalc-ui #regcalc_subDec,
-        #regcalc-ui #regcalc_subDec1 {
+        #regcalc-ui .regcalc-sub-dec {
             width: calc(var(--regcalc-field-width) - 54px - 86px - (var(--regcalc-gap) * 2)) !important;
+        }
+        #regcalc-ui .regcalc-bitfield-buttons {
+            white-space: nowrap;
+        }
+        #regcalc-ui .regcalc-bitfield-buttons button {
+            min-width: 24px;
+            padding: 3px 6px;
         }
         #regcalc-ui #regcalc_bin {
             width: var(--regcalc-field-width) !important;
@@ -239,9 +284,10 @@
                 flex: 1 1 0;
                 min-width: 0;
                 margin-right: 0;
-                padding: 11px 8px;
+                padding: 4px 6px;
                 text-align: center;
-                font-size: 15px;
+                font-size: 14px;
+                line-height: 1.15;
                 border-radius: 0;
                 top: 0;
             }
@@ -251,7 +297,7 @@
                 border-left: 0;
                 border-right: 0;
                 border-radius: 0;
-                min-height: calc(100vh - 44px);
+                min-height: calc(100vh - 30px);
             }
             #regcalc-ui {
                 width: max-content;
@@ -275,16 +321,17 @@
                 font-size: 18px;
             }
             #textconvert-ui .buttons {
-                flex-wrap: wrap;
-                gap: 8px;
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 6px;
             }
             #textconvert-ui button {
-                min-height: 40px;
-                padding: 9px 12px;
-                font-size: 15px;
+                min-height: 34px;
+                padding: 7px 8px;
+                font-size: 14px;
             }
             #textconvert-ui .buttons button {
-                flex: 1 1 calc(50% - 8px);
+                width: 100%;
                 white-space: normal;
             }
             #textconvert-ui .container {
@@ -306,9 +353,6 @@
             }
             .tab-content {
                 padding: 8px;
-            }
-            #textconvert-ui .buttons button {
-                flex-basis: 100%;
             }
         }
 
@@ -335,7 +379,7 @@
             <table align="center" border="1">
                 <tr>
                     <td>
-                        <table align="center">
+                        <table align="center" class="regcalc-title-table">
                             <tr align="center">
                                 <!-- <td><h3>64位寄存器计算 (RegCalc)</h3></td> -->
                                 <td><b>64位寄存器计算 (RegCalc)</b></td>
@@ -346,8 +390,8 @@
                 <tr>
                     <td>
                         <!-- 位按钮区域（全原样保留） -->
-                        <table align="center">
-                            <tr align="center">
+                        <table align="center" class="regcalc-bit-table">
+                            <tr align="center" class="regcalc-bit-label">
                                 <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
                                 <td>63</td>
                                 <td>62</td>
@@ -367,7 +411,7 @@
                                 <td>48</td>
                                 <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
                             </tr>
-                            <tr align="center">
+                            <tr align="center" class="regcalc-bit-button">
                                 <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
                                 <td><input type="button" value="0" onclick="regcalc_set_button_value( '00')" id="regcalc_00"></td>
                                 <td><input type="button" value="0" onclick="regcalc_set_button_value( '01')" id="regcalc_01"></td>
@@ -387,7 +431,7 @@
                                 <td><input type="button" value="0" onclick="regcalc_set_button_value( '15')" id="regcalc_15"></td>
                                 <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
                             </tr>
-                            <tr align="center">
+                            <tr align="center" class="regcalc-bit-label regcalc-bit-label-small-gap">
                                 <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
                                 <td>47</td>
                                 <td>46</td>
@@ -407,7 +451,7 @@
                                 <td>32</td>
                                 <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
                             </tr>
-                            <tr align="center">
+                            <tr align="center" class="regcalc-bit-button">
                                 <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
                                 <td><input type="button" value="0" onclick="regcalc_set_button_value( '16')" id="regcalc_16"></td>
                                 <td><input type="button" value="0" onclick="regcalc_set_button_value( '17')" id="regcalc_17"></td>
@@ -427,7 +471,7 @@
                                 <td><input type="button" value="0" onclick="regcalc_set_button_value( '31')" id="regcalc_31"></td>
                                 <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
 							</tr>
-							<tr align="center">						
+							<tr align="center" class="regcalc-bit-spacer">
 								<td></td>
 								<td></td>
 								<td></td>
@@ -445,7 +489,7 @@
 								<td></td>
 								<td></td>
 							</tr>
-                            <tr align="center">
+                            <tr align="center" class="regcalc-bit-label regcalc-bit-label-mid-gap">
                                 <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
                                 <td>31</td>
                                 <td>30</td>
@@ -465,7 +509,7 @@
                                 <td>16</td>
                                 <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
                             </tr>
-                            <tr align="center">
+                            <tr align="center" class="regcalc-bit-button">
                                 <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
                                 <td><input type="button" value="0" onclick="regcalc_set_button_value( '32')" id="regcalc_32"></td>
                                 <td><input type="button" value="0" onclick="regcalc_set_button_value( '33')" id="regcalc_33"></td>
@@ -485,7 +529,7 @@
                                 <td><input type="button" value="0" onclick="regcalc_set_button_value( '47')" id="regcalc_47"></td>
                                 <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
                             </tr>
-                            <tr align="center">
+                            <tr align="center" class="regcalc-bit-label regcalc-bit-label-small-gap">
                                 <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
                                 <td>15</td>
                                 <td>14</td>
@@ -505,7 +549,7 @@
                                 <td>0</td>
                                 <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
                             </tr>
-                            <tr align="center">
+                            <tr align="center" class="regcalc-bit-button">
                                 <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
                                 <td><input type="button" value="0" onclick="regcalc_set_button_value( '48')" id="regcalc_48"></td>
                                 <td><input type="button" value="0" onclick="regcalc_set_button_value( '49')" id="regcalc_49"></td>
@@ -584,25 +628,20 @@
                                 </td>
                                 <td class="regcalc-actions"></td>
                             </tr>
-                            <tr>
-                                <td class="regcalc-label">位域编辑：</td>
-                                <td class="regcalc-control">
-                                    <input type="text" id="regcalc_bitRange" style="width:48px;" placeholder="14:12" oninput="regcalc_handleBitRangeChange()">
-                                    <input type="text" id="regcalc_subHex" placeholder="0x0" style="width:80px;" oninput="regcalc_updateFromSubHex()">
-                                    <input type="text" id="regcalc_subDec" placeholder="0" style="width:100px;" oninput="regcalc_updateFromSubDec()">
-                                </td>
-                                <td class="regcalc-actions"></td>
-                                <!-- <td style="text-align: right; padding-right: 5px"><input type="button" value="清空数字" onclick="regcalc_clean_all_value()" id="regcalc_clean"></td> -->
-                            </tr>
-                            <tr>
-                                <td class="regcalc-label">位域编辑：</td>
-                                <td class="regcalc-control">
-                                    <input type="text" id="regcalc_bitRange1" style="width:48px;" placeholder="7:5" oninput="regcalc_handleBitRangeChange1()">
-                                    <input type="text" id="regcalc_subHex1" placeholder="0x0" style="width:80px;" oninput="regcalc_updateFromSubHex1()">
-                                    <input type="text" id="regcalc_subDec1" placeholder="0" style="width:100px;" oninput="regcalc_updateFromSubDec1()">
-                                </td>
-                                <td class="regcalc-actions"></td>
-                            </tr>
+                            <tbody id="regcalc_bitfieldRows">
+                                <tr class="regcalc-bitfield-row">
+                                    <td class="regcalc-label">位域编辑：</td>
+                                    <td class="regcalc-control">
+                                        <input type="text" class="regcalc-bit-range" placeholder="14:12" oninput="regcalc_handleBitFieldRangeChange(this)">
+                                        <input type="text" class="regcalc-sub-hex" placeholder="0x0" oninput="regcalc_updateFromBitField(this, 'hex')">
+                                        <input type="text" class="regcalc-sub-dec" placeholder="0" oninput="regcalc_updateFromBitField(this, 'dec')">
+                                    </td>
+                                    <td class="regcalc-actions regcalc-bitfield-buttons">
+                                        <button type="button" onclick="regcalc_addBitFieldRow(this)" title="新增位域行">+</button>
+                                        <button type="button" onclick="regcalc_removeBitFieldRow(this)" title="删除此位域行">-</button>
+                                    </td>
+                                </tr>
+                            </tbody>
                             <tr>
                                 <td class="regcalc-label">位移操作：</td>
                                 <td class="regcalc-control">
@@ -660,8 +699,16 @@
             <div class="buttons">
                 <button onclick="textconvert_processText('removeEmptyLines')">去除空行</button>
                 <button onclick="textconvert_processText('removeSpaces')">去除空格</button>
+                <button onclick="textconvert_processText('trimLines')">去首尾空格</button>
+                <button onclick="textconvert_processText('collapseSpaces')">合并空白</button>
                 <button onclick="textconvert_processText('removeAllLineBreaks')">去除所有换行</button>
                 <button onclick="textconvert_processText('removeInterruptedBreaks')">去除中断换行</button>
+                <button onclick="textconvert_processText('dedupeLines')">行去重</button>
+                <button onclick="textconvert_processText('sortLines')">行排序</button>
+                <button onclick="textconvert_processText('addLineNumbers')">添加行号</button>
+                <button onclick="textconvert_processText('removeLineNumbers')">移除行号</button>
+                <button onclick="textconvert_processText('upperCase')">转大写</button>
+                <button onclick="textconvert_processText('lowerCase')">转小写</button>
                 <button title="横排转成竖排"
                         onclick="textconvert_processText('verticalLayout')">-- → |</button>
                 <button title="竖排转成横排"
@@ -757,6 +804,9 @@ Release note：
   2025.07.25  v0.1 初版
   2026.03.28  v0.2 修改格式
   2026.06.08  v0.3 适配移动端显示，优化字体与 RegCalc 表单布局
+  2026.06.08  v0.4 优化位按钮矩阵分组间距，位域编辑支持动态增删
+  2026.06.08  v0.5 计算器支持浮点表达式
+  2026.06.08  v0.6 优化 TextFormatter 手机按钮布局，新增常用文本处理
   
   yakoye
             `
@@ -805,8 +855,7 @@ Release note：
         const num = BigInt('0b' + bin_str);
         document.getElementById("regcalc_human").value = regcalc_convertToHumanReadable(num);
 
-        regcalc_updateBitRange();
-        regcalc_updateBitRange1();
+        regcalc_updateAllBitFields();
     }
 
     function regcalc_set_button_value(id) {
@@ -838,9 +887,7 @@ Release note：
             btn.value = bitVal;
             btn.style.color = (bitVal === '1') ? 'Red' : 'Black';
         }
-        regcalc_updateBitRange();
-        regcalc_updateBitRange1();
-        regcalc_updateSubFields();
+        regcalc_updateAllBitFields();
     }
 
     function regcalc_validateNumber(str, base) {
@@ -932,213 +979,169 @@ Release note：
         return BigInt(Math.round(result));
     }
 
-    function regcalc_handleBitRangeChange() {
-        regcalc_updateSubFields();
+    function regcalc_getBitFieldRows() {
+        return Array.from(document.querySelectorAll('#regcalc_bitfieldRows .regcalc-bitfield-row'));
     }
 
-    function regcalc_handleBitRangeChange1() {
-        regcalc_updateSubFields1();
+    function regcalc_parseBitRange(rangeInput) {
+        const range = (rangeInput || '').replace(/[^\d:~-]/g, '');
+        const match = range.match(/^(\d+)(?:[:~-](\d+))?$/);
+        if (!match) return null;
+
+        let hi = Number(match[1]);
+        let lo = match[2] === undefined ? hi : Number(match[2]);
+        if (hi < lo) [hi, lo] = [lo, hi];
+        if (hi > 63 || lo < 0) return null;
+        return { hi, lo, width: hi - lo + 1 };
     }
 
-    function regcalc_updateSubFields() {
-        try {
-            const range = document.getElementById('regcalc_bitRange').value.replace(/[^\d:~-]/g, '');
-            const [hi, lo] = range.split(/[:~-]/).map(Number).sort((a,b) => b-a);
-            if (lo === undefined || hi === undefined) return;
-            if (hi < lo) [hi, lo] = [lo, hi];
-            if (hi > 63 || lo < 0 || hi === lo || lo === undefined) return;
-
-            const hexInput = document.getElementById('regcalc_hex').value;
-            const hexValue = hexInput.replace(/^0x/gi, '');
-            if (!/^[0-9a-f]*$/i.test(hexValue)) { throw new Error("Invalid hex value"); }
-            const fullValue = hexValue ? BigInt(`0x${hexValue}`) : 0n;
-            const bitWidth = hi - lo + 1;
-
-            const mask = (1n << BigInt(bitWidth)) - 1n;
-            const subValue = (fullValue >> BigInt(lo)) & mask;
-
-            regcalc_isProgrammatic = true;
-            document.getElementById('regcalc_subHex').value = '0x' + subValue.toString(16);
-            document.getElementById('regcalc_subDec').value = subValue.toString();
-            regcalc_isProgrammatic = false;
-        } catch(e) {
-            regcalc_clearSubFields();
-        }
+    function regcalc_getFullHexValue() {
+        let hexInput = document.getElementById('regcalc_hex').value.trim();
+        if (hexInput === '' || hexInput === '0x' || hexInput === '0X') return 0n;
+        if (!/^0x/i.test(hexInput)) hexInput = '0x' + hexInput;
+        return BigInt(hexInput);
     }
 
-    function regcalc_updateSubFields1() {
-        try {
-            const range = document.getElementById('regcalc_bitRange1').value.replace(/[^\d:~-]/g, '');
-            const [hi, lo] = range.split(/[:~-]/).map(Number).sort((a,b) => b-a);
-            if (lo === undefined || hi === undefined) return;
-            if (hi < lo) [hi, lo] = [lo, hi];
-            if (hi > 63 || lo < 0 || hi === lo || lo === undefined) return;
-
-            const hexInput = document.getElementById('regcalc_hex').value;
-            const hexValue = hexInput.replace(/^0x/gi, '');
-            if (!/^[0-9a-f]*$/i.test(hexValue)) { throw new Error("Invalid hex value"); }
-            const fullValue = hexValue ? BigInt(`0x${hexValue}`) : 0n;
-            const bitWidth = hi - lo + 1;
-
-            const mask = (1n << BigInt(bitWidth)) - 1n;
-            const subValue = (fullValue >> BigInt(lo)) & mask;
-
-            regcalc_isProgrammatic = true;
-            document.getElementById('regcalc_subHex1').value = '0x' + subValue.toString(16);
-            document.getElementById('regcalc_subDec1').value = subValue.toString();
-            regcalc_isProgrammatic = false;
-        } catch(e) {
-            regcalc_clearSubFields1();
-        }
+    function regcalc_getBitFieldParts(row) {
+        return {
+            range: row.querySelector('.regcalc-bit-range'),
+            subHex: row.querySelector('.regcalc-sub-hex'),
+            subDec: row.querySelector('.regcalc-sub-dec')
+        };
     }
 
-    function regcalc_updateFromSubField(type) {
-        if (regcalc_isProgrammatic) return;
-
-        try {
-            const range = document.getElementById('regcalc_bitRange').value.replace(/[^\d:~-]/g, '');
-            const [hi, lo] = range.split(/[:~-]/).map(Number).sort((a,b) => b-a);
-            let tpmVal, base;
-            if (type === 'hex') {
-                const hexInput = document.getElementById('regcalc_subHex').value;
-                tpmVal = hexInput.replace(/^0x/i, '').replace(/[^0-9a-f]/gi, '');
-                base = 16;
-            } else {
-                const decInput = document.getElementById('regcalc_subDec').value;
-                tpmVal = decInput.replace(/[^\d]/g, '');
-                base = 10;
-            }
-
-            let subValue;
-            try {
-                if (base === 16) {
-                    subValue = BigInt(`0x${tpmVal}`);
-                } else {
-                    subValue = BigInt(tpmVal);
-                }
-            } catch (e) { throw new Error(`无效的 ${type} 输入: ${tpmVal}`); }
-
-            let hexInput = document.getElementById('regcalc_hex').value.trim();
-            if (hexInput === "") { hexInput = "0x0"; }
-            else if (!hexInput.startsWith('0x')) { hexInput = '0x' + hexInput; }
-            let fullValue = BigInt(hexInput);
-
-            const mask = (1n << BigInt(hi - lo + 1)) - 1n;
-            fullValue &= ~(mask << BigInt(lo));
-            fullValue |= (subValue & mask) << BigInt(lo);
-
-            document.getElementById('regcalc_hex').value = '0x' + fullValue.toString(16);
-            regcalc_set_text_value('hex');
-        } catch { regcalc_clearSubFields(); }
-    }
-
-    function regcalc_updateFromSubField1(type) {
-        if (regcalc_isProgrammatic) return;
-
-        try {
-            const range = document.getElementById('regcalc_bitRange1').value.replace(/[^\d:~-]/g, '');
-            const [hi, lo] = range.split(/[:~-]/).map(Number).sort((a,b) => b-a);
-            let tpmVal, base;
-            if (type === 'hex') {
-                const hexInput = document.getElementById('regcalc_subHex1').value;
-                tpmVal = hexInput.replace(/^0x/i, '').replace(/[^0-9a-f]/gi, '');
-                base = 16;
-            } else {
-                const decInput = document.getElementById('regcalc_subDec1').value;
-                tpmVal = decInput.replace(/[^\d]/g, '');
-                base = 10;
-            }
-
-            let subValue;
-            try {
-                if (base === 16) {
-                    subValue = BigInt(`0x${tpmVal}`);
-                } else {
-                    subValue = BigInt(tpmVal);
-                }
-            } catch (e) { throw new Error(`无效的 ${type} 输入: ${tpmVal}`); }
-
-            let hexInput = document.getElementById('regcalc_hex').value.trim();
-            if (hexInput === "") { hexInput = "0x0"; }
-            else if (!hexInput.startsWith('0x')) { hexInput = '0x' + hexInput; }
-            let fullValue = BigInt(hexInput);
-
-            const mask = (1n << BigInt(hi - lo + 1)) - 1n;
-            fullValue &= ~(mask << BigInt(lo));
-            fullValue |= (subValue & mask) << BigInt(lo);
-
-            document.getElementById('regcalc_hex').value = '0x' + fullValue.toString(16);
-            regcalc_set_text_value('hex');
-        } catch { regcalc_clearSubFields1(); }
-    }
-
-    function regcalc_clearSubFields() {
+    function regcalc_clearBitFieldRow(row) {
+        const { subHex, subDec } = regcalc_getBitFieldParts(row);
         regcalc_isProgrammatic = true;
-        document.getElementById('regcalc_subHex').value = '';
-        document.getElementById('regcalc_subDec').value = '';
+        subHex.value = '';
+        subDec.value = '';
         regcalc_isProgrammatic = false;
     }
 
-    function regcalc_clearSubFields1() {
-        regcalc_isProgrammatic = true;
-        document.getElementById('regcalc_subHex1').value = '';
-        document.getElementById('regcalc_subDec1').value = '';
-        regcalc_isProgrammatic = false;
+    function regcalc_updateBitFieldRow(row) {
+        try {
+            const { range, subHex, subDec } = regcalc_getBitFieldParts(row);
+            const parsed = regcalc_parseBitRange(range.value);
+            if (!parsed) {
+                regcalc_clearBitFieldRow(row);
+                return;
+            }
+
+            const fullValue = regcalc_getFullHexValue();
+            const mask = (1n << BigInt(parsed.width)) - 1n;
+            const subValue = (fullValue >> BigInt(parsed.lo)) & mask;
+
+            regcalc_isProgrammatic = true;
+            subHex.value = '0x' + subValue.toString(16);
+            subDec.value = subValue.toString(10);
+            regcalc_isProgrammatic = false;
+        } catch {
+            regcalc_clearBitFieldRow(row);
+        }
     }
 
-    function regcalc_updateBitRange() {
-        const rangeInput = document.getElementById('regcalc_bitRange').value;
-        const match = rangeInput.match(/^(\d+)[:~-](\d+)$/);
-        if (!match) return;
-
-        let hi = parseInt(match[1]), lo = parseInt(match[2]);
-        if (hi < lo) [hi, lo] = [lo, hi];
-        if (hi > 63 || lo < 0) return;
-
-        const fullValue = BigInt(document.getElementById('regcalc_hex').value);
-        const mask = (1n << BigInt(hi - lo + 1)) - 1n;
-        const subValue = (fullValue >> BigInt(lo)) & mask;
-
-        document.getElementById('regcalc_subHex').value = '0x' + subValue.toString(16);
-        document.getElementById('regcalc_subDec').value = subValue.toString(10);
+    function regcalc_updateAllBitFields() {
+        regcalc_getBitFieldRows().forEach(regcalc_updateBitFieldRow);
+        regcalc_refreshBitFieldButtons();
     }
 
-    function regcalc_updateBitRange1() {
-        const rangeInput = document.getElementById('regcalc_bitRange1').value;
-        const match = rangeInput.match(/^(\d+)[:~-](\d+)$/);
-        if (!match) return;
-
-        let hi = parseInt(match[1]), lo = parseInt(match[2]);
-        if (hi < lo) [hi, lo] = [lo, hi];
-        if (hi > 63 || lo < 0) return;
-
-        const fullValue = BigInt(document.getElementById('regcalc_hex').value);
-        const mask = (1n << BigInt(hi - lo + 1)) - 1n;
-        const subValue = (fullValue >> BigInt(lo)) & mask;
-
-        document.getElementById('regcalc_subHex1').value = '0x' + subValue.toString(16);
-        document.getElementById('regcalc_subDec1').value = subValue.toString(10);
+    function regcalc_handleBitFieldRangeChange(input) {
+        regcalc_updateBitFieldRow(input.closest('.regcalc-bitfield-row'));
     }
 
-    function regcalc_updateFromSubHex() {
-        const value = document.getElementById('regcalc_subHex').value;
-        if (value) regcalc_set_text_value('hex', true);
+    function regcalc_updateFromBitField(input, type) {
+        if (regcalc_isProgrammatic) return;
+
+        const row = input.closest('.regcalc-bitfield-row');
+        const { range, subHex, subDec } = regcalc_getBitFieldParts(row);
+        const parsed = regcalc_parseBitRange(range.value);
+        if (!parsed) {
+            regcalc_clearBitFieldRow(row);
+            return;
+        }
+
+        try {
+            const rawValue = type === 'hex'
+                ? subHex.value.replace(/^0x/i, '').replace(/[^0-9a-f]/gi, '')
+                : subDec.value.replace(/[^\d]/g, '');
+            if (!rawValue) return;
+
+            const subValue = type === 'hex' ? BigInt('0x' + rawValue) : BigInt(rawValue);
+            const mask = (1n << BigInt(parsed.width)) - 1n;
+            let fullValue = regcalc_getFullHexValue();
+            fullValue &= ~(mask << BigInt(parsed.lo));
+            fullValue |= (subValue & mask) << BigInt(parsed.lo);
+
+            document.getElementById('regcalc_hex').value = '0x' + fullValue.toString(16);
+            regcalc_set_text_value('hex');
+        } catch {
+            regcalc_clearBitFieldRow(row);
+        }
     }
 
-    function regcalc_updateFromSubHex1() {
-        const value = document.getElementById('regcalc_subHex1').value;
-        if (value) regcalc_set_text_value('hex', true);
+    function regcalc_createBitFieldRow(range = '') {
+        const tr = document.createElement('tr');
+        tr.className = 'regcalc-bitfield-row';
+        tr.innerHTML = `
+            <td class="regcalc-label">位域编辑：</td>
+            <td class="regcalc-control">
+                <input type="text" class="regcalc-bit-range" placeholder="14:12" value="${range}" oninput="regcalc_handleBitFieldRangeChange(this)">
+                <input type="text" class="regcalc-sub-hex" placeholder="0x0" oninput="regcalc_updateFromBitField(this, 'hex')">
+                <input type="text" class="regcalc-sub-dec" placeholder="0" oninput="regcalc_updateFromBitField(this, 'dec')">
+            </td>
+            <td class="regcalc-actions regcalc-bitfield-buttons">
+                <button type="button" onclick="regcalc_addBitFieldRow(this)" title="新增位域行">+</button>
+                <button type="button" onclick="regcalc_removeBitFieldRow(this)" title="删除此位域行">-</button>
+            </td>
+        `;
+        return tr;
     }
 
-    function regcalc_updateFromSubDec() {
-        const value = document.getElementById('regcalc_subDec').value;
-        if (value) regcalc_set_text_value('dec', true);
+    function regcalc_addBitFieldRow(button) {
+        const currentRow = button.closest('.regcalc-bitfield-row');
+        const newRow = regcalc_createBitFieldRow();
+        currentRow.after(newRow);
+        regcalc_refreshBitFieldButtons();
+        regcalc_fitToMobileScreen();
     }
 
-    function regcalc_updateFromSubDec1() {
-        const value = document.getElementById('regcalc_subDec1').value;
-        if (value) regcalc_set_text_value('dec', true);
+    function regcalc_removeBitFieldRow(button) {
+        const rows = regcalc_getBitFieldRows();
+        if (rows.length <= 1) return;
+
+        button.closest('.regcalc-bitfield-row').remove();
+        regcalc_refreshBitFieldButtons();
+        regcalc_fitToMobileScreen();
     }
+
+    function regcalc_refreshBitFieldButtons() {
+        const rows = regcalc_getBitFieldRows();
+        rows.forEach(row => {
+            const removeButton = row.querySelector('.regcalc-bitfield-buttons button:last-child');
+            if (removeButton) removeButton.disabled = rows.length <= 1;
+        });
+    }
+
+    function regcalc_clearAllBitFields() {
+        regcalc_getBitFieldRows().forEach(row => {
+            const { range } = regcalc_getBitFieldParts(row);
+            range.value = '';
+            regcalc_clearBitFieldRow(row);
+        });
+    }
+
+    function regcalc_handleBitRangeChange() { regcalc_updateAllBitFields(); }
+    function regcalc_handleBitRangeChange1() { regcalc_updateAllBitFields(); }
+    function regcalc_updateSubFields() { regcalc_updateAllBitFields(); }
+    function regcalc_updateSubFields1() { regcalc_updateAllBitFields(); }
+    function regcalc_clearSubFields() { regcalc_clearAllBitFields(); }
+    function regcalc_clearSubFields1() { regcalc_clearAllBitFields(); }
+    function regcalc_updateBitRange() { regcalc_updateAllBitFields(); }
+    function regcalc_updateBitRange1() { regcalc_updateAllBitFields(); }
+    function regcalc_updateFromSubHex() {}
+    function regcalc_updateFromSubHex1() {}
+    function regcalc_updateFromSubDec() {}
+    function regcalc_updateFromSubDec1() {}
 
     function regcalc_handleShift(direction) {
         try {
@@ -1172,26 +1175,6 @@ Release note：
         } catch(e) {
             alert("发生位移操作错误，请检查输入值！");
         }
-    }
-
-    function regcalc_updateFromSubHex() {
-        if (regcalc_isProgrammatic) return;
-        regcalc_updateFromSubField('hex');
-    }
-    
-    function regcalc_updateFromSubHex1() {
-        if (regcalc_isProgrammatic) return;
-        regcalc_updateFromSubField1('hex');
-    }
-    
-    function regcalc_updateFromSubDec() {
-        if (regcalc_isProgrammatic) return;
-        regcalc_updateFromSubField('dec');
-    }
-
-    function regcalc_updateFromSubDec1() {
-        if (regcalc_isProgrammatic) return;
-        regcalc_updateFromSubField1('dec');
     }
 
     function regcalc_set_text_value(id, isSubField = false) {
@@ -1310,6 +1293,7 @@ Release note：
 
     let regcalc_g_originalResult = 0n;
     let regcalc_g_currentResult = 0n;
+    let regcalc_g_floatResult = null;
     let regcalc_g_resultFormat = 'hex';
 
     function regcalc_handleEnterKey(event) {
@@ -1331,6 +1315,11 @@ Release note：
         // 没有任何输入
         if (!inputStr) {
             resultElement.value = '';
+            return;
+        }
+
+        if (regcalc_g_floatResult !== null) {
+            resultElement.value = regcalc_formatFloatResult(regcalc_g_floatResult);
             return;
         }
 
@@ -1357,17 +1346,47 @@ Release note：
         document.getElementById('regcalc_calcResult').value = displayValue;
     }
 
+    function regcalc_formatFloatResult(value) {
+        if (!Number.isFinite(value)) return String(value);
+        if (Number.isInteger(value)) return value.toString();
+        return Number(value.toPrecision(15)).toString();
+    }
+
+    function regcalc_calculateFloat(rawInput) {
+        if (!/^[\d.eE()+\-*/\s]+$/.test(rawInput)) {
+            throw new Error("浮点计算只支持数字、小数点、科学计数法和 + - * / ()");
+        }
+
+        const result = Function(`"use strict"; return (${rawInput});`)();
+        if (typeof result !== 'number' || Number.isNaN(result)) {
+            throw new Error("浮点计算结果无效");
+        }
+        return result;
+    }
+
     function regcalc_calculate() {
         const inputElement = document.getElementById('regcalc_calcInput');
         const warningElement = document.getElementById('regcalc_truncateWarning');
 
         try {
             const rawInput = inputElement.value.trim().replace(/[\s_ULul]+/g, '');
+            regcalc_g_floatResult = null;
             warningElement.style.display = 'none';
             if (!rawInput) { document.getElementById('regcalc_calcResult').value = ''; return; }
 
             const operators = rawInput.match(/(\*\*|<<|>>|[\+\-\*/%&|\^~])/g) || [];
             if (operators.length > 20) { throw new Error("操作符数量不能超过20个"); }
+
+            const hasIntegerOnlyOperator = /(<<|>>|[%&|^~])/.test(rawInput);
+            const hasBaseLiteral = /0[xb]/i.test(rawInput);
+            const shouldUseFloat = !hasIntegerOnlyOperator && !hasBaseLiteral && /(?:\d\.\d|\d\.|\.\d|\/|e[+\-]?\d)/i.test(rawInput);
+
+            if (shouldUseFloat) {
+                regcalc_g_currentResult = null;
+                regcalc_g_floatResult = regcalc_calculateFloat(rawInput);
+                regcalc_updateResultDisplay();
+                return;
+            }
 
             const convertInput = (input) => {
                 let processed = input
@@ -1445,20 +1464,13 @@ Release note：
         document.getElementById("regcalc_bin").value = "";
         document.getElementById("regcalc_dec").value = "";
         document.getElementById("regcalc_human").value = "";
-        document.getElementById('regcalc_bitRange').value = "";
-        document.getElementById('regcalc_bitRange1').value = "";
-        document.getElementById('regcalc_subHex').value = "";
-        document.getElementById('regcalc_subHex1').value = "";
-        document.getElementById('regcalc_subDec').value = "";
-        document.getElementById('regcalc_subDec1').value = "";
         document.getElementById('regcalc_shiftLeft').value = "";
         document.getElementById('regcalc_shiftRight').value = "";
         document.getElementById('regcalc_calcInput').value = "";
         document.getElementById('regcalc_calcResult').value = "";
         document.getElementById('regcalc_truncateWarning').value = "";
         
-        regcalc_clearSubFields();
-        regcalc_clearSubFields1();
+        regcalc_clearAllBitFields();
 
         for (i = 0; i < 64; i++) {
             const id = i < 10 ? "0" + i : "" + i;
@@ -1471,6 +1483,7 @@ Release note：
         document.getElementById("regcalc_hex").value = "";
         document.getElementById("regcalc_bin").value = "";
         document.getElementById("regcalc_dec").value = "";
+        regcalc_refreshBitFieldButtons();
     }
     window.onload = regcalc_window_onload;
     </script>
@@ -1512,11 +1525,35 @@ Release note：
             case 'removeSpaces':
                 output = input.replace(/ /g, '');
                 break;
+            case 'trimLines':
+                output = input.split('\n').map(line => line.trim()).join('\n');
+                break;
+            case 'collapseSpaces':
+                output = input.replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n');
+                break;
             case 'removeAllLineBreaks':
                 output = input.replace(/\n/g, '');
                 break;
             case 'removeInterruptedBreaks':
                 output = input.replace(/([^\.!\?。！？\”’\]）】])[\r\n]+/g, '$1');
+                break;
+            case 'dedupeLines':
+                output = Array.from(new Set(input.split('\n'))).join('\n');
+                break;
+            case 'sortLines':
+                output = input.split('\n').sort((a, b) => a.localeCompare(b, 'zh-Hans-CN')).join('\n');
+                break;
+            case 'addLineNumbers':
+                output = input.split('\n').map((line, index) => `${index + 1}. ${line}`).join('\n');
+                break;
+            case 'removeLineNumbers':
+                output = input.split('\n').map(line => line.replace(/^\s*\d+[\.\)、\)]\s*/, '')).join('\n');
+                break;
+            case 'upperCase':
+                output = input.toUpperCase();
+                break;
+            case 'lowerCase':
+                output = input.toLowerCase();
                 break;
             case 'verticalLayout':
                 output = input.split(/[ ,?	]+/).join('\n');
