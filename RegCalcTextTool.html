@@ -8,9 +8,17 @@
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <style>
         body {
-            font-family: Arial, "微软雅黑", sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans CJK SC", "PingFang SC", Arial, sans-serif;
             background: #f9f9f9;
             margin:0;
+            color: #222;
+            font-size: 15px;
+            line-height: 1.5;
+            -webkit-text-size-adjust: 100%;
+            text-rendering: optimizeLegibility;
+        }
+        * {
+            box-sizing: border-box;
         }
         .tab-bar {
             display: flex;
@@ -30,6 +38,7 @@
             cursor: pointer;
             color: #888;
             font-size: 16px;
+            font-weight: 600;
             position: relative;
             top: 2px;
             transition: all 0.2s;
@@ -61,12 +70,103 @@
         .tab-content.active {
             display: block;
         }
+        #regcalc-ui {
+            max-width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+        #regcalc-ui table {
+            --regcalc-field-width: 280px;
+            --regcalc-gap: 4px;
+            font-size: 14px;
+            line-height: 1.45;
+        }
+        #regcalc-ui > table {
+            max-width: 100%;
+        }
         /* RegCalc指定样式（防止干扰） */
         #regcalc-ui table input[type="text"], #regcalc-ui table textarea {
-            font-family: monospace;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            font-size: 14px;
+            line-height: 1.35;
             padding: 5px;
             border: 1px solid #999;
             margin: 3px 0;
+        }
+        #regcalc-ui table input[type="button"], #regcalc-ui table button {
+            font-family: inherit;
+            font-size: 14px;
+            line-height: 1.2;
+        }
+        #regcalc-ui .regcalc-form-table {
+            border-spacing: 3px 3px;
+        }
+        #regcalc-ui .regcalc-label {
+            width: 86px;
+            padding-right: 5px;
+            text-align: right;
+            white-space: nowrap;
+        }
+        #regcalc-ui .regcalc-control {
+            text-align: left;
+            white-space: nowrap;
+        }
+        #regcalc-ui .regcalc-actions {
+            text-align: left;
+            white-space: nowrap;
+            padding-left: 2px;
+            width: 1%;
+        }
+        #regcalc-ui .regcalc-control input,
+        #regcalc-ui .regcalc-control textarea,
+        #regcalc-ui .regcalc-actions button,
+        #regcalc-ui .regcalc-actions input {
+            margin-right: var(--regcalc-gap);
+        }
+        #regcalc-ui #regcalc_hex,
+        #regcalc-ui #regcalc_dec,
+        #regcalc-ui #regcalc_calcInput,
+        #regcalc-ui #regcalc_calcResult {
+            width: var(--regcalc-field-width) !important;
+        }
+        #regcalc-ui #regcalc_human {
+            width: 70px !important;
+        }
+        #regcalc-ui #regcalc_bitRange,
+        #regcalc-ui #regcalc_bitRange1 {
+            width: 54px !important;
+        }
+        #regcalc-ui #regcalc_subHex,
+        #regcalc-ui #regcalc_subHex1 {
+            width: 86px !important;
+        }
+        #regcalc-ui #regcalc_subDec,
+        #regcalc-ui #regcalc_subDec1 {
+            width: calc(var(--regcalc-field-width) - 54px - 86px - (var(--regcalc-gap) * 2)) !important;
+        }
+        #regcalc-ui #regcalc_bin {
+            width: var(--regcalc-field-width) !important;
+            height: 3.5em !important;
+            resize: none;
+            white-space: pre-wrap;
+            overflow-x: hidden;
+            overflow-y: auto;
+            overflow-wrap: anywhere;
+            word-break: break-all;
+        }
+        #regcalc-ui .regcalc-spacer td {
+            height: 5px;
+            padding: 0;
+            line-height: 0;
+        }
+        #regcalc-ui .regcalc-footer-actions {
+            padding-top: 4px;
+            text-align: center;
+        }
+        #regcalc-ui .regcalc-footer-actions a,
+        #regcalc-ui .regcalc-footer-actions input {
+            margin: 0 5px;
         }
         #regcalc-ui table textarea {
             vertical-align: top;
@@ -87,7 +187,9 @@
             width: 500px;
             height: 300px;
             padding: 10px;
-            font-family: Consolas, "Courier New", monospace;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            font-size: 14px;
+            line-height: 1.45;
             box-sizing: border-box;
         }
         #textconvert-ui .swap-btn {
@@ -104,6 +206,9 @@
             gap: 10px;
         }
         #textconvert-ui button {
+            font-family: inherit;
+            font-size: 14px;
+            line-height: 1.25;
             padding: 8px 16px;
             cursor: pointer;
         }
@@ -115,6 +220,96 @@
         #textconvert-ui button.clear-btn:hover {
             background: #f7fbcc;
             border-color: #22ca24;
+        }
+
+        @media (max-width:700px) {
+            body {
+                background: #fff;
+                font-size: 14px;
+            }
+            .tab-bar {
+                height: auto;
+                padding-left: 0;
+                align-items: stretch;
+                position: sticky;
+                top: 0;
+                z-index: 20;
+            }
+            .tab {
+                flex: 1 1 0;
+                min-width: 0;
+                margin-right: 0;
+                padding: 11px 8px;
+                text-align: center;
+                font-size: 15px;
+                border-radius: 0;
+                top: 0;
+            }
+            .tab-content {
+                margin: 0;
+                padding: 6px;
+                border-left: 0;
+                border-right: 0;
+                border-radius: 0;
+                min-height: calc(100vh - 44px);
+            }
+            #regcalc-ui {
+                width: max-content;
+                max-width: none;
+                padding-bottom: 8px;
+                overflow: visible;
+                transform-origin: left top;
+            }
+            #regcalc-ui > table {
+                max-width: none;
+            }
+            #regcalc-ui table {
+                border-spacing: 2px;
+            }
+            #regcalc-ui table input[type="text"],
+            #regcalc-ui table textarea {
+                max-width: 100%;
+            }
+            #textconvert-ui h3 {
+                margin: 6px 0 12px;
+                font-size: 18px;
+            }
+            #textconvert-ui .buttons {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            #textconvert-ui button {
+                min-height: 40px;
+                padding: 9px 12px;
+                font-size: 15px;
+            }
+            #textconvert-ui .buttons button {
+                flex: 1 1 calc(50% - 8px);
+                white-space: normal;
+            }
+            #textconvert-ui .container {
+                gap: 8px;
+            }
+            #textconvert-ui textarea {
+                min-height: 220px;
+                font-size: 16px;
+            }
+            #textconvert-ui .swap-btn {
+                width: 100%;
+                align-self: stretch;
+            }
+        }
+
+        @media (max-width:380px) {
+            .tab {
+                font-size: 14px;
+            }
+            .tab-content {
+                padding: 8px;
+            }
+            #textconvert-ui .buttons button {
+                flex-basis: 100%;
+            }
         }
 
         @media (max-width:1100px) {
@@ -366,65 +561,77 @@
                 </tr>
                 <tr>
                     <td>
-                        <table>
+                        <table class="regcalc-form-table">
                             <tr>
-                                <td>&nbsp;&nbsp;&nbsp;&nbsp;十六进制：
+                                <td class="regcalc-label">十六进制：</td>
+                                <td class="regcalc-control">
                                     <input type="text" name="hex" id="regcalc_hex" style="width:260px;" placeholder="0x0" oninput="regcalc_set_text_value('hex')">
-                                </td>
-                                <td>
-                                    &nbsp;&nbsp;
-                                    <input type="text" name="human" id="regcalc_human" style="width:65px;"  placeholder="数据大小" oninput="regcalc_set_text_value('human')">
-                                    &nbsp;&nbsp;
                                     <!-- <button onclick="regcalc_syncHexTocalcInput()" title="同步到计算的输入框中"> ⭣ </button> -->
                                 </td>
+                                <td class="regcalc-actions"><input type="text" name="human" id="regcalc_human" style="width:65px;"  placeholder="数据大小" oninput="regcalc_set_text_value('human')"></td>
                             </tr>
                             <tr>
-                                <td>&nbsp;&nbsp;&nbsp;&nbsp;十&nbsp; 进&nbsp; 制：
+                                <td class="regcalc-label">十进制：</td>
+                                <td class="regcalc-control">
                                     <input type="text" name="dec" id="regcalc_dec" value="0" style="width:260px;" placeholder="0" oninput="regcalc_set_text_value('dec')">
                                 </td>
+                                <td class="regcalc-actions"></td>
                             </tr>
                             <tr>
-                                <td>&nbsp;&nbsp;&nbsp;&nbsp;二&nbsp; 进&nbsp; 制：
-                                    <textarea name="bin" id="regcalc_bin" style="width:260px; height:36px;" placeholder="0" oninput="regcalc_set_text_value('bin')"></textarea>
+                                <td class="regcalc-label">二进制：</td>
+                                <td class="regcalc-control">
+                                    <textarea name="bin" id="regcalc_bin" placeholder="0" oninput="regcalc_set_text_value('bin')"></textarea>
                                 </td>
+                                <td class="regcalc-actions"></td>
                             </tr>
                             <tr>
-                                <td>&nbsp;&nbsp;&nbsp;&nbsp;位域编辑：<input type="text" id="regcalc_bitRange" style="width:48px;" placeholder="14:12" oninput="regcalc_handleBitRangeChange()">
+                                <td class="regcalc-label">位域编辑：</td>
+                                <td class="regcalc-control">
+                                    <input type="text" id="regcalc_bitRange" style="width:48px;" placeholder="14:12" oninput="regcalc_handleBitRangeChange()">
                                     <input type="text" id="regcalc_subHex" placeholder="0x0" style="width:80px;" oninput="regcalc_updateFromSubHex()">
-                                    <input type="text" id="regcalc_subDec" placeholder="0" style="width:100px;" oninput="regcalc_updateFromSubDec()"></td>
-                                    <!-- <td style="text-align: right; padding-right: 5px"><input type="button" value="清空数字" onclick="regcalc_clean_all_value()" id="regcalc_clean"></td> -->
+                                    <input type="text" id="regcalc_subDec" placeholder="0" style="width:100px;" oninput="regcalc_updateFromSubDec()">
+                                </td>
+                                <td class="regcalc-actions"></td>
+                                <!-- <td style="text-align: right; padding-right: 5px"><input type="button" value="清空数字" onclick="regcalc_clean_all_value()" id="regcalc_clean"></td> -->
                             </tr>
                             <tr>
-                                <td>&nbsp;&nbsp;&nbsp;&nbsp;位域编辑：<input type="text" id="regcalc_bitRange1" style="width:48px;" placeholder="7:5" oninput="regcalc_handleBitRangeChange1()">
+                                <td class="regcalc-label">位域编辑：</td>
+                                <td class="regcalc-control">
+                                    <input type="text" id="regcalc_bitRange1" style="width:48px;" placeholder="7:5" oninput="regcalc_handleBitRangeChange1()">
                                     <input type="text" id="regcalc_subHex1" placeholder="0x0" style="width:80px;" oninput="regcalc_updateFromSubHex1()">
-                                    <input type="text" id="regcalc_subDec1" placeholder="0" style="width:100px;" oninput="regcalc_updateFromSubDec1()"></td>
+                                    <input type="text" id="regcalc_subDec1" placeholder="0" style="width:100px;" oninput="regcalc_updateFromSubDec1()">
+                                </td>
+                                <td class="regcalc-actions"></td>
                             </tr>
                             <tr>
-                                <td>&nbsp;&nbsp;&nbsp;&nbsp;位移操作：<input type="text" id="regcalc_shiftLeft" style="width:32px;text-align: center;" placeholder="1" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                                <td class="regcalc-label">位移操作：</td>
+                                <td class="regcalc-control">
+                                    <input type="text" id="regcalc_shiftLeft" style="width:32px;text-align: center;" placeholder="1" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
                                     <button onclick="regcalc_handleShift('left')" title="左移操作">&lt;&lt;</button>
-                                    &nbsp;&nbsp;&nbsp;&nbsp;
                                     <button onclick="regcalc_handleShift('right')" title="右移操作">&gt;&gt;</button>
                                     <input type="text" id="regcalc_shiftRight" style="width:32px;text-align: center;" placeholder="1" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
                                 </td>
-                                <td style="text-align: left; padding-right: 5px"><input type="button" value="清空所有" title="清空输入框中内容" onclick="regcalc_clean_all_value()" id="regcalc_clean"></td>
+                                <td class="regcalc-actions"></td>
                             </tr>
-                            <tr>
-                                <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                            <tr class="regcalc-spacer">
+                                <td colspan="3"></td>
                             </tr>
                               <!-- 第一行：计算输入 -->
                             <tr>
-                                <td>
-                                    &nbsp;&nbsp;&nbsp;&nbsp;计&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;算：<input type="text" id="regcalc_calcInput" style="width:260px;" placeholder="输入表达式，如 0x43+10" onkeypress="regcalc_handleEnterKey(event)">
+                                <td class="regcalc-label">计算：</td>
+                                <td class="regcalc-control">
+                                    <input type="text" id="regcalc_calcInput" style="width:260px;" placeholder="输入表达式，如 0x43+10" onkeypress="regcalc_handleEnterKey(event)">
                                 </td>
-                                <td>
+                                <td class="regcalc-actions">
                                     <button onclick="regcalc_calculate()">计算</button> &nbsp;
                                     <button onclick="regcalc_syncResultToHex()" title="同步结果到十六进制输入框中"> ⭡ </button>
                                 </td>
                             </tr>
                             <!-- 第二行：结果输出 -->
                             <tr>
-                                <td>&nbsp;&nbsp;&nbsp;&nbsp;结&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;果：<input type="text" id="regcalc_calcResult" style="width:260px;" readonly></td>
-                                <td>
+                                <td class="regcalc-label">结果：</td>
+                                <td class="regcalc-control"><input type="text" id="regcalc_calcResult" style="width:260px;" readonly></td>
+                                <td class="regcalc-actions">
                                     <button onclick="regcalc_setResultFormat('hex')" title="将结果转成十六进制">16</button>
                                     <button onclick="regcalc_setResultFormat('dec')" title="将结果转成十进制">10</button>
                                     <button onclick="regcalc_setResultFormat('bin')" title="将结果转成二进制">2</button>
@@ -432,13 +639,11 @@
                             </tr>
                             <!-- 第三行：截断提示 -->
                             <tr>
-                                <td colspan="3" style="text-align: center; padding-top: 8px;">
+                                <td colspan="3" class="regcalc-footer-actions">
                                     <span id="regcalc_truncateWarning" style="color: red; display: none;">注意：结果可能有误，已被截断为128位无符号整数</span>
+                                    <input type="button" value="清空所有" title="清空输入框中内容" onclick="regcalc_clean_all_value()" id="regcalc_clean">
                                     <a href="javascript:void(0)" onclick="regcalc_showHelp()"
-                                    title="查看使用说明" style="margin-left:10px;font-size:12px;">帮助(?)</a>
-                                </td>
-                                <td>
-                                    &nbsp;&nbsp;&nbsp;&nbsp;
+                                    title="查看使用说明" style="font-size:12px;">帮助(?)</a>
                                 </td>
                             </tr>
                         </table>
@@ -490,8 +695,43 @@
                     contents[id].classList.remove('active');
                 });
                 contents[this.getAttribute('data-tab')].classList.add('active');
+                requestAnimationFrame(regcalc_fitToMobileScreen);
             };
         });
+
+        function regcalc_fitToMobileScreen() {
+            const ui = document.getElementById('regcalc-ui');
+            const panel = document.getElementById('regcalc');
+            const table = ui ? ui.querySelector(':scope > table') : null;
+            if (!ui || !panel || !table) return;
+
+            ui.style.zoom = '';
+            ui.style.transform = '';
+            ui.style.height = '';
+            ui.style.width = '';
+
+            if (window.innerWidth > 700) return;
+
+            ui.style.width = 'max-content';
+            const availableWidth = Math.max(300, panel.clientWidth - 12);
+            const naturalWidth = table.scrollWidth;
+            if (!naturalWidth) return;
+
+            const scale = Math.min(1, availableWidth / naturalWidth);
+            if ('zoom' in ui.style) {
+                ui.style.zoom = scale.toFixed(3);
+                return;
+            }
+
+            ui.style.transform = `scale(${scale})`;
+            ui.style.height = `${table.offsetHeight * scale}px`;
+        }
+
+        window.addEventListener('load', regcalc_fitToMobileScreen);
+        window.addEventListener('resize', regcalc_fitToMobileScreen);
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', regcalc_fitToMobileScreen);
+        }
 
         function regcalc_showHelp() {
             alert(
@@ -516,6 +756,7 @@
 Release note：
   2025.07.25  v0.1 初版
   2026.03.28  v0.2 修改格式
+  2026.06.08  v0.3 适配移动端显示，优化字体与 RegCalc 表单布局
   
   yakoye
             `

@@ -100,6 +100,12 @@ npm run build
 
 后续如果继续添加新的静态工具，直接把新的 `.html`、图片、CSS、JS 放到仓库中即可。`npm run build` 会自动复制常见静态资源到 `dist/`。如果想让新工具成为站点首页，修改 `index.html` 的跳转地址即可。
 
+## Release note
+
+- 2025.07.25 v0.1 初版
+- 2026.03.28 v0.2 修改格式
+- 2026.06.08 v0.3 适配移动端显示，优化字体与 RegCalc 表单布局
+
 ## Refer
 
 - [reg_tools](https://github.com/lzwwiner/reg_tools)
