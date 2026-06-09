@@ -376,6 +376,21 @@
             font-family: inherit;
             font-size: 14px;
         }
+        #timecalc-ui .timecalc-base-row {
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: end;
+        }
+        #timecalc-ui .timecalc-convert-toggle {
+            min-height: 28px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+            font-size: 13px;
+        }
+        #timecalc-ui .timecalc-convert-toggle input {
+            margin: 0;
+        }
         .tool-panel h3 {
             margin: 8px 0 12px;
         }
@@ -1107,37 +1122,41 @@
             </div>
             <div class="tool-section">
                 <div class="tool-section-title">计算未来或过去时间</div>
-                <div class="timecalc-form-row timecalc-one-col">
+                <div class="timecalc-form-row timecalc-base-row">
                     <label class="timecalc-inline-field">基准时间
                         <input type="datetime-local" id="timecalc_base">
+                    </label>
+                    <label class="timecalc-convert-toggle" title="按 1年=12月=365天 换算">
+                        <input type="checkbox" id="timecalc_convertMode" onchange="timecalc_toggleConvertMode()">
+                        时间转换
                     </label>
                 </div>
                 <div class="timecalc-form-row timecalc-three-col">
                     <label class="tool-field">年
-                        <input type="number" id="timecalc_addYears" value="0">
+                        <input type="number" id="timecalc_addYears" value="0" oninput="timecalc_handleConvertInput('years')">
                     </label>
                     <label class="tool-field">月
-                        <input type="number" id="timecalc_addMonths" value="0">
+                        <input type="number" id="timecalc_addMonths" value="0" oninput="timecalc_handleConvertInput('months')">
                     </label>
                     <label class="tool-field">天
-                        <input type="number" id="timecalc_addDays" value="0">
+                        <input type="number" id="timecalc_addDays" value="0" oninput="timecalc_handleConvertInput('days')">
                     </label>
                 </div>
                 <div class="timecalc-form-row timecalc-three-col">
                     <label class="tool-field">小时
-                        <input type="number" id="timecalc_addHours" value="0">
+                        <input type="number" id="timecalc_addHours" value="0" oninput="timecalc_handleConvertInput('hours')">
                     </label>
                     <label class="tool-field">分钟
-                        <input type="number" id="timecalc_addMinutes" value="0">
+                        <input type="number" id="timecalc_addMinutes" value="0" oninput="timecalc_handleConvertInput('minutes')">
                     </label>
                     <label class="tool-field">秒
-                        <input type="number" id="timecalc_addSeconds" value="0">
+                        <input type="number" id="timecalc_addSeconds" value="0" oninput="timecalc_handleConvertInput('seconds')">
                     </label>
                 </div>
                 <div class="tool-actions">
-                    <button type="button" onclick="timecalc_calculateOffset(1)">计算未来</button>
-                    <button type="button" onclick="timecalc_calculateOffset(-1)">计算过去</button>
-                    <button type="button" onclick="timecalc_setNow('timecalc_base')">基准=现在</button>
+                    <button type="button" id="timecalc_futureBtn" onclick="timecalc_calculateOffset(1)">计算未来</button>
+                    <button type="button" id="timecalc_pastBtn" onclick="timecalc_calculateOffset(-1)">计算过去</button>
+                    <button type="button" id="timecalc_baseNowBtn" onclick="timecalc_setNow('timecalc_base')">基准=现在</button>
                 </div>
                 <div class="tool-output" id="timecalc_offsetOutput"></div>
             </div>
@@ -1331,7 +1350,8 @@
 2026.06.07  v0.19  时间计算器时间输入改为同排行
 2026.06.07  v0.20  RegCalc 计算输入支持三行自适应
 2026.06.07  v0.21  放宽 RegCalc 表达式限制并取消 128 位截断
-2026.06.07  v0.22  修改界面为英文，提示中文英文</pre>
+2026.06.07  v0.22  修改界面为英文，提示中文英文
+2026.06.09  v0.23  修复 RegCalc 精确小数计算，Time 增加时间转换联动</pre>
             </div>
 
             <div class="tool-section">
@@ -1382,7 +1402,8 @@
 2026.06.07  v0.19  Changed time calculator time inputs to same-row layout
 2026.06.07  v0.20  RegCalc calculation input now supports three-line auto-resizing
 2026.06.07  v0.21  Relaxed RegCalc expression restrictions and removed 128-bit truncation
-2026.06.07  v0.22  Updated the UI to English and added bilingual Chinese-English tooltips</pre>
+2026.06.07  v0.22  Updated the UI to English and added bilingual Chinese-English tooltips
+2026.06.09  v0.23  Fixed exact decimal calculation in RegCalc, added linked time conversion in Time</pre>
             </div>
         </div>
     </div>
@@ -2022,9 +2043,98 @@
     }
 
     function regcalc_formatFloatResult(value) {
-        if (!Number.isFinite(value)) return String(value);
-        if (Number.isInteger(value)) return value.toString();
-        return Number(value.toPrecision(15)).toString();
+        return String(value);
+    }
+
+    function regcalc_bigIntAbs(value) {
+        return value < 0n ? -value : value;
+    }
+
+    function regcalc_bigIntGcd(a, b) {
+        a = regcalc_bigIntAbs(a);
+        b = regcalc_bigIntAbs(b);
+        while (b !== 0n) {
+            const next = a % b;
+            a = b;
+            b = next;
+        }
+        return a || 1n;
+    }
+
+    function regcalc_fraction(numerator, denominator = 1n) {
+        if (denominator === 0n) throw new Error("除数不能为0");
+        if (denominator < 0n) {
+            numerator = -numerator;
+            denominator = -denominator;
+        }
+        const divisor = regcalc_bigIntGcd(numerator, denominator);
+        return { n: numerator / divisor, d: denominator / divisor };
+    }
+
+    function regcalc_fractionAdd(a, b) {
+        return regcalc_fraction(a.n * b.d + b.n * a.d, a.d * b.d);
+    }
+
+    function regcalc_fractionSub(a, b) {
+        return regcalc_fraction(a.n * b.d - b.n * a.d, a.d * b.d);
+    }
+
+    function regcalc_fractionMul(a, b) {
+        return regcalc_fraction(a.n * b.n, a.d * b.d);
+    }
+
+    function regcalc_fractionDiv(a, b) {
+        return regcalc_fraction(a.n * b.d, a.d * b.n);
+    }
+
+    function regcalc_fractionPow(base, exponent) {
+        if (exponent.d !== 1n || exponent.n < 0n || exponent.n > REGCALC_MAX_POWER_EXPONENT) {
+            throw new Error(`浮点幂指数必须是0到${REGCALC_MAX_POWER_EXPONENT}之间的整数`);
+        }
+        return regcalc_fraction(base.n ** exponent.n, base.d ** exponent.n);
+    }
+
+    function regcalc_parseDecimalLiteral(literal) {
+        const match = literal.match(/^((?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e([+\-]?\d+))?$/i);
+        if (!match) throw new Error("浮点数字格式错误");
+        let [intPart, fracPart = ''] = match[1].split('.');
+        if (intPart === '') intPart = '0';
+        let digits = (intPart + fracPart).replace(/^0+(?=\d)/, '');
+        if (digits === '') digits = '0';
+        let scale = fracPart.length;
+        const exponent = match[2] ? Number(match[2]) : 0;
+        if (!Number.isSafeInteger(exponent) || Math.abs(exponent) > 1024) {
+            throw new Error("科学计数法指数过大");
+        }
+        scale -= exponent;
+        if (scale < 0) {
+            digits += '0'.repeat(-scale);
+            scale = 0;
+        }
+        return regcalc_fraction(BigInt(digits), 10n ** BigInt(scale));
+    }
+
+    function regcalc_formatFraction(value) {
+        if (value.n === 0n) return '0';
+        const sign = value.n < 0n ? '-' : '';
+        let numerator = regcalc_bigIntAbs(value.n);
+        let denominator = value.d;
+        const integerPart = numerator / denominator;
+        let remainder = numerator % denominator;
+        if (remainder === 0n) return sign + integerPart.toString();
+
+        let finiteDenominator = denominator;
+        while (finiteDenominator % 2n === 0n) finiteDenominator /= 2n;
+        while (finiteDenominator % 5n === 0n) finiteDenominator /= 5n;
+        const maxDigits = finiteDenominator === 1n ? 1024 : 24;
+        let decimal = '';
+        for (let i = 0; remainder !== 0n && i < maxDigits; i++) {
+            remainder *= 10n;
+            decimal += (remainder / denominator).toString();
+            remainder %= denominator;
+        }
+        decimal = decimal.replace(/0+$/, '');
+        return sign + integerPart.toString() + (decimal ? '.' + decimal : '');
     }
 
     function regcalc_calculateFloat(rawInput) {
@@ -2032,11 +2142,83 @@
             throw new Error("浮点计算只支持数字、小数点、科学计数法和 + - * / ()");
         }
 
-        const result = Function(`"use strict"; return (${rawInput});`)();
-        if (typeof result !== 'number' || Number.isNaN(result)) {
-            throw new Error("浮点计算结果无效");
+        let pos = 0;
+        const input = rawInput;
+
+        function peek() {
+            return input[pos];
         }
-        return result;
+
+        function consume(char) {
+            if (input[pos] === char) {
+                pos++;
+                return true;
+            }
+            return false;
+        }
+
+        function parseExpression() {
+            let value = parseTerm();
+            while (true) {
+                if (consume('+')) value = regcalc_fractionAdd(value, parseTerm());
+                else if (consume('-')) value = regcalc_fractionSub(value, parseTerm());
+                else break;
+            }
+            return value;
+        }
+
+        function parseTerm() {
+            let value = parsePower();
+            while (true) {
+                if (consume('*')) {
+                    if (consume('*')) {
+                        pos -= 2;
+                        break;
+                    }
+                    value = regcalc_fractionMul(value, parsePower());
+                } else if (consume('/')) {
+                    value = regcalc_fractionDiv(value, parsePower());
+                } else {
+                    break;
+                }
+            }
+            return value;
+        }
+
+        function parsePower() {
+            let value = parseUnary();
+            if (input.slice(pos, pos + 2) === '**') {
+                pos += 2;
+                value = regcalc_fractionPow(value, parseUnary());
+            }
+            return value;
+        }
+
+        function parseUnary() {
+            if (consume('+')) return parseUnary();
+            if (consume('-')) {
+                const value = parseUnary();
+                return regcalc_fraction(-value.n, value.d);
+            }
+            return parsePrimary();
+        }
+
+        function parsePrimary() {
+            if (consume('(')) {
+                const value = parseExpression();
+                if (!consume(')')) throw new Error("括号不匹配");
+                return value;
+            }
+            const rest = input.slice(pos);
+            const match = rest.match(/^((?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[+\-]?\d+)?/i);
+            if (!match) throw new Error("表达式格式错误");
+            pos += match[0].length;
+            return regcalc_parseDecimalLiteral(match[0]);
+        }
+
+        const result = parseExpression();
+        if (pos !== input.length) throw new Error("表达式格式错误");
+        return regcalc_formatFraction(result);
     }
 
     function regcalc_parseIntegerLiteral(literal) {
@@ -2218,6 +2400,7 @@
         document.getElementById('timecalc_start').value = timecalc_toLocalInputValue(now);
         document.getElementById('timecalc_end').value = timecalc_toLocalInputValue(tomorrow);
         document.getElementById('timecalc_base').value = timecalc_toLocalInputValue(now);
+        timecalc_toggleConvertMode();
 
         const savedPasswordSymbols = localStorage.getItem('password_symbols');
         const savedPasswordExcludeCustom = localStorage.getItem('password_exclude_custom');
@@ -2460,6 +2643,63 @@
         return new Date(value);
     }
 
+    const timecalc_convertUnits = {
+        years: 365 * 24 * 60 * 60,
+        months: 365 * 24 * 60 * 60 / 12,
+        days: 24 * 60 * 60,
+        hours: 60 * 60,
+        minutes: 60,
+        seconds: 1
+    };
+    const timecalc_convertFieldIds = {
+        years: 'timecalc_addYears',
+        months: 'timecalc_addMonths',
+        days: 'timecalc_addDays',
+        hours: 'timecalc_addHours',
+        minutes: 'timecalc_addMinutes',
+        seconds: 'timecalc_addSeconds'
+    };
+    let timecalc_isConverting = false;
+
+    function timecalc_formatConvertNumber(value) {
+        if (!Number.isFinite(value)) return '0';
+        if (Object.is(value, -0)) value = 0;
+        if (Number.isInteger(value)) return String(value);
+        return Number(value.toPrecision(12)).toString();
+    }
+
+    function timecalc_clearOffsetFields() {
+        Object.values(timecalc_convertFieldIds).forEach(id => {
+            document.getElementById(id).value = '0';
+        });
+        document.getElementById('timecalc_offsetOutput').textContent = '';
+    }
+
+    function timecalc_toggleConvertMode() {
+        const enabled = document.getElementById('timecalc_convertMode').checked;
+        timecalc_clearOffsetFields();
+        document.getElementById('timecalc_base').disabled = enabled;
+        document.getElementById('timecalc_futureBtn').disabled = enabled;
+        document.getElementById('timecalc_pastBtn').disabled = enabled;
+        document.getElementById('timecalc_baseNowBtn').disabled = enabled;
+    }
+
+    function timecalc_handleConvertInput(unit) {
+        if (!document.getElementById('timecalc_convertMode').checked || timecalc_isConverting) return;
+        const source = document.getElementById(timecalc_convertFieldIds[unit]);
+        const rawValue = Number(source.value || 0);
+        if (!Number.isFinite(rawValue)) return;
+
+        timecalc_isConverting = true;
+        const totalSeconds = rawValue * timecalc_convertUnits[unit];
+        Object.keys(timecalc_convertFieldIds).forEach(key => {
+            if (key === unit) return;
+            document.getElementById(timecalc_convertFieldIds[key]).value =
+                timecalc_formatConvertNumber(totalSeconds / timecalc_convertUnits[key]);
+        });
+        timecalc_isConverting = false;
+    }
+
     function timecalc_daysInMonth(year, monthIndex) {
         return new Date(year, monthIndex + 1, 0).getDate();
     }
@@ -2516,6 +2756,7 @@
     }
 
     function timecalc_calculateOffset(direction) {
+        if (document.getElementById('timecalc_convertMode').checked) return;
         const base = timecalc_parseInput('timecalc_base') || new Date();
         const result = new Date(base);
         const years = Number(document.getElementById('timecalc_addYears').value || 0) * direction;
