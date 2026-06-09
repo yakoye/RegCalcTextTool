@@ -223,13 +223,19 @@
             display: none;
         }
         /* TextConvert 指定样式（命名前缀隔离） */
+        #textconvert-ui {
+            max-width: 1040px;
+            margin: 0 auto;
+        }
         #textconvert-ui .container {
             display: flex;    /* 启用 flex 布局 */
             gap: 5px;        /* 设置子元素之间的间距为 5px */
+            width: 100%;
         }
         /* TextConvert 文本框的宽度和高度 */
         #textconvert-ui textarea {
-            width: 500px;
+            flex: 1 1 0;
+            min-width: 0;
             height: 300px;
             padding: 10px;
             font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
@@ -247,15 +253,21 @@
         }
         #textconvert-ui .buttons {
             margin: 10px 0;
-            display: flex;
-            gap: 10px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+            gap: 8px;
         }
         #textconvert-ui button {
             font-family: inherit;
             font-size: 14px;
             line-height: 1.25;
-            padding: 8px 16px;
+            min-height: 34px;
+            padding: 7px 10px;
             cursor: pointer;
+        }
+        #textconvert-ui .buttons button {
+            width: 100%;
+            white-space: normal;
         }
         #textconvert-ui button.clear-btn {
             background: #f0f0f0;
@@ -265,6 +277,114 @@
         #textconvert-ui button.clear-btn:hover {
             background: #f7fbcc;
             border-color: #22ca24;
+        }
+        .tool-panel {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        #timecalc-ui,
+        #password-ui {
+            max-width: 720px;
+        }
+        #password-ui {
+            max-width: 680px;
+        }
+        .tool-panel h3 {
+            margin: 8px 0 12px;
+        }
+        .tool-section {
+            border: 1px solid #d8d8d8;
+            padding: 10px;
+            margin: 10px 0;
+            background: #fff;
+        }
+        .tool-section-title {
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .tool-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 8px;
+            align-items: end;
+        }
+        .tool-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 13px;
+        }
+        .tool-field input,
+        .tool-field select,
+        .tool-field textarea {
+            width: 100%;
+            min-height: 32px;
+            padding: 5px 7px;
+            border: 1px solid #999;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        .tool-field textarea {
+            min-height: 80px;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+        }
+        .tool-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin-top: 8px;
+        }
+        .tool-actions button,
+        .tool-action-btn {
+            min-height: 34px;
+            padding: 7px 12px;
+            cursor: pointer;
+        }
+        .tool-output {
+            margin-top: 10px;
+            padding: 8px;
+            border: 1px solid #d0d0d0;
+            background: #fafafa;
+            white-space: pre-wrap;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            font-size: 14px;
+            min-height: 40px;
+        }
+        .checkbox-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 14px;
+            align-items: center;
+        }
+        .checkbox-row label {
+            white-space: nowrap;
+        }
+        .external-links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 10px;
+        }
+        .external-tool-link {
+            display: block;
+            padding: 10px;
+            border: 1px solid #d8d8d8;
+            color: #222;
+            text-decoration: none;
+            background: #fff;
+        }
+        .external-tool-link:hover {
+            background: #f7fbff;
+            border-color: #88b7e8;
+        }
+        .external-tool-link b {
+            display: block;
+            margin-bottom: 4px;
+        }
+        .external-tool-link span {
+            color: #555;
+            font-size: 13px;
+            line-height: 1.4;
         }
 
         @media (max-width:700px) {
@@ -345,6 +465,15 @@
                 width: 100%;
                 align-self: stretch;
             }
+            .tool-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            .tool-section {
+                padding: 8px;
+            }
+            .external-links-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         @media (max-width:380px) {
@@ -370,6 +499,9 @@
     <div class="tab-bar">
         <div class="tab active" data-tab="regcalc">RegCalc</div>
         <div class="tab" data-tab="textconvert">TextFormatter</div>
+        <div class="tab" data-tab="timecalc">Time</div>
+        <div class="tab" data-tab="password">Password</div>
+        <div class="tab" data-tab="externallinks">Links</div>
     </div>
     <!-- RegCalc内容区 -->
     <div class="tab-content active" id="regcalc">
@@ -612,7 +744,7 @@
                                     <input type="text" name="hex" id="regcalc_hex" style="width:260px;" placeholder="0x0" oninput="regcalc_set_text_value('hex')">
                                     <!-- <button onclick="regcalc_syncHexTocalcInput()" title="同步到计算的输入框中"> ⭣ </button> -->
                                 </td>
-                                <td class="regcalc-actions"><input type="text" name="human" id="regcalc_human" style="width:65px;"  placeholder="数据大小" oninput="regcalc_set_text_value('human')"></td>
+                                <td class="regcalc-actions"><input type="text" name="human" id="regcalc_human" placeholder="数据大小" oninput="regcalc_set_text_value('human')"></td>
                             </tr>
                             <tr>
                                 <td class="regcalc-label">十进制：</td>
@@ -709,15 +841,72 @@
                 <button onclick="textconvert_processText('removeLineNumbers')">移除行号</button>
                 <button onclick="textconvert_processText('upperCase')">转大写</button>
                 <button onclick="textconvert_processText('lowerCase')">转小写</button>
+                <button onclick="textconvert_processText('pascalCase')">大驼峰</button>
+                <button onclick="textconvert_processText('camelCase')">小驼峰</button>
+                <button onclick="textconvert_processText('snakeCase')">下划线</button>
+                <button onclick="textconvert_processText('kebabCase')">短横线</button>
+                <button onclick="textconvert_processText('urlEncode')">URL编码</button>
+                <button onclick="textconvert_processText('urlDecode')">URL解码</button>
+                <button onclick="textconvert_processText('base64Encode')">Base64编码</button>
+                <button onclick="textconvert_processText('base64Decode')">Base64解码</button>
+                <button onclick="textconvert_processText('jsonFormat')">JSON格式化</button>
+                <button onclick="textconvert_processText('jsonMinify')">JSON压缩</button>
                 <button title="横排转成竖排"
                         onclick="textconvert_processText('verticalLayout')">-- → |</button>
                 <button title="竖排转成横排"
                         onclick="textconvert_processText('horizontalLayout')">| → --</button>
                 <button title="80 01 02 00 → 0x80, 0x01, 0x02, 0x00"
-                        onclick="textconvert_processText('hexFormat')">添加0x格式</button>
-                <button title="0x80, 0x01, 0x02, 0x00 → 80 01 02 00"
-                        onclick="textconvert_processText('hexReverse')">移除0x格式</button>
+                        onclick="textconvert_processText('hexFormat1Byte')">1B加0x</button>
+                <button title="12345678 → 0x12345678"
+                        onclick="textconvert_processText('hexFormat4Byte')">4B加0x</button>
+                <button title="12345678 → 0x78563412"
+                        onclick="textconvert_processText('hexFormat4ByteLe')">4B小端0x</button>
+                <button title="1122334455667788 → 0x1122334455667788"
+                        onclick="textconvert_processText('hexFormat8Byte')">8B加0x</button>
+                <button title="1122334455667788 → 0x8877665544332211"
+                        onclick="textconvert_processText('hexFormat8ByteLe')">8B小端0x</button>
+                <button title="0x12345678 → 12345678"
+                        onclick="textconvert_processText('hexReverse')">移除0x</button>
                 <button onclick="textconvert_clearInput()" class="clear-btn">清空原文</button>
+            </div>
+            <div class="tool-section">
+                <div class="tool-section-title">序列号码生成</div>
+                <div class="tool-grid">
+                    <label class="tool-field">开始
+                        <input type="number" id="sequence_start" value="1">
+                    </label>
+                    <label class="tool-field">结束
+                        <input type="number" id="sequence_end" value="50">
+                    </label>
+                    <label class="tool-field">位数
+                        <input type="number" id="sequence_width" value="0" min="0">
+                    </label>
+                    <label class="tool-field">生成个数
+                        <input type="number" id="sequence_count" placeholder="留空=全部" min="1">
+                    </label>
+                    <label class="tool-field">顺序
+                        <select id="sequence_order">
+                            <option value="asc">正序</option>
+                            <option value="desc">逆序</option>
+                            <option value="random">乱序</option>
+                        </select>
+                    </label>
+                    <label class="tool-field">分隔方式
+                        <select id="sequence_separator_mode" onchange="textconvert_updateSequenceSeparator()">
+                            <option value="newline">一行一个</option>
+                            <option value="space">空格</option>
+                            <option value="comma">逗号</option>
+                            <option value="custom">自定义</option>
+                        </select>
+                    </label>
+                    <label class="tool-field">自定义分隔符
+                        <input type="text" id="sequence_separator_custom" value="," disabled>
+                    </label>
+                </div>
+                <div class="tool-actions">
+                    <button type="button" onclick="textconvert_generateSequence()">生成到结果</button>
+                    <button type="button" onclick="textconvert_useSequenceAsInput()">生成到原文</button>
+                </div>
             </div>
             <div class="container">
                 <textarea id="textconvert_input" placeholder="输入原文..." autocomplete="off"></textarea>
@@ -727,12 +916,135 @@
         </div>
     </div>
 
+    <div class="tab-content" id="timecalc">
+        <div class="tool-panel" id="timecalc-ui">
+            <h3>时间计算器</h3>
+            <div class="tool-section">
+                <div class="tool-section-title">计算两个时间相隔</div>
+                <div class="tool-grid">
+                    <label class="tool-field">开始时间
+                        <input type="datetime-local" id="timecalc_start">
+                    </label>
+                    <label class="tool-field">结束时间
+                        <input type="datetime-local" id="timecalc_end">
+                    </label>
+                </div>
+                <div class="tool-actions">
+                    <button type="button" onclick="timecalc_calculateDiff()">计算间隔</button>
+                    <button type="button" onclick="timecalc_setNow('timecalc_start')">开始=现在</button>
+                    <button type="button" onclick="timecalc_setNow('timecalc_end')">结束=现在</button>
+                </div>
+                <div class="tool-output" id="timecalc_diffOutput"></div>
+            </div>
+            <div class="tool-section">
+                <div class="tool-section-title">计算未来或过去时间</div>
+                <div class="tool-grid">
+                    <label class="tool-field">基准时间
+                        <input type="datetime-local" id="timecalc_base">
+                    </label>
+                    <label class="tool-field">年
+                        <input type="number" id="timecalc_addYears" value="0">
+                    </label>
+                    <label class="tool-field">月
+                        <input type="number" id="timecalc_addMonths" value="0">
+                    </label>
+                    <label class="tool-field">天
+                        <input type="number" id="timecalc_addDays" value="0">
+                    </label>
+                    <label class="tool-field">小时
+                        <input type="number" id="timecalc_addHours" value="0">
+                    </label>
+                    <label class="tool-field">分钟
+                        <input type="number" id="timecalc_addMinutes" value="0">
+                    </label>
+                    <label class="tool-field">秒
+                        <input type="number" id="timecalc_addSeconds" value="0">
+                    </label>
+                </div>
+                <div class="tool-actions">
+                    <button type="button" onclick="timecalc_calculateOffset(1)">计算未来</button>
+                    <button type="button" onclick="timecalc_calculateOffset(-1)">计算过去</button>
+                    <button type="button" onclick="timecalc_setNow('timecalc_base')">基准=现在</button>
+                </div>
+                <div class="tool-output" id="timecalc_offsetOutput"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-content" id="password">
+        <div class="tool-panel" id="password-ui">
+            <h3>密码生成器</h3>
+            <div class="tool-section">
+                <div class="tool-grid">
+                    <label class="tool-field">长度
+                        <input type="number" id="password_length" value="16" min="1" max="256">
+                    </label>
+                    <label class="tool-field">数量
+                        <input type="number" id="password_count" value="8" min="1" max="200">
+                    </label>
+                    <label class="tool-field">指定符号
+                        <input type="text" id="password_symbols" value="!@#$%^&*_-+=?">
+                    </label>
+                    <label class="tool-field">额外排除字符
+                        <input type="text" id="password_exclude_custom" placeholder="例如: {}[]/\\">
+                    </label>
+                </div>
+                <div class="checkbox-row" style="margin-top:10px;">
+                    <label><input type="checkbox" id="password_lower" checked> 小写</label>
+                    <label><input type="checkbox" id="password_upper" checked> 大写</label>
+                    <label><input type="checkbox" id="password_digits" checked> 数字</label>
+                    <label><input type="checkbox" id="password_use_symbols" checked> 符号</label>
+                    <label><input type="checkbox" id="password_no_confusing"> 删除可能混淆字符</label>
+                </div>
+                <div class="tool-actions">
+                    <button type="button" onclick="password_generate()">生成密码</button>
+                    <button type="button" onclick="password_copyOutput()">复制结果</button>
+                </div>
+                <textarea id="password_output" class="tool-output" style="width:100%; min-height:180px;"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-content" id="externallinks">
+        <div class="tool-panel" id="externallinks-ui">
+            <h3>外部工具链接</h3>
+            <div class="tool-section">
+                <div class="tool-section-title">常用工具站</div>
+                <div class="external-links-grid">
+                    <a class="external-tool-link" href="https://tool.lu/tool/" target="_blank" rel="noopener"><b>tool.lu</b><span>开发、编码、格式化等常用在线工具合集。</span></a>
+                    <a class="external-tool-link" href="https://www.toolzt.com/" target="_blank" rel="noopener"><b>紫图工具</b><span>时间、文本、图片、编码等综合工具。</span></a>
+                    <a class="external-tool-link" href="https://tool.chinaz.com/tools/base64.aspx" target="_blank" rel="noopener"><b>站长工具 Base64</b><span>Base64 编码解码专项工具。</span></a>
+                    <a class="external-tool-link" href="https://tool.oschina.net/" target="_blank" rel="noopener"><b>OSCHINA 在线工具</b><span>程序员常用格式化、加密、转换工具。</span></a>
+                    <a class="external-tool-link" href="http://www.nicetool.net/" target="_blank" rel="noopener"><b>NiceTool</b><span>轻量综合工具导航。</span></a>
+                    <a class="external-tool-link" href="https://tools.jb51.net/" target="_blank" rel="noopener"><b>脚本之家工具</b><span>站长、编码、格式转换类工具。</span></a>
+                    <a class="external-tool-link" href="https://toolshu.com/" target="_blank" rel="noopener"><b>Toolshu</b><span>文本、编码、开发辅助工具合集。</span></a>
+                    <a class="external-tool-link" href="https://www.freetoolhouse.com/all-tools" target="_blank" rel="noopener"><b>FreeToolHouse</b><span>英文在线工具合集，适合补充查找。</span></a>
+                    <a class="external-tool-link" href="https://tools.miku.ac/" target="_blank" rel="noopener"><b>MikuTools</b><span>偏开发和日常转换的在线工具箱。</span></a>
+                    <a class="external-tool-link" href="https://devtoolbox.org.cn/" target="_blank" rel="noopener"><b>DevToolBox</b><span>开发者工具箱，适合编码和调试。</span></a>
+                    <a class="external-tool-link" href="https://www.toolfk.com/" target="_blank" rel="noopener"><b>ToolFK</b><span>代码格式化、加解密、网络工具等。</span></a>
+                </div>
+            </div>
+            <div class="tool-section">
+                <div class="tool-section-title">图像处理</div>
+                <div class="external-links-grid">
+                    <a class="external-tool-link" href="https://zh.recompressor.com/" target="_blank" rel="noopener"><b>Recompressor</b><span>对比不同压缩质量，适合精细压缩图片体积。</span></a>
+                    <a class="external-tool-link" href="https://squoosh.app/" target="_blank" rel="noopener"><b>Squoosh</b><span>浏览器内图片压缩、格式转换和质量预览。</span></a>
+                    <a class="external-tool-link" href="https://riot-optimizer.com/" target="_blank" rel="noopener"><b>RIOT</b><span>桌面图片优化工具，适合批量压缩和本地处理。</span></a>
+                    <a class="external-tool-link" href="https://www.996day.com/squoosh.html" target="_blank" rel="noopener"><b>996day Squoosh</b><span>Squoosh 镜像入口，官方站访问不稳时可备用。</span></a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Tab切换
         const tabs = document.querySelectorAll('.tab');
         const contents = {
             regcalc: document.getElementById('regcalc'),
-            textconvert: document.getElementById('textconvert')
+            textconvert: document.getElementById('textconvert'),
+            timecalc: document.getElementById('timecalc'),
+            password: document.getElementById('password'),
+            externallinks: document.getElementById('externallinks')
         };
         tabs.forEach(tab => {
             tab.onclick = function() {
@@ -807,6 +1119,10 @@ Release note：
   2026.06.08  v0.4 优化位按钮矩阵分组间距，位域编辑支持动态增删
   2026.06.08  v0.5 计算器支持浮点表达式
   2026.06.08  v0.6 优化 TextFormatter 手机按钮布局，新增常用文本处理
+  2026.06.09  v0.7 增强 TextFormatter 十六进制分组、大小端、URL、Base64、JSON 处理
+  2026.06.09  v0.8 新增序列生成、时间计算、密码生成和外部工具链接
+  2026.06.09  v0.9 外部工具增加图像处理链接
+  2026.06.09  v0.10 调整 TextFormatter 序列区位置，收窄工具页宽度
   
   yakoye
             `
@@ -1498,6 +1814,11 @@ Release note：
         const savedOutput = localStorage.getItem('textconvert_textOutput');
         if(savedInput) document.getElementById('textconvert_input').value = savedInput;
         if(savedOutput) document.getElementById('textconvert_output').value = savedOutput;
+        const now = new Date();
+        const tomorrow = new Date(now.getTime() + 86400000);
+        document.getElementById('timecalc_start').value = timecalc_toLocalInputValue(now);
+        document.getElementById('timecalc_end').value = timecalc_toLocalInputValue(tomorrow);
+        document.getElementById('timecalc_base').value = timecalc_toLocalInputValue(now);
     });
 
     document.getElementById('textconvert_input').addEventListener('input', function() {
@@ -1515,9 +1836,97 @@ Release note：
         localStorage.setItem('textconvert_textOutput', outputElem.value);
     }
 
+    function textconvert_updateSequenceSeparator() {
+        const mode = document.getElementById('sequence_separator_mode').value;
+        document.getElementById('sequence_separator_custom').disabled = mode !== 'custom';
+    }
+
+    function textconvert_getSequenceSeparator() {
+        const mode = document.getElementById('sequence_separator_mode').value;
+        if (mode === 'newline') return '\n';
+        if (mode === 'space') return ' ';
+        if (mode === 'comma') return ',';
+        return document.getElementById('sequence_separator_custom').value;
+    }
+
+    function textconvert_generateSequenceText() {
+        const start = Number(document.getElementById('sequence_start').value);
+        const end = Number(document.getElementById('sequence_end').value);
+        const width = Math.max(0, Number(document.getElementById('sequence_width').value || 0));
+        const countRaw = document.getElementById('sequence_count').value;
+        const count = countRaw === '' ? null : Math.max(1, Number(countRaw));
+        const order = document.getElementById('sequence_order').value;
+        if (!Number.isFinite(start) || !Number.isFinite(end)) return '';
+
+        const step = start <= end ? 1 : -1;
+        const values = [];
+        for (let n = start; step > 0 ? n <= end : n >= end; n += step) {
+            values.push(n);
+            if (values.length > 10000) break;
+        }
+
+        let ordered = values;
+        if (order === 'desc') ordered = values.slice().reverse();
+        if (order === 'random') {
+            ordered = values.slice();
+            for (let i = ordered.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [ordered[i], ordered[j]] = [ordered[j], ordered[i]];
+            }
+        }
+
+        const limited = count ? ordered.slice(0, count) : ordered;
+        const formatNumber = (num) => {
+            const sign = num < 0 ? '-' : '';
+            return sign + Math.abs(num).toString().padStart(width, '0');
+        };
+        return limited.map(formatNumber).join(textconvert_getSequenceSeparator());
+    }
+
+    function textconvert_generateSequence() {
+        const output = textconvert_generateSequenceText();
+        document.getElementById('textconvert_output').value = output;
+        localStorage.setItem('textconvert_textOutput', output);
+    }
+
+    function textconvert_useSequenceAsInput() {
+        const output = textconvert_generateSequenceText();
+        document.getElementById('textconvert_input').value = output;
+        localStorage.setItem('textconvert_textInput', output);
+    }
+
     function textconvert_processText(action) {
         const input = document.getElementById('textconvert_input').value;
         let output = input;
+        const cleanHex = (text) => text.replace(/0x/gi, '').replace(/[^0-9A-Fa-f]/g, '');
+        const splitHexBytes = (hex) => hex.match(/.{1,2}/g) || [];
+        const formatHexGroups = (text, byteCount, littleEndian = false) => {
+            const bytes = splitHexBytes(cleanHex(text));
+            const groups = [];
+            for (let i = 0; i < bytes.length; i += byteCount) {
+                const group = bytes.slice(i, i + byteCount);
+                if (group.length < byteCount) break;
+                groups.push('0x' + (littleEndian ? group.reverse() : group).join('').toUpperCase());
+            }
+            return groups.join(', ');
+        };
+        const base64EncodeUnicode = (text) => {
+            const bytes = new TextEncoder().encode(text);
+            let binary = '';
+            bytes.forEach(byte => { binary += String.fromCharCode(byte); });
+            return btoa(binary);
+        };
+        const base64DecodeUnicode = (text) => {
+            const binary = atob(text.replace(/\s+/g, ''));
+            const bytes = Uint8Array.from(binary, char => char.charCodeAt(0));
+            return new TextDecoder().decode(bytes);
+        };
+        const words = (text) => text
+            .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+            .split(/[^0-9A-Za-z\u4e00-\u9fa5]+/)
+            .filter(Boolean);
+        const capitalize = (word) => word ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : '';
+        const pascalCase = (text) => words(text).map(capitalize).join('');
         switch(action) {
             case 'removeEmptyLines':
                 output = input.split('\n').filter(line => line.trim() !== '').join('\n');
@@ -1555,6 +1964,37 @@ Release note：
             case 'lowerCase':
                 output = input.toLowerCase();
                 break;
+            case 'pascalCase':
+                output = pascalCase(input);
+                break;
+            case 'camelCase':
+                output = pascalCase(input);
+                output = output.charAt(0).toLowerCase() + output.slice(1);
+                break;
+            case 'snakeCase':
+                output = words(input).map(word => word.toLowerCase()).join('_');
+                break;
+            case 'kebabCase':
+                output = words(input).map(word => word.toLowerCase()).join('-');
+                break;
+            case 'urlEncode':
+                output = encodeURIComponent(input);
+                break;
+            case 'urlDecode':
+                try { output = decodeURIComponent(input); } catch { output = input; }
+                break;
+            case 'base64Encode':
+                output = base64EncodeUnicode(input);
+                break;
+            case 'base64Decode':
+                try { output = base64DecodeUnicode(input); } catch { output = input; }
+                break;
+            case 'jsonFormat':
+                try { output = JSON.stringify(JSON.parse(input), null, 2); } catch { output = input; }
+                break;
+            case 'jsonMinify':
+                try { output = JSON.stringify(JSON.parse(input)); } catch { output = input; }
+                break;
             case 'verticalLayout':
                 output = input.split(/[ ,?	]+/).join('\n');
                 break;
@@ -1564,18 +2004,23 @@ Release note：
                     .join(' ');
                 break;
             case 'hexFormat':
-                output = input
-                    .replace(/\s+/g, '')                       // 删除所有空白
-                    .replace(/[^0-9A-Fa-f]/g, '')              // 非16进制字符都删掉
-                    .match(/.{2}/g)
-                    ?.map(byte => `0x${byte.toUpperCase()}`)
-                    .join(', ') || '';
+            case 'hexFormat1Byte':
+                output = formatHexGroups(input, 1);
+                break;
+            case 'hexFormat4Byte':
+                output = formatHexGroups(input, 4);
+                break;
+            case 'hexFormat4ByteLe':
+                output = formatHexGroups(input, 4, true);
+                break;
+            case 'hexFormat8Byte':
+                output = formatHexGroups(input, 8);
+                break;
+            case 'hexFormat8ByteLe':
+                output = formatHexGroups(input, 8, true);
                 break;
             case 'hexReverse':
-                output = input.replace(/0x/g, '')
-                    .split(/,\s*/)
-                    .map(hex => hex.padStart(2, '0'))
-                    .join(' ');
+                output = cleanHex(input).toUpperCase().match(/.{1,2}/g)?.join(' ') || '';
                 break;
         }
         document.getElementById('textconvert_output').value = output;
@@ -1585,6 +2030,162 @@ Release note：
     function textconvert_clearInput() {
         document.getElementById('textconvert_input').value = '';
         localStorage.removeItem('textconvert_textInput');
+    }
+
+    function timecalc_pad(n) {
+        return String(n).padStart(2, '0');
+    }
+
+    function timecalc_toLocalInputValue(date) {
+        return `${date.getFullYear()}-${timecalc_pad(date.getMonth() + 1)}-${timecalc_pad(date.getDate())}T${timecalc_pad(date.getHours())}:${timecalc_pad(date.getMinutes())}:${timecalc_pad(date.getSeconds())}`;
+    }
+
+    function timecalc_setNow(id) {
+        document.getElementById(id).value = timecalc_toLocalInputValue(new Date());
+    }
+
+    function timecalc_parseInput(id) {
+        const value = document.getElementById(id).value;
+        if (!value) return null;
+        return new Date(value);
+    }
+
+    function timecalc_daysInMonth(year, monthIndex) {
+        return new Date(year, monthIndex + 1, 0).getDate();
+    }
+
+    function timecalc_addMonthsSafe(date, months) {
+        const result = new Date(date);
+        const day = result.getDate();
+        result.setDate(1);
+        result.setMonth(result.getMonth() + months);
+        result.setDate(Math.min(day, timecalc_daysInMonth(result.getFullYear(), result.getMonth())));
+        return result;
+    }
+
+    function timecalc_calculateDiff() {
+        let start = timecalc_parseInput('timecalc_start');
+        let end = timecalc_parseInput('timecalc_end');
+        const output = document.getElementById('timecalc_diffOutput');
+        if (!start || !end || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+            output.textContent = '请选择开始时间和结束时间。';
+            return;
+        }
+
+        const reversed = end < start;
+        if (reversed) [start, end] = [end, start];
+
+        let cursor = new Date(start);
+        let years = 0;
+        while (timecalc_addMonthsSafe(cursor, 12) <= end) {
+            cursor = timecalc_addMonthsSafe(cursor, 12);
+            years++;
+        }
+        let months = 0;
+        while (timecalc_addMonthsSafe(cursor, 1) <= end) {
+            cursor = timecalc_addMonthsSafe(cursor, 1);
+            months++;
+        }
+
+        let remainingMs = end - cursor;
+        const days = Math.floor(remainingMs / 86400000);
+        remainingMs -= days * 86400000;
+        const hours = Math.floor(remainingMs / 3600000);
+        remainingMs -= hours * 3600000;
+        const minutes = Math.floor(remainingMs / 60000);
+        remainingMs -= minutes * 60000;
+        const seconds = Math.floor(remainingMs / 1000);
+        const totalSeconds = Math.floor((end - start) / 1000);
+
+        output.textContent =
+            `${reversed ? '反向间隔：' : '时间间隔：'}${years} 年 ${months} 月 ${days} 天 ${hours} 小时 ${minutes} 分 ${seconds} 秒\n` +
+            `总天数：${Math.floor(totalSeconds / 86400)} 天\n` +
+            `总小时：${Math.floor(totalSeconds / 3600)} 小时\n` +
+            `总分钟：${Math.floor(totalSeconds / 60)} 分钟\n` +
+            `总秒数：${totalSeconds} 秒`;
+    }
+
+    function timecalc_calculateOffset(direction) {
+        const base = timecalc_parseInput('timecalc_base') || new Date();
+        const result = new Date(base);
+        const years = Number(document.getElementById('timecalc_addYears').value || 0) * direction;
+        const months = Number(document.getElementById('timecalc_addMonths').value || 0) * direction;
+        const days = Number(document.getElementById('timecalc_addDays').value || 0) * direction;
+        const hours = Number(document.getElementById('timecalc_addHours').value || 0) * direction;
+        const minutes = Number(document.getElementById('timecalc_addMinutes').value || 0) * direction;
+        const seconds = Number(document.getElementById('timecalc_addSeconds').value || 0) * direction;
+
+        let shifted = timecalc_addMonthsSafe(result, years * 12 + months);
+        shifted.setDate(shifted.getDate() + days);
+        shifted.setHours(shifted.getHours() + hours);
+        shifted.setMinutes(shifted.getMinutes() + minutes);
+        shifted.setSeconds(shifted.getSeconds() + seconds);
+
+        document.getElementById('timecalc_offsetOutput').textContent =
+            `${direction > 0 ? '未来时间' : '过去时间'}：${timecalc_toLocalInputValue(shifted).replace('T', ' ')}`;
+    }
+
+    function password_getRandomIndex(max) {
+        const array = new Uint32Array(1);
+        crypto.getRandomValues(array);
+        return array[0] % max;
+    }
+
+    function password_shuffle(chars) {
+        for (let i = chars.length - 1; i > 0; i--) {
+            const j = password_getRandomIndex(i + 1);
+            [chars[i], chars[j]] = [chars[j], chars[i]];
+        }
+        return chars;
+    }
+
+    function password_generateOne(length, groups, excluded) {
+        const filteredGroups = groups
+            .map(group => Array.from(new Set(group.split('').filter(ch => !excluded.has(ch)))))
+            .filter(group => group.length > 0);
+        if (!filteredGroups.length) return '';
+
+        const allChars = filteredGroups.flat();
+        const chars = [];
+        filteredGroups.forEach(group => {
+            if (chars.length < length) chars.push(group[password_getRandomIndex(group.length)]);
+        });
+        while (chars.length < length) {
+            chars.push(allChars[password_getRandomIndex(allChars.length)]);
+        }
+        return password_shuffle(chars).join('');
+    }
+
+    function password_generate() {
+        const length = Math.max(1, Math.min(256, Number(document.getElementById('password_length').value || 16)));
+        const count = Math.max(1, Math.min(200, Number(document.getElementById('password_count').value || 1)));
+        const groups = [];
+        if (document.getElementById('password_lower').checked) groups.push('abcdefghijklmnopqrstuvwxyz');
+        if (document.getElementById('password_upper').checked) groups.push('ABCDEFGHIJKLMNOPQRSTUVWXYZ');
+        if (document.getElementById('password_digits').checked) groups.push('0123456789');
+        if (document.getElementById('password_use_symbols').checked) groups.push(document.getElementById('password_symbols').value || '!@#$%^&*_-+=?');
+
+        const confusing = document.getElementById('password_no_confusing').checked ? '0O1lI|`\'"{}[]()/\\,.;:' : '';
+        const customExcluded = document.getElementById('password_exclude_custom').value || '';
+        const excluded = new Set((confusing + customExcluded).split(''));
+        const passwords = [];
+        for (let i = 0; i < count; i++) {
+            passwords.push(password_generateOne(length, groups, excluded));
+        }
+        document.getElementById('password_output').value = passwords.join('\n');
+    }
+
+    async function password_copyOutput() {
+        const text = document.getElementById('password_output').value;
+        if (!text) return;
+        try {
+            await navigator.clipboard.writeText(text);
+        } catch {
+            const output = document.getElementById('password_output');
+            output.focus();
+            output.select();
+            document.execCommand('copy');
+        }
     }
 
     // ---- 快捷键：Alt+↑ 结果->Hex；Alt+↓ Hex->表达式输入 ----
