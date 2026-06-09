@@ -1136,12 +1136,12 @@
                 <div class="tool-section-title">计算两个时间相隔</div>
                 <div class="timecalc-form-row timecalc-one-col">
                     <label class="timecalc-inline-field">开始时间
-                        <input type="datetime-local" id="timecalc_start">
+                        <input type="datetime-local" id="timecalc_start" step="1">
                     </label>
                 </div>
                 <div class="timecalc-form-row timecalc-one-col">
                     <label class="timecalc-inline-field">结束时间
-                        <input type="datetime-local" id="timecalc_end">
+                        <input type="datetime-local" id="timecalc_end" step="1">
                     </label>
                 </div>
                 <div class="tool-actions">
@@ -1155,7 +1155,7 @@
                 <div class="tool-section-title">计算未来或过去时间</div>
                 <div class="timecalc-form-row timecalc-base-row">
                     <label class="timecalc-inline-field">基准时间
-                        <input type="datetime-local" id="timecalc_base">
+                        <input type="datetime-local" id="timecalc_base" step="1">
                     </label>
                     <label class="timecalc-convert-toggle" title="按 1年=12月=365天 换算">
                         <input type="checkbox" id="timecalc_convertMode" onchange="timecalc_toggleConvertMode()">
@@ -1388,7 +1388,8 @@
 2026.06.09  v0.25  RegCalc 计算输入支持 × ÷ 和全角运算符
 2026.06.09  v0.26  Bin(2) 输入框改为按内容动态高度
 2026.06.09  v0.27  密码生成器增加本地生成与不上传说明
-2026.06.09  v0.28  优化 Time 基准时间与时间转换开关布局</pre>
+2026.06.09  v0.28  优化 Time 基准时间与时间转换开关布局
+2026.06.09  v0.29  Time 支持基准时间与当前时间的精确差值</pre>
             </div>
 
             <div class="tool-section">
@@ -1445,7 +1446,8 @@
 2026.06.09  v0.25  Added RegCalc support for ×, ÷, and full-width operators
 2026.06.09  v0.26  Made the Bin(2) input height adjust to its content
 2026.06.09  v0.27  Added local-only and no-upload notice to Password Generator
-2026.06.09  v0.28  Optimized Time base-time and conversion toggle layout</pre>
+2026.06.09  v0.28  Optimized Time base-time and conversion toggle layout
+2026.06.09  v0.29  Added precise Time difference from base time to now</pre>
             </div>
         </div>
     </div>
@@ -2661,15 +2663,7 @@
         return result;
     }
 
-    function timecalc_calculateDiff() {
-        let start = timecalc_parseInput('timecalc_start');
-        let end = timecalc_parseInput('timecalc_end');
-        const output = document.getElementById('timecalc_diffOutput');
-        if (!start || !end || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-            output.textContent = '请选择开始时间和结束时间。';
-            return;
-        }
-
+    function timecalc_getPreciseDiff(start, end) {
         const reversed = end < start;
         if (reversed) [start, end] = [end, start];
 
@@ -2695,17 +2689,69 @@
         const seconds = Math.floor(remainingMs / 1000);
         const totalSeconds = Math.floor((end - start) / 1000);
 
+        return { years, months, days, hours, minutes, seconds, totalSeconds, reversed };
+    }
+
+    function timecalc_formatPreciseDiff(prefix, diff) {
+        return `${prefix}${diff.years} 年 ${diff.months} 月 ${diff.days} 天 ${diff.hours} 小时 ${diff.minutes} 分 ${diff.seconds} 秒\n` +
+            `总天数：${Math.floor(diff.totalSeconds / 86400)} 天\n` +
+            `总小时：${Math.floor(diff.totalSeconds / 3600)} 小时\n` +
+            `总分钟：${Math.floor(diff.totalSeconds / 60)} 分钟\n` +
+            `总秒数：${diff.totalSeconds} 秒`;
+    }
+
+    function timecalc_hasOffsetValues() {
+        return Object.values(timecalc_convertFieldIds).some(id => {
+            const value = Number(document.getElementById(id).value || 0);
+            return Number.isFinite(value) && value !== 0;
+        });
+    }
+
+    function timecalc_calculateDiff() {
+        const start = timecalc_parseInput('timecalc_start');
+        const end = timecalc_parseInput('timecalc_end');
+        const output = document.getElementById('timecalc_diffOutput');
+        if (!start || !end || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+            output.textContent = '请选择开始时间和结束时间。';
+            return;
+        }
+
+        const diff = timecalc_getPreciseDiff(start, end);
         output.textContent =
-            `${reversed ? '反向间隔：' : '时间间隔：'}${years} 年 ${months} 月 ${days} 天 ${hours} 小时 ${minutes} 分 ${seconds} 秒\n` +
-            `总天数：${Math.floor(totalSeconds / 86400)} 天\n` +
-            `总小时：${Math.floor(totalSeconds / 3600)} 小时\n` +
-            `总分钟：${Math.floor(totalSeconds / 60)} 分钟\n` +
-            `总秒数：${totalSeconds} 秒`;
+            timecalc_formatPreciseDiff(diff.reversed ? '反向间隔：' : '时间间隔：', diff);
     }
 
     function timecalc_calculateOffset(direction) {
         if (document.getElementById('timecalc_convertMode').checked) return;
-        const base = timecalc_parseInput('timecalc_base') || new Date();
+        const output = document.getElementById('timecalc_offsetOutput');
+        const parsedBase = timecalc_parseInput('timecalc_base');
+        const hasOffsetValues = timecalc_hasOffsetValues();
+        if (!parsedBase && !hasOffsetValues) {
+            output.textContent = '请选择基准时间，或填写要加减的时间。';
+            return;
+        }
+
+        const base = parsedBase || new Date();
+        if (Number.isNaN(base.getTime())) {
+            output.textContent = '基准时间格式无效。';
+            return;
+        }
+
+        if (!hasOffsetValues) {
+            const now = new Date();
+            const diff = direction > 0
+                ? timecalc_getPreciseDiff(now, base)
+                : timecalc_getPreciseDiff(base, now);
+            let prefix;
+            if (direction > 0) {
+                prefix = diff.reversed ? '基准时间在过去，已过去：' : '距离未来：';
+            } else {
+                prefix = diff.reversed ? '基准时间在未来，还差：' : '已过去：';
+            }
+            output.textContent = timecalc_formatPreciseDiff(prefix, diff);
+            return;
+        }
+
         const result = new Date(base);
         const years = Number(document.getElementById('timecalc_addYears').value || 0) * direction;
         const months = Number(document.getElementById('timecalc_addMonths').value || 0) * direction;
@@ -2720,7 +2766,7 @@
         shifted.setMinutes(shifted.getMinutes() + minutes);
         shifted.setSeconds(shifted.getSeconds() + seconds);
 
-        document.getElementById('timecalc_offsetOutput').textContent =
+        output.textContent =
             `${direction > 0 ? '未来时间' : '过去时间'}：${timecalc_toLocalInputValue(shifted).replace('T', ' ')}`;
     }
 
