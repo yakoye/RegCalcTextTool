@@ -487,6 +487,36 @@
             line-height: 1.4;
         }
 
+
+        #about-ui {
+            max-width: 900px;
+        }
+        #about-ui h3 {
+            margin: 8px 0 12px;
+        }
+        #about-ui h4 {
+            margin: 8px 0 6px;
+        }
+        #about-ui h5 {
+            margin: 8px 0 4px;
+        }
+        #about-ui ul {
+            margin: 4px 0 10px 20px;
+            padding: 0;
+        }
+        .about-release-note {
+            margin: 6px 0 0;
+            padding: 8px;
+            border: 1px solid #e0e0e0;
+            background: #fafafa;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            word-break: break-word;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
         @media (max-width:700px) {
             body {
                 background: #fff;
@@ -638,6 +668,7 @@
         <div class="tab" data-tab="timecalc" data-mobile-label="Time">Time</div>
         <div class="tab" data-tab="password" data-mobile-label="Pwd">Password</div>
         <div class="tab" data-tab="externallinks" data-mobile-label="Links">Links</div>
+        <div class="tab" data-tab="about" data-mobile-label="Info">About</div>
     </div>
     <!-- RegCalc内容区 -->
     <div class="tab-content active" id="regcalc">
@@ -650,7 +681,7 @@
                         <table align="center" class="regcalc-title-table">
                             <tr align="center">
                                 <!-- <td><h3>64位寄存器计算 (RegCalc)</h3></td> -->
-                                <td><b>64位寄存器计算 (RegCalc)</b></td>
+                                <td><b>64位寄存器计算 (RegCalc64)</b></td>
                             </tr>
                         </table>
                     </td>
@@ -875,22 +906,22 @@
                     <td>
                         <table class="regcalc-form-table">
                             <tr>
-                                <td class="regcalc-label">十六进制：</td>
+                                <td class="regcalc-label" title="十六进制(Hexadecimal)">Hex(16)：</td>
                                 <td class="regcalc-control">
                                     <input type="text" name="hex" id="regcalc_hex" style="width:260px;" placeholder="0x0" oninput="regcalc_set_text_value('hex')">
                                     <!-- <button onclick="regcalc_syncHexTocalcInput()" title="同步到计算的输入框中"> ⭣ </button> -->
                                 </td>
-                                <td class="regcalc-actions"><input type="text" name="human" id="regcalc_human" placeholder="数据大小" oninput="regcalc_set_text_value('human')"></td>
+                                <td class="regcalc-actions" title="自动显示可读容量大小(Show readable size automatically)"><input type="text" name="human" id="regcalc_human" placeholder="Size" oninput="regcalc_set_text_value('human')"></td>
                             </tr>
                             <tr>
-                                <td class="regcalc-label">十进制：</td>
+                                <td class="regcalc-label" title="十进制(Decimal)">Dec(10)：</td>
                                 <td class="regcalc-control">
                                     <input type="text" name="dec" id="regcalc_dec" value="0" style="width:260px;" placeholder="0" oninput="regcalc_set_text_value('dec')">
                                 </td>
                                 <td class="regcalc-actions"></td>
                             </tr>
                             <tr>
-                                <td class="regcalc-label">二进制：</td>
+                                <td class="regcalc-label" title="二进制(Binary)">Bin(2)：</td>
                                 <td class="regcalc-control">
                                     <textarea name="bin" id="regcalc_bin" placeholder="0" oninput="regcalc_set_text_value('bin')"></textarea>
                                 </td>
@@ -898,24 +929,24 @@
                             </tr>
                             <tbody id="regcalc_bitfieldRows">
                                 <tr class="regcalc-bitfield-row">
-                                    <td class="regcalc-label">位域编辑：</td>
+                                    <td class="regcalc-label" title="位域编辑(Edit bit field)">Bit Field：</td>
                                     <td class="regcalc-control">
                                         <input type="text" class="regcalc-bit-range" placeholder="14:12" oninput="regcalc_handleBitFieldRangeChange(this)">
                                         <input type="text" class="regcalc-sub-hex" placeholder="0x0" oninput="regcalc_updateFromBitField(this, 'hex')">
                                         <input type="text" class="regcalc-sub-dec" placeholder="0" oninput="regcalc_updateFromBitField(this, 'dec')">
                                     </td>
                                     <td class="regcalc-actions regcalc-bitfield-buttons">
-                                        <button type="button" onclick="regcalc_addBitFieldRow(this)" title="新增位域行">+</button>
-                                        <button type="button" onclick="regcalc_removeBitFieldRow(this)" title="删除此位域行">-</button>
+                                        <button type="button" onclick="regcalc_addBitFieldRow(this)" title="新增位域行(Add bit-field row)">+</button>
+                                        <button type="button" onclick="regcalc_removeBitFieldRow(this)" title="删除此位域行(Delete this bit-field row)">-</button>
                                     </td>
                                 </tr>
                             </tbody>
                             <tr>
-                                <td class="regcalc-label">位移操作：</td>
+                                <td class="regcalc-label" title="位移操作(Bit shift operation)">Shift：</td>
                                 <td class="regcalc-control">
                                     <input type="text" id="regcalc_shiftLeft" style="width:32px;text-align: center;" placeholder="1" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
-                                    <button onclick="regcalc_handleShift('left')" title="左移操作">&lt;&lt;</button>
-                                    <button onclick="regcalc_handleShift('right')" title="右移操作">&gt;&gt;</button>
+                                    <button onclick="regcalc_handleShift('left')" title="左移(Shift left)">&lt;&lt;</button>
+                                    <button onclick="regcalc_handleShift('right')" title="右移(Shift right)">&gt;&gt;</button>
                                     <input type="text" id="regcalc_shiftRight" style="width:32px;text-align: center;" placeholder="1" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
                                 </td>
                                 <td class="regcalc-actions"></td>
@@ -925,32 +956,32 @@
                             </tr>
                               <!-- 第一行：计算输入 -->
                             <tr>
-                                <td class="regcalc-label">计算：</td>
+                                <td class="regcalc-label" title="表达式(expression)">Expr：</td>
                                 <td class="regcalc-control">
-                                    <textarea id="regcalc_calcInput" rows="1" placeholder="输入表达式，如 0x43+10" oninput="regcalc_resizeCalcInput()" onkeydown="regcalc_handleEnterKey(event)"></textarea>
+                                    <textarea id="regcalc_calcInput" rows="1" title="输入计算表达式(Expression input)" placeholder="Enter expression, e.g. 0x43+10" oninput="regcalc_resizeCalcInput()" onkeydown="regcalc_handleEnterKey(event)"></textarea>
                                 </td>
                                 <td class="regcalc-actions">
-                                    <button onclick="regcalc_calculate()">计算</button> &nbsp;
-                                    <button onclick="regcalc_clearCalculation()" title="清空计算输入和结果">C</button> &nbsp;
-                                    <button onclick="regcalc_syncResultToHex()" title="同步结果到十六进制输入框中"> ⭡ </button>
+                                    <button onclick="regcalc_calculate()" title="计算表达式(Evaluate expression)">=</button>
+                                    <button onclick="regcalc_clearCalculation()" title="清空计算输入和结果(Clear input and result)">C</button>
+                                    <button onclick="regcalc_syncResultToHex()" title="同步结果到十六进制输入框中(Sync result to Hex(16) input field)"> ⭡ </button>
                                 </td>
                             </tr>
                             <!-- 第二行：结果输出 -->
                             <tr>
-                                <td class="regcalc-label">结果：</td>
+                                <td class="regcalc-label"  title="计算结果(result)">Result：</td>
                                 <td class="regcalc-control"><input type="text" id="regcalc_calcResult" style="width:260px;" readonly></td>
                                 <td class="regcalc-actions">
-                                    <button onclick="regcalc_setResultFormat('hex')" title="将结果转成十六进制">16</button>
-                                    <button onclick="regcalc_setResultFormat('dec')" title="将结果转成十进制">10</button>
-                                    <button onclick="regcalc_setResultFormat('bin')" title="将结果转成二进制">2</button>
+                                    <button onclick="regcalc_setResultFormat('hex')" title="显示十六进制结果(Show result as hexadecimal)">16</button>
+                                    <button onclick="regcalc_setResultFormat('dec')" title="显示十进制结果(Show result as decimal)">10</button>
+                                    <button onclick="regcalc_setResultFormat('bin')" title="显示二进制结果(Show result as binary)">2</button>
                                 </td>
                             </tr>
                             <!-- 第三行：截断提示 -->
                             <tr>
                                 <td colspan="3" class="regcalc-footer-actions">
-                                    <input type="button" value="清空所有" title="清空输入框中内容" onclick="regcalc_clean_all_value()" id="regcalc_clean">
+                                    <input type="button" value="Clear All" title="清空所有输入框内容(Clear all input fields)" onclick="regcalc_clean_all_value()" id="regcalc_clean">
                                     <a href="javascript:void(0)" onclick="regcalc_showHelp()"
-                                    title="查看使用说明" style="font-size:12px;">帮助(?)</a>
+                                    title="查看使用说明(View usage guide)" style="font-size:12px;">help(?)</a>
                                 </td>
                             </tr>
                         </table>
@@ -1250,6 +1281,114 @@
         </div>
     </div>
 
+    <div class="tab-content" id="about">
+        <div class="tool-panel" id="about-ui">
+            <h3>About / 使用说明</h3>
+
+            <div class="tool-section">
+                <h4>64位寄存器计算（RegCalc）使用说明（快捷键与操作）</h4>
+
+                <h5>1) 输入方式</h5>
+                <ul>
+                    <li>可直接在 Hex / Dec / Bin / Human 任一框输入，其他输入框会自动联动更新。</li>
+                    <li>位按钮可点选 0 / 1 生成数值。</li>
+                </ul>
+
+                <h5>2) 计算器</h5>
+                <ul>
+                    <li>在“计算”输入框中输入表达式，例如：0x43+10、(0x100>>4)|3。</li>
+                    <li>按回车键执行计算。</li>
+                </ul>
+
+                <h5>3) 快捷键</h5>
+                <ul>
+                    <li>Alt + ↑：结果 → Hex，并联动刷新。</li>
+                    <li>Alt + ↓：Hex → 计算输入框。</li>
+                </ul>
+
+                <h5>4) 双击复制</h5>
+                <ul>
+                    <li>任意文本框或文本域双击，可复制该框内容到剪贴板。</li>
+                </ul>
+
+                <h4>发布记录</h4>
+                <pre class="about-release-note">2025.07.25  v0.1   初版
+2026.03.28  v0.2   修改格式
+2026.06.06  v0.3   适配移动端显示，优化字体与 RegCalc 表单布局
+2026.06.06  v0.4   优化位按钮矩阵分组间距，位域编辑支持动态增删
+2026.06.06  v0.5   计算器支持浮点表达式
+2026.06.06  v0.6   优化 TextFormatter 手机按钮布局，新增常用文本处理
+2026.06.07  v0.7   增强 TextFormatter 十六进制分组、大小端、URL、Base64、JSON 处理
+2026.06.07  v0.8   新增序列生成、时间计算、密码生成和外部工具链接
+2026.06.07  v0.9   外部工具增加图像处理链接
+2026.06.07  v0.10  调整 TextFormatter 序列区位置，收窄工具页宽度
+2026.06.07  v0.11  密码生成器记住指定符号和额外排除字符
+2026.06.07  v0.12  外部工具增加 Awesome-tools 清单
+2026.06.07  v0.13  优化 Awesome-tools 清单内部分类展示
+2026.06.07  v0.14  优化序列号码生成布局和位数限制
+2026.06.07  v0.15  修复 TextFormatter 窄屏文本框高度
+2026.06.07  v0.16  TextFormatter 操作区改为滚动面板
+2026.06.07  v0.17  优化手机端标签栏短名称
+2026.06.07  v0.18  调整时间计算器输入排列
+2026.06.07  v0.19  时间计算器时间输入改为同排行
+2026.06.07  v0.20  RegCalc 计算输入支持三行自适应
+2026.06.07  v0.21  放宽 RegCalc 表达式限制并取消 128 位截断
+2026.06.07  v0.22  修改界面为英文，提示中文英文</pre>
+            </div>
+
+            <div class="tool-section">
+                <h4>64-bit Register Calculator (RegCalc) User Guide</h4>
+
+                <h5>1) Input</h5>
+                <ul>
+                    <li>You can enter a value in any Hex / Dec / Bin / Human field. Other fields will update automatically.</li>
+                    <li>You can click bit buttons to set 0 / 1 and generate the value.</li>
+                </ul>
+
+                <h5>2) Calculator</h5>
+                <ul>
+                    <li>Enter an expression in the calculation input box, for example: 0x43+10, (0x100>>4)|3.</li>
+                    <li>Press Enter to calculate.</li>
+                </ul>
+
+                <h5>3) Shortcuts</h5>
+                <ul>
+                    <li>Alt + ↑: Result → Hex, then update related fields automatically.</li>
+                    <li>Alt + ↓: Hex → calculation input box.</li>
+                </ul>
+
+                <h5>4) Double-click to Copy</h5>
+                <ul>
+                    <li>Double-click any input box or text area to copy its content to the clipboard.</li>
+                </ul>
+
+                <h4>Release Notes</h4>
+                <pre class="about-release-note">2025.07.25  v0.1   Initial release
+2026.03.28  v0.2   Updated format
+2026.06.06  v0.3   Added mobile display support, optimized fonts and RegCalc form layout
+2026.06.06  v0.4   Optimized bit button matrix group spacing, added dynamic add/delete support for bit-field rows
+2026.06.06  v0.5   Added floating-point expression support to the calculator
+2026.06.06  v0.6   Optimized TextFormatter mobile button layout, added common text processing features
+2026.06.07  v0.7   Enhanced TextFormatter support for hex grouping, endian conversion, URL, Base64, and JSON processing
+2026.06.07  v0.8   Added sequence generator, time calculator, password generator, and external tool links
+2026.06.07  v0.9   Added image processing links to external tools
+2026.06.07  v0.10  Adjusted TextFormatter sequence section position and reduced tool page width
+2026.06.07  v0.11  Password generator now remembers specified symbols and extra excluded characters
+2026.06.07  v0.12  Added Awesome-tools list to external tools
+2026.06.07  v0.13  Optimized category display inside the Awesome-tools list
+2026.06.07  v0.14  Optimized sequence number generator layout and digit limit
+2026.06.07  v0.15  Fixed TextFormatter text box height on narrow screens
+2026.06.07  v0.16  Changed TextFormatter operation area to a scrollable panel
+2026.06.07  v0.17  Optimized short tab names on mobile
+2026.06.07  v0.18  Adjusted time calculator input layout
+2026.06.07  v0.19  Changed time calculator time inputs to same-row layout
+2026.06.07  v0.20  RegCalc calculation input now supports three-line auto-resizing
+2026.06.07  v0.21  Relaxed RegCalc expression restrictions and removed 128-bit truncation
+2026.06.07  v0.22  Updated the UI to English and added bilingual Chinese-English tooltips</pre>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Tab切换
         const tabs = document.querySelectorAll('.tab');
@@ -1258,17 +1397,29 @@
             textconvert: document.getElementById('textconvert'),
             timecalc: document.getElementById('timecalc'),
             password: document.getElementById('password'),
-            externallinks: document.getElementById('externallinks')
+            externallinks: document.getElementById('externallinks'),
+            about: document.getElementById('about')
         };
+
+        function switchTab(tabId) {
+            const targetTab = document.querySelector(`.tab[data-tab="${tabId}"]`);
+            const targetContent = contents[tabId];
+            if (!targetTab || !targetContent) return;
+
+            tabs.forEach(t => t.classList.remove('active'));
+            targetTab.classList.add('active');
+
+            Object.keys(contents).forEach(id => {
+                if (contents[id]) contents[id].classList.remove('active');
+            });
+            targetContent.classList.add('active');
+
+            requestAnimationFrame(regcalc_fitToMobileScreen);
+        }
+
         tabs.forEach(tab => {
             tab.onclick = function() {
-                tabs.forEach(t => t.classList.remove('active'));
-                this.classList.add('active');
-                Object.keys(contents).forEach(id => {
-                    contents[id].classList.remove('active');
-                });
-                contents[this.getAttribute('data-tab')].classList.add('active');
-                requestAnimationFrame(regcalc_fitToMobileScreen);
+                switchTab(this.getAttribute('data-tab'));
             };
         });
 
@@ -1307,51 +1458,7 @@
         }
 
         function regcalc_showHelp() {
-            alert(
-            `
-     64位寄存器计算 (RegCalc) 使用说明（快捷键与操作）
-
-1) 输入方式：
-  - 可直接在 Hex/Dec/Bin/Human 任一框输入，其他会自动联动更新
-  - 位按钮可点选 0/1 生成数值
-
-2) 计算器：
-  - 在“计算”输入表达式，如：0x43+10、(0x100>>4)|3
-  - 回车=计算
-
-3) 快捷键：
-  - Alt + ↑ ：结果 → Hex（并联动刷新）
-  - Alt + ↓ ：Hex → 计算输入框
-
-4) 双击复制：
-  - 任意文本框/文本域双击，可复制该框内容到剪贴板
-
-Release note：
-  2025.07.25  v0.1 初版
-  2026.03.28  v0.2 修改格式
-  2026.06.08  v0.3 适配移动端显示，优化字体与 RegCalc 表单布局
-  2026.06.08  v0.4 优化位按钮矩阵分组间距，位域编辑支持动态增删
-  2026.06.08  v0.5 计算器支持浮点表达式
-  2026.06.08  v0.6 优化 TextFormatter 手机按钮布局，新增常用文本处理
-  2026.06.09  v0.7 增强 TextFormatter 十六进制分组、大小端、URL、Base64、JSON 处理
-  2026.06.09  v0.8 新增序列生成、时间计算、密码生成和外部工具链接
-  2026.06.09  v0.9 外部工具增加图像处理链接
-  2026.06.09  v0.10 调整 TextFormatter 序列区位置，收窄工具页宽度
-  2026.06.09  v0.11 密码生成器记住指定符号和额外排除字符
-  2026.06.09  v0.12 外部工具增加 Awesome-tools 清单
-  2026.06.09  v0.13 优化 Awesome-tools 清单内部分类展示
-  2026.06.09  v0.14 优化序列号码生成布局和位数限制
-  2026.06.09  v0.15 修复 TextFormatter 窄屏文本框高度
-  2026.06.09  v0.16 TextFormatter 操作区改为滚动面板
-  2026.06.09  v0.17 优化手机端标签栏短名称
-  2026.06.09  v0.18 调整时间计算器输入排列
-  2026.06.09  v0.19 时间计算器时间输入改为同排行
-  2026.06.09  v0.20 RegCalc 计算输入支持三行自适应
-  2026.06.09  v0.21 放宽 RegCalc 表达式限制并取消128位截断
-  
-  yakoye
-            `
-                );
+            switchTab('about');
         }
     </script>
 
