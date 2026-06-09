@@ -257,6 +257,24 @@
             grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
             gap: 8px;
         }
+        #textconvert-ui .textconvert-controls-panel {
+            max-height: clamp(220px, 36vh, 330px);
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            border: 1px solid #d8d8d8;
+            padding: 10px;
+            margin: 10px 0;
+            background: #fff;
+        }
+        #textconvert-ui .textconvert-controls-panel .buttons {
+            margin: 0;
+        }
+        #textconvert-ui .textconvert-controls-panel .sequence-section {
+            border: 0;
+            border-top: 1px solid #e2e2e2;
+            padding: 10px 0 0;
+            margin: 10px 0 0;
+        }
         #textconvert-ui button {
             font-family: inherit;
             font-size: 14px;
@@ -297,7 +315,7 @@
             width: 100px;
         }
         #textconvert-ui .sequence-separator-custom-field {
-            width: 112px;
+            width: 64px;
         }
         #textconvert-ui .sequence-actions {
             display: flex;
@@ -455,10 +473,18 @@
                 margin-right: 0;
                 padding: 4px 6px;
                 text-align: center;
-                font-size: 14px;
+                font-size: 0;
                 line-height: 1.15;
                 border-radius: 0;
                 top: 0;
+                overflow: hidden;
+                white-space: nowrap;
+            }
+            .tab::after {
+                content: attr(data-mobile-label);
+                display: block;
+                font-size: 13px;
+                line-height: 1.15;
             }
             .tab-content {
                 margin: 0;
@@ -493,6 +519,10 @@
                 display: grid;
                 grid-template-columns: repeat(2, minmax(0, 1fr));
                 gap: 6px;
+            }
+            #textconvert-ui .textconvert-controls-panel {
+                max-height: min(42vh, 320px);
+                padding: 8px;
             }
             #textconvert-ui button {
                 min-height: 34px;
@@ -558,18 +588,20 @@
                 flex-direction: column;
             }
             #textconvert-ui textarea {
+                flex: none;
                 width: 100%;
+                height: 300px;
             }
         }
     </style>
 </head>
 <body>
     <div class="tab-bar">
-        <div class="tab active" data-tab="regcalc">RegCalc</div>
-        <div class="tab" data-tab="textconvert">TextFormatter</div>
-        <div class="tab" data-tab="timecalc">Time</div>
-        <div class="tab" data-tab="password">Password</div>
-        <div class="tab" data-tab="externallinks">Links</div>
+        <div class="tab active" data-tab="regcalc" data-mobile-label="Reg">RegCalc</div>
+        <div class="tab" data-tab="textconvert" data-mobile-label="Text">TextFormatter</div>
+        <div class="tab" data-tab="timecalc" data-mobile-label="Time">Time</div>
+        <div class="tab" data-tab="password" data-mobile-label="Pwd">Password</div>
+        <div class="tab" data-tab="externallinks" data-mobile-label="Links">Links</div>
     </div>
     <!-- RegCalc内容区 -->
     <div class="tab-content active" id="regcalc">
@@ -896,83 +928,85 @@
     <div class="tab-content" id="textconvert">
         <div id="textconvert-ui">
             <h3>文本处理工具 (TextFormatter)</h3>
-            <div class="buttons">
-                <button onclick="textconvert_processText('removeEmptyLines')">去除空行</button>
-                <button onclick="textconvert_processText('removeSpaces')">去除空格</button>
-                <button onclick="textconvert_processText('trimLines')">去首尾空格</button>
-                <button onclick="textconvert_processText('collapseSpaces')">合并空白</button>
-                <button onclick="textconvert_processText('removeAllLineBreaks')">去除所有换行</button>
-                <button onclick="textconvert_processText('removeInterruptedBreaks')">去除中断换行</button>
-                <button onclick="textconvert_processText('dedupeLines')">行去重</button>
-                <button onclick="textconvert_processText('sortLines')">行排序</button>
-                <button onclick="textconvert_processText('addLineNumbers')">添加行号</button>
-                <button onclick="textconvert_processText('removeLineNumbers')">移除行号</button>
-                <button onclick="textconvert_processText('upperCase')">转大写</button>
-                <button onclick="textconvert_processText('lowerCase')">转小写</button>
-                <button onclick="textconvert_processText('pascalCase')">大驼峰</button>
-                <button onclick="textconvert_processText('camelCase')">小驼峰</button>
-                <button onclick="textconvert_processText('snakeCase')">下划线</button>
-                <button onclick="textconvert_processText('kebabCase')">短横线</button>
-                <button onclick="textconvert_processText('urlEncode')">URL编码</button>
-                <button onclick="textconvert_processText('urlDecode')">URL解码</button>
-                <button onclick="textconvert_processText('base64Encode')">Base64编码</button>
-                <button onclick="textconvert_processText('base64Decode')">Base64解码</button>
-                <button onclick="textconvert_processText('jsonFormat')">JSON格式化</button>
-                <button onclick="textconvert_processText('jsonMinify')">JSON压缩</button>
-                <button title="横排转成竖排"
-                        onclick="textconvert_processText('verticalLayout')">-- → |</button>
-                <button title="竖排转成横排"
-                        onclick="textconvert_processText('horizontalLayout')">| → --</button>
-                <button title="80 01 02 00 → 0x80, 0x01, 0x02, 0x00"
-                        onclick="textconvert_processText('hexFormat1Byte')">1B加0x</button>
-                <button title="12345678 → 0x12345678"
-                        onclick="textconvert_processText('hexFormat4Byte')">4B加0x</button>
-                <button title="12345678 → 0x78563412"
-                        onclick="textconvert_processText('hexFormat4ByteLe')">4B小端0x</button>
-                <button title="1122334455667788 → 0x1122334455667788"
-                        onclick="textconvert_processText('hexFormat8Byte')">8B加0x</button>
-                <button title="1122334455667788 → 0x8877665544332211"
-                        onclick="textconvert_processText('hexFormat8ByteLe')">8B小端0x</button>
-                <button title="0x12345678 → 12345678"
-                        onclick="textconvert_processText('hexReverse')">移除0x</button>
-                <button onclick="textconvert_clearInput()" class="clear-btn">清空原文</button>
-            </div>
-            <div class="tool-section sequence-section">
-                <div class="tool-section-title">序列号码生成</div>
-                <div class="tool-grid sequence-grid">
-                    <label class="tool-field sequence-range-field">开始
-                        <input type="number" id="sequence_start" value="1">
-                    </label>
-                    <label class="tool-field sequence-range-field">结束
-                        <input type="number" id="sequence_end" value="50">
-                    </label>
-                    <label class="tool-field sequence-width-field">位数
-                        <input type="number" id="sequence_width" value="0" min="0" max="10">
-                    </label>
-                    <label class="tool-field sequence-count-field">生成个数
-                        <input type="number" id="sequence_count" placeholder="留空=全部" min="1">
-                    </label>
-                    <label class="tool-field sequence-order-field">顺序
-                        <select id="sequence_order">
-                            <option value="asc">正序</option>
-                            <option value="desc">逆序</option>
-                            <option value="random">乱序</option>
-                        </select>
-                    </label>
-                    <label class="tool-field sequence-separator-mode-field">分隔方式
-                        <select id="sequence_separator_mode" onchange="textconvert_updateSequenceSeparator()">
-                            <option value="newline">一行一个</option>
-                            <option value="space">空格</option>
-                            <option value="comma">逗号</option>
-                            <option value="custom">自定义</option>
-                        </select>
-                    </label>
-                    <label class="tool-field sequence-separator-custom-field">自定义分隔符
-                        <input type="text" id="sequence_separator_custom" value="," disabled>
-                    </label>
-                    <div class="sequence-actions">
-                        <button type="button" onclick="textconvert_useSequenceAsInput()">生成到原文</button>
-                        <button type="button" onclick="textconvert_generateSequence()">生成到结果</button>
+            <div class="textconvert-controls-panel">
+                <div class="buttons">
+                    <button onclick="textconvert_processText('removeEmptyLines')">去除空行</button>
+                    <button onclick="textconvert_processText('removeSpaces')">去除空格</button>
+                    <button onclick="textconvert_processText('trimLines')">去首尾空格</button>
+                    <button onclick="textconvert_processText('collapseSpaces')">合并空白</button>
+                    <button onclick="textconvert_processText('removeAllLineBreaks')">去除所有换行</button>
+                    <button onclick="textconvert_processText('removeInterruptedBreaks')">去除中断换行</button>
+                    <button onclick="textconvert_processText('dedupeLines')">行去重</button>
+                    <button onclick="textconvert_processText('sortLines')">行排序</button>
+                    <button onclick="textconvert_processText('addLineNumbers')">添加行号</button>
+                    <button onclick="textconvert_processText('removeLineNumbers')">移除行号</button>
+                    <button onclick="textconvert_processText('upperCase')">转大写</button>
+                    <button onclick="textconvert_processText('lowerCase')">转小写</button>
+                    <button onclick="textconvert_processText('pascalCase')">大驼峰</button>
+                    <button onclick="textconvert_processText('camelCase')">小驼峰</button>
+                    <button onclick="textconvert_processText('snakeCase')">下划线</button>
+                    <button onclick="textconvert_processText('kebabCase')">短横线</button>
+                    <button onclick="textconvert_processText('urlEncode')">URL编码</button>
+                    <button onclick="textconvert_processText('urlDecode')">URL解码</button>
+                    <button onclick="textconvert_processText('base64Encode')">Base64编码</button>
+                    <button onclick="textconvert_processText('base64Decode')">Base64解码</button>
+                    <button onclick="textconvert_processText('jsonFormat')">JSON格式化</button>
+                    <button onclick="textconvert_processText('jsonMinify')">JSON压缩</button>
+                    <button title="横排转成竖排"
+                            onclick="textconvert_processText('verticalLayout')">-- → |</button>
+                    <button title="竖排转成横排"
+                            onclick="textconvert_processText('horizontalLayout')">| → --</button>
+                    <button title="80 01 02 00 → 0x80, 0x01, 0x02, 0x00"
+                            onclick="textconvert_processText('hexFormat1Byte')">1B加0x</button>
+                    <button title="12345678 → 0x12345678"
+                            onclick="textconvert_processText('hexFormat4Byte')">4B加0x</button>
+                    <button title="12345678 → 0x78563412"
+                            onclick="textconvert_processText('hexFormat4ByteLe')">4B小端0x</button>
+                    <button title="1122334455667788 → 0x1122334455667788"
+                            onclick="textconvert_processText('hexFormat8Byte')">8B加0x</button>
+                    <button title="1122334455667788 → 0x8877665544332211"
+                            onclick="textconvert_processText('hexFormat8ByteLe')">8B小端0x</button>
+                    <button title="0x12345678 → 12345678"
+                            onclick="textconvert_processText('hexReverse')">移除0x</button>
+                    <button onclick="textconvert_clearInput()" class="clear-btn">清空原文</button>
+                </div>
+                <div class="tool-section sequence-section">
+                    <div class="tool-section-title">序列号码生成</div>
+                    <div class="tool-grid sequence-grid">
+                        <label class="tool-field sequence-range-field">开始
+                            <input type="number" id="sequence_start" value="1">
+                        </label>
+                        <label class="tool-field sequence-range-field">结束
+                            <input type="number" id="sequence_end" value="50">
+                        </label>
+                        <label class="tool-field sequence-width-field">位数
+                            <input type="number" id="sequence_width" value="0" min="0" max="10">
+                        </label>
+                        <label class="tool-field sequence-count-field">生成个数
+                            <input type="number" id="sequence_count" placeholder="留空=全部" min="1">
+                        </label>
+                        <label class="tool-field sequence-order-field">顺序
+                            <select id="sequence_order">
+                                <option value="asc">正序</option>
+                                <option value="desc">逆序</option>
+                                <option value="random">乱序</option>
+                            </select>
+                        </label>
+                        <label class="tool-field sequence-separator-mode-field">分隔方式
+                            <select id="sequence_separator_mode" onchange="textconvert_updateSequenceSeparator()">
+                                <option value="newline">一行一个</option>
+                                <option value="space">空格</option>
+                                <option value="comma">逗号</option>
+                                <option value="custom">自定义</option>
+                            </select>
+                        </label>
+                        <label class="tool-field sequence-separator-custom-field">自定义分隔符
+                            <input type="text" id="sequence_separator_custom" value="," disabled>
+                        </label>
+                        <div class="sequence-actions">
+                            <button type="button" onclick="textconvert_useSequenceAsInput()">生成到原文</button>
+                            <button type="button" onclick="textconvert_generateSequence()">生成到结果</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1265,6 +1299,9 @@ Release note：
   2026.06.09  v0.12 外部工具增加 Awesome-tools 清单
   2026.06.09  v0.13 优化 Awesome-tools 清单内部分类展示
   2026.06.09  v0.14 优化序列号码生成布局和位数限制
+  2026.06.09  v0.15 修复 TextFormatter 窄屏文本框高度
+  2026.06.09  v0.16 TextFormatter 操作区改为滚动面板
+  2026.06.09  v0.17 优化手机端标签栏短名称
   
   yakoye
             `
