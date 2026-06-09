@@ -200,6 +200,16 @@
             overflow-wrap: anywhere;
             word-break: break-all;
         }
+        #regcalc-ui #regcalc_calcInput {
+            min-height: calc(1.35em + 10px);
+            max-height: calc((1.35em * 3) + 10px);
+            resize: none;
+            white-space: pre-wrap;
+            overflow-x: hidden;
+            overflow-y: hidden;
+            overflow-wrap: anywhere;
+            word-break: break-all;
+        }
         #regcalc-ui .regcalc-spacer td {
             height: 5px;
             padding: 0;
@@ -215,12 +225,6 @@
         }
         #regcalc-ui table textarea {
             vertical-align: top;
-        }
-        #regcalc-ui #truncateWarning {
-            color: #ff4444;
-            font-size: 12px;
-            margin-top: 2px;
-            display: none;
         }
         /* TextConvert 指定样式（命名前缀隔离） */
         #textconvert-ui {
@@ -923,10 +927,11 @@
                             <tr>
                                 <td class="regcalc-label">计算：</td>
                                 <td class="regcalc-control">
-                                    <input type="text" id="regcalc_calcInput" style="width:260px;" placeholder="输入表达式，如 0x43+10" onkeypress="regcalc_handleEnterKey(event)">
+                                    <textarea id="regcalc_calcInput" rows="1" placeholder="输入表达式，如 0x43+10" oninput="regcalc_resizeCalcInput()" onkeydown="regcalc_handleEnterKey(event)"></textarea>
                                 </td>
                                 <td class="regcalc-actions">
                                     <button onclick="regcalc_calculate()">计算</button> &nbsp;
+                                    <button onclick="regcalc_clearCalculation()" title="清空计算输入和结果">C</button> &nbsp;
                                     <button onclick="regcalc_syncResultToHex()" title="同步结果到十六进制输入框中"> ⭡ </button>
                                 </td>
                             </tr>
@@ -943,7 +948,6 @@
                             <!-- 第三行：截断提示 -->
                             <tr>
                                 <td colspan="3" class="regcalc-footer-actions">
-                                    <span id="regcalc_truncateWarning" style="color: red; display: none;">注意：结果可能有误，已被截断为128位无符号整数</span>
                                     <input type="button" value="清空所有" title="清空输入框中内容" onclick="regcalc_clean_all_value()" id="regcalc_clean">
                                     <a href="javascript:void(0)" onclick="regcalc_showHelp()"
                                     title="查看使用说明" style="font-size:12px;">帮助(?)</a>
@@ -1342,6 +1346,8 @@ Release note：
   2026.06.09  v0.17 优化手机端标签栏短名称
   2026.06.09  v0.18 调整时间计算器输入排列
   2026.06.09  v0.19 时间计算器时间输入改为同排行
+  2026.06.09  v0.20 RegCalc 计算输入支持三行自适应
+  2026.06.09  v0.21 放宽 RegCalc 表达式限制并取消128位截断
   
   yakoye
             `
@@ -1830,9 +1836,32 @@ Release note：
     let regcalc_g_currentResult = 0n;
     let regcalc_g_floatResult = null;
     let regcalc_g_resultFormat = 'hex';
+    const REGCALC_MAX_EXPR_LENGTH = 1024;
+    const REGCALC_MAX_OPERATOR_COUNT = 256;
+    const REGCALC_MAX_SHIFT_BITS = 4096n;
+    const REGCALC_MAX_POWER_EXPONENT = 1024n;
+    const REGCALC_MAX_REGISTER_VALUE = 0xFFFFFFFFFFFFFFFFn;
+
+    function regcalc_resizeCalcInput() {
+        const input = document.getElementById('regcalc_calcInput');
+        if (!input) return;
+        const style = window.getComputedStyle(input);
+        const lineHeight = parseFloat(style.lineHeight) || 19;
+        const verticalPadding =
+            (parseFloat(style.paddingTop) || 0) +
+            (parseFloat(style.paddingBottom) || 0) +
+            (parseFloat(style.borderTopWidth) || 0) +
+            (parseFloat(style.borderBottomWidth) || 0);
+        const maxHeight = Math.ceil(lineHeight * 3 + verticalPadding);
+
+        input.style.height = 'auto';
+        const nextHeight = Math.min(input.scrollHeight, maxHeight);
+        input.style.height = `${nextHeight}px`;
+        input.style.overflowY = input.scrollHeight > maxHeight ? 'auto' : 'hidden';
+    }
 
     function regcalc_handleEnterKey(event) {
-        if (event.key === 'Enter') {
+        if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
             regcalc_calculate();
         }
@@ -1841,6 +1870,12 @@ Release note：
     function regcalc_setResultFormat(format) {
         regcalc_g_resultFormat = format;
         regcalc_updateResultDisplay();
+    }
+
+    function regcalc_formatBigIntWithPrefix(value, prefix, radix) {
+        const sign = value < 0n ? '-' : '';
+        const absValue = value < 0n ? -value : value;
+        return sign + prefix + absValue.toString(radix).toUpperCase();
     }
 
     function regcalc_updateResultDisplay() {
@@ -1867,13 +1902,13 @@ Release note：
         let displayValue;
         switch (regcalc_g_resultFormat) {
             case 'hex':
-                displayValue = '0x' + regcalc_g_currentResult.toString(16).toUpperCase();
+                displayValue = regcalc_formatBigIntWithPrefix(regcalc_g_currentResult, '0x', 16);
                 break;
             case 'dec':
                 displayValue = regcalc_g_currentResult.toString();
                 break;
             case 'bin':
-                displayValue = '0b' + regcalc_g_currentResult.toString(2);
+                displayValue = regcalc_formatBigIntWithPrefix(regcalc_g_currentResult, '0b', 2);
                 break;
             default:
                 displayValue = regcalc_g_currentResult.toString();
@@ -1899,18 +1934,39 @@ Release note：
         return result;
     }
 
+    function regcalc_parseIntegerLiteral(literal) {
+        if (/^0x/i.test(literal)) return BigInt(literal);
+        if (/^0b/i.test(literal)) return BigInt(literal);
+        return BigInt(literal);
+    }
+
     function regcalc_calculate() {
         const inputElement = document.getElementById('regcalc_calcInput');
-        const warningElement = document.getElementById('regcalc_truncateWarning');
 
         try {
             const rawInput = inputElement.value.trim().replace(/[\s_ULul]+/g, '');
             regcalc_g_floatResult = null;
-            warningElement.style.display = 'none';
             if (!rawInput) { document.getElementById('regcalc_calcResult').value = ''; return; }
+            if (rawInput.length > REGCALC_MAX_EXPR_LENGTH) {
+                throw new Error(`表达式长度不能超过${REGCALC_MAX_EXPR_LENGTH}个字符`);
+            }
 
             const operators = rawInput.match(/(\*\*|<<|>>|[\+\-\*/%&|\^~])/g) || [];
-            if (operators.length > 20) { throw new Error("操作符数量不能超过20个"); }
+            if (operators.length > REGCALC_MAX_OPERATOR_COUNT) {
+                throw new Error(`操作符数量不能超过${REGCALC_MAX_OPERATOR_COUNT}个`);
+            }
+            rawInput.replace(/(?:<<|>>)(0x[0-9a-f]+|0b[01]+|\d+)/ig, (_, bits) => {
+                if (regcalc_parseIntegerLiteral(bits) > REGCALC_MAX_SHIFT_BITS) {
+                    throw new Error(`移位位数不能超过${REGCALC_MAX_SHIFT_BITS}位`);
+                }
+                return '';
+            });
+            rawInput.replace(/\*\*(0x[0-9a-f]+|0b[01]+|\d+)/ig, (_, exponent) => {
+                if (regcalc_parseIntegerLiteral(exponent) > REGCALC_MAX_POWER_EXPONENT) {
+                    throw new Error(`幂指数不能超过${REGCALC_MAX_POWER_EXPONENT}`);
+                }
+                return '';
+            });
 
             const hasIntegerOnlyOperator = /(<<|>>|[%&|^~])/.test(rawInput);
             const hasBaseLiteral = /0[xb]/i.test(rawInput);
@@ -1942,18 +1998,21 @@ Release note：
             }
 
             regcalc_g_originalResult = result;
-            regcalc_g_currentResult = BigInt.asUintN(128, result); // 最多128位
-
-            if (regcalc_g_originalResult !== regcalc_g_currentResult) {
-                warningElement.style.display = 'inline';
-            } else {
-                warningElement.style.display = 'none';
-            }
+            regcalc_g_currentResult = result;
             regcalc_updateResultDisplay();
         } catch (e) {
             document.getElementById('regcalc_calcResult').value = '';
             alert(`计算错误: ${e.message}`);
         }
+    }
+
+    function regcalc_clearCalculation() {
+        document.getElementById('regcalc_calcInput').value = '';
+        document.getElementById('regcalc_calcResult').value = '';
+        regcalc_g_floatResult = null;
+        regcalc_g_currentResult = 0n;
+        regcalc_g_originalResult = 0n;
+        regcalc_resizeCalcInput();
     }
 
     function regcalc_syncHexTocalcInput() {
@@ -1965,6 +2024,7 @@ Release note：
         if (!/^0x/i.test(hexStr)) hexStr = '0x' + hexStr.replace(/^x/i, '');
 
         document.getElementById('regcalc_calcInput').value = hexStr;
+        regcalc_resizeCalcInput();
     }
 
 
@@ -1974,6 +2034,14 @@ Release note：
 
         // 取当前结果的数值（优先用 bigint 结果变量，避免解析显示字符串）
         if (typeof regcalc_g_currentResult === 'bigint') {
+            if (regcalc_g_currentResult < 0n) {
+                alert("负数结果不能直接同步到64位寄存器；如需64位取反结果，请在表达式后加 &0xFFFFFFFFFFFFFFFF。");
+                return;
+            }
+            if (regcalc_g_currentResult > REGCALC_MAX_REGISTER_VALUE) {
+                alert("结果超出64位寄存器范围，不能直接同步到十六进制输入框。");
+                return;
+            }
             document.getElementById('regcalc_hex').value =
                 '0x' + regcalc_g_currentResult.toString(16).toUpperCase();
             regcalc_set_text_value('hex');   // 触发联动刷新：dec/bin/bit按钮/human/位域等
@@ -1989,6 +2057,14 @@ Release note：
         } catch {
             return;
         }
+        if (v < 0n) {
+            alert("负数结果不能直接同步到64位寄存器；如需64位取反结果，请在表达式后加 &0xFFFFFFFFFFFFFFFF。");
+            return;
+        }
+        if (v > REGCALC_MAX_REGISTER_VALUE) {
+            alert("结果超出64位寄存器范围，不能直接同步到十六进制输入框。");
+            return;
+        }
 
         document.getElementById('regcalc_hex').value = '0x' + v.toString(16).toUpperCase();
         regcalc_set_text_value('hex');
@@ -2001,9 +2077,7 @@ Release note：
         document.getElementById("regcalc_human").value = "";
         document.getElementById('regcalc_shiftLeft').value = "";
         document.getElementById('regcalc_shiftRight').value = "";
-        document.getElementById('regcalc_calcInput').value = "";
-        document.getElementById('regcalc_calcResult').value = "";
-        document.getElementById('regcalc_truncateWarning').value = "";
+        regcalc_clearCalculation();
         
         regcalc_clearAllBitFields();
 
@@ -2019,6 +2093,7 @@ Release note：
         document.getElementById("regcalc_bin").value = "";
         document.getElementById("regcalc_dec").value = "";
         regcalc_refreshBitFieldButtons();
+        regcalc_resizeCalcInput();
     }
     window.onload = regcalc_window_onload;
     </script>
