@@ -1123,6 +1123,7 @@ Release note：
   2026.06.09  v0.8 新增序列生成、时间计算、密码生成和外部工具链接
   2026.06.09  v0.9 外部工具增加图像处理链接
   2026.06.09  v0.10 调整 TextFormatter 序列区位置，收窄工具页宽度
+  2026.06.09  v0.11 密码生成器记住指定符号和额外排除字符
   
   yakoye
             `
@@ -1819,6 +1820,11 @@ Release note：
         document.getElementById('timecalc_start').value = timecalc_toLocalInputValue(now);
         document.getElementById('timecalc_end').value = timecalc_toLocalInputValue(tomorrow);
         document.getElementById('timecalc_base').value = timecalc_toLocalInputValue(now);
+
+        const savedPasswordSymbols = localStorage.getItem('password_symbols');
+        const savedPasswordExcludeCustom = localStorage.getItem('password_exclude_custom');
+        if (savedPasswordSymbols !== null) document.getElementById('password_symbols').value = savedPasswordSymbols;
+        if (savedPasswordExcludeCustom !== null) document.getElementById('password_exclude_custom').value = savedPasswordExcludeCustom;
     });
 
     document.getElementById('textconvert_input').addEventListener('input', function() {
@@ -1826,6 +1832,12 @@ Release note：
     });
     document.getElementById('textconvert_output').addEventListener('input', function() {
         localStorage.setItem('textconvert_textOutput', this.value);
+    });
+    document.getElementById('password_symbols').addEventListener('input', function() {
+        localStorage.setItem('password_symbols', this.value);
+    });
+    document.getElementById('password_exclude_custom').addEventListener('input', function() {
+        localStorage.setItem('password_exclude_custom', this.value);
     });
 
     function textconvert_swapText() {
