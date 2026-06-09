@@ -269,6 +269,44 @@
             width: 100%;
             white-space: normal;
         }
+        #textconvert-ui .sequence-section .tool-section-title {
+            margin-bottom: 6px;
+        }
+        #textconvert-ui .sequence-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: end;
+        }
+        #textconvert-ui .sequence-grid .tool-field {
+            flex: 0 0 auto;
+        }
+        #textconvert-ui .sequence-range-field {
+            width: 92px;
+        }
+        #textconvert-ui .sequence-width-field {
+            width: 58px;
+        }
+        #textconvert-ui .sequence-count-field {
+            width: 112px;
+        }
+        #textconvert-ui .sequence-order-field {
+            width: 72px;
+        }
+        #textconvert-ui .sequence-separator-mode-field {
+            width: 100px;
+        }
+        #textconvert-ui .sequence-separator-custom-field {
+            width: 112px;
+        }
+        #textconvert-ui .sequence-actions {
+            display: flex;
+            gap: 8px;
+            align-items: end;
+        }
+        #textconvert-ui .sequence-actions button {
+            min-width: 96px;
+        }
         #textconvert-ui button.clear-btn {
             background: #f0f0f0;
             border-color: #238625;
@@ -364,6 +402,17 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 10px;
+        }
+        .external-links-subtitle {
+            grid-column: 1 / -1;
+            margin: 8px 0 0;
+            padding: 6px 0 2px;
+            border-bottom: 1px solid #e4e4e4;
+            color: #333;
+            font-weight: 700;
+        }
+        .external-links-subtitle:first-child {
+            margin-top: 0;
         }
         .external-tool-link {
             display: block;
@@ -467,6 +516,25 @@
             }
             .tool-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            #textconvert-ui .sequence-grid {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            #textconvert-ui .sequence-range-field,
+            #textconvert-ui .sequence-width-field,
+            #textconvert-ui .sequence-count-field,
+            #textconvert-ui .sequence-order-field,
+            #textconvert-ui .sequence-separator-mode-field,
+            #textconvert-ui .sequence-separator-custom-field {
+                width: auto;
+            }
+            #textconvert-ui .sequence-actions {
+                grid-column: 1 / -1;
+            }
+            #textconvert-ui .sequence-actions button {
+                flex: 1 1 0;
+                min-width: 0;
             }
             .tool-section {
                 padding: 8px;
@@ -869,29 +937,29 @@
                         onclick="textconvert_processText('hexReverse')">移除0x</button>
                 <button onclick="textconvert_clearInput()" class="clear-btn">清空原文</button>
             </div>
-            <div class="tool-section">
+            <div class="tool-section sequence-section">
                 <div class="tool-section-title">序列号码生成</div>
-                <div class="tool-grid">
-                    <label class="tool-field">开始
+                <div class="tool-grid sequence-grid">
+                    <label class="tool-field sequence-range-field">开始
                         <input type="number" id="sequence_start" value="1">
                     </label>
-                    <label class="tool-field">结束
+                    <label class="tool-field sequence-range-field">结束
                         <input type="number" id="sequence_end" value="50">
                     </label>
-                    <label class="tool-field">位数
-                        <input type="number" id="sequence_width" value="0" min="0">
+                    <label class="tool-field sequence-width-field">位数
+                        <input type="number" id="sequence_width" value="0" min="0" max="10">
                     </label>
-                    <label class="tool-field">生成个数
+                    <label class="tool-field sequence-count-field">生成个数
                         <input type="number" id="sequence_count" placeholder="留空=全部" min="1">
                     </label>
-                    <label class="tool-field">顺序
+                    <label class="tool-field sequence-order-field">顺序
                         <select id="sequence_order">
                             <option value="asc">正序</option>
                             <option value="desc">逆序</option>
                             <option value="random">乱序</option>
                         </select>
                     </label>
-                    <label class="tool-field">分隔方式
+                    <label class="tool-field sequence-separator-mode-field">分隔方式
                         <select id="sequence_separator_mode" onchange="textconvert_updateSequenceSeparator()">
                             <option value="newline">一行一个</option>
                             <option value="space">空格</option>
@@ -899,13 +967,13 @@
                             <option value="custom">自定义</option>
                         </select>
                     </label>
-                    <label class="tool-field">自定义分隔符
+                    <label class="tool-field sequence-separator-custom-field">自定义分隔符
                         <input type="text" id="sequence_separator_custom" value="," disabled>
                     </label>
-                </div>
-                <div class="tool-actions">
-                    <button type="button" onclick="textconvert_generateSequence()">生成到结果</button>
-                    <button type="button" onclick="textconvert_useSequenceAsInput()">生成到原文</button>
+                    <div class="sequence-actions">
+                        <button type="button" onclick="textconvert_useSequenceAsInput()">生成到原文</button>
+                        <button type="button" onclick="textconvert_generateSequence()">生成到结果</button>
+                    </div>
                 </div>
             </div>
             <div class="container">
@@ -1027,7 +1095,6 @@
             <div class="tool-section">
                 <div class="tool-section-title">图像处理</div>
                 <div class="external-links-grid">
-                    <a class="external-tool-link" href="https://www.adobe.com/products/photoshop.html" target="_blank" rel="noopener"><b>Photoshop</b><span>专业图像处理工具，建议从官方渠道获取并注意授权。</span></a>
                     <a class="external-tool-link" href="https://zh.recompressor.com/" target="_blank" rel="noopener"><b>Recompressor</b><span>对比不同压缩质量，适合精细压缩图片体积。</span></a>
                     <a class="external-tool-link" href="https://squoosh.app/" target="_blank" rel="noopener"><b>Squoosh</b><span>浏览器内图片压缩、格式转换和质量预览。</span></a>
                     <a class="external-tool-link" href="https://riot-optimizer.com/" target="_blank" rel="noopener"><b>RIOT</b><span>桌面图片优化工具，适合批量压缩和本地处理。</span></a>
@@ -1035,25 +1102,20 @@
                 </div>
             </div>
             <div class="tool-section">
-                <div class="tool-section-title">知乎工具清单 - PDF</div>
+                <div class="tool-section-title">Awesome-tools 清单</div>
                 <div class="external-links-grid">
+                    <div class="external-links-subtitle">PDF</div>
                     <a class="external-tool-link" href="https://www.pdf-xchange.com/product/downloads" target="_blank" rel="noopener"><b>PDF-Xchange Editor</b><span>PDF 阅读、标注、编辑和转换，功能很完整。</span></a>
                     <a class="external-tool-link" href="https://github.com/wmjordan/PDFPatcher" target="_blank" rel="noopener"><b>PDFPatcher</b><span>开源 PDF 合并、拆分、压缩、编辑和转换工具。</span></a>
                     <a class="external-tool-link" href="https://tools.pdf24.org/zh/all-tools" target="_blank" rel="noopener"><b>PDF24 Tools</b><span>在线 PDF 工具合集，覆盖合并、拆分、压缩、转换等。</span></a>
-                </div>
-            </div>
-            <div class="tool-section">
-                <div class="tool-section-title">知乎工具清单 - 截图与录屏</div>
-                <div class="external-links-grid">
+                    <div class="external-links-subtitle">截图与录屏</div>
                     <a class="external-tool-link" href="https://pixpin.cn/" target="_blank" rel="noopener"><b>PixPin</b><span>截图、贴图、长截图、OCR 和标注，适合日常高频使用。</span></a>
                     <a class="external-tool-link" href="https://www.snipaste.com/" target="_blank" rel="noopener"><b>Snipaste</b><span>截图、贴图、标注工具，轻量稳定。</span></a>
                     <a class="external-tool-link" href="https://www.faststone.org/" target="_blank" rel="noopener"><b>FastStone Capture</b><span>截图、延迟截图、尺子、放大镜等桌面辅助功能。</span></a>
                     <a class="external-tool-link" href="https://www.screentogif.com/" target="_blank" rel="noopener"><b>ScreenToGif</b><span>屏幕录制并生成 GIF，适合演示和教程素材。</span></a>
-                </div>
-            </div>
-            <div class="tool-section">
-                <div class="tool-section-title">知乎工具清单 - 图像制作与看图</div>
-                <div class="external-links-grid">
+                    <div class="external-links-subtitle">图像处理</div>
+                    <a class="external-tool-link" href="https://www.adobe.com/products/photoshop.html" target="_blank" rel="noopener"><b>Photoshop</b><span>专业图像处理工具，建议从官方渠道获取并注意授权。</span></a>
+                    <div class="external-links-subtitle">图像制作与看图</div>
                     <a class="external-tool-link" href="https://github.com/jgraph/drawio-desktop/releases" target="_blank" rel="noopener"><b>Draw.io Desktop</b><span>流程图和架构图桌面版。</span></a>
                     <a class="external-tool-link" href="https://app.diagrams.net/" target="_blank" rel="noopener"><b>diagrams.net</b><span>Draw.io 在线版，浏览器中绘制流程图。</span></a>
                     <a class="external-tool-link" href="https://xmind.cn/" target="_blank" rel="noopener"><b>Xmind</b><span>思维导图工具，适合梳理结构化内容。</span></a>
@@ -1065,11 +1127,7 @@
                     <a class="external-tool-link" href="https://drawnix.com/" target="_blank" rel="noopener"><b>Drawnix</b><span>在线白板，支持自由画、流程图和思维导图。</span></a>
                     <a class="external-tool-link" href="https://imageglass.org/" target="_blank" rel="noopener"><b>ImageGlass</b><span>开源图片查看器，轻量清爽。</span></a>
                     <a class="external-tool-link" href="https://github.com/jark006/jarkViewer" target="_blank" rel="noopener"><b>JarkViewer</b><span>轻量级看图工具，强调快速打开。</span></a>
-                </div>
-            </div>
-            <div class="tool-section">
-                <div class="tool-section-title">知乎工具清单 - Windows 系统与装机</div>
-                <div class="external-links-grid">
+                    <div class="external-links-subtitle">Windows 系统与装机</div>
                     <a class="external-tool-link" href="https://efotinis.neocities.org/deskpins/" target="_blank" rel="noopener"><b>DeskPins</b><span>把任意窗口置顶。</span></a>
                     <a class="external-tool-link" href="https://github.com/RamonUnch/AltSnap" target="_blank" rel="noopener"><b>AltSnap</b><span>窗口拖动和缩放增强，适合处理超出屏幕的对话框。</span></a>
                     <a class="external-tool-link" href="https://schinagl.priv.at/nt/hardlinkshellext/linkshellextension.html" target="_blank" rel="noopener"><b>Link Shell Extension</b><span>软链接、硬链接、符号链接的右键扩展。</span></a>
@@ -1083,11 +1141,7 @@
                     <a class="external-tool-link" href="https://www.ventoy.net/cn/index.html" target="_blank" rel="noopener"><b>Ventoy</b><span>多镜像 U 盘启动制作工具。</span></a>
                     <a class="external-tool-link" href="https://rufus.ie/zh/" target="_blank" rel="noopener"><b>Rufus</b><span>轻量 U 盘启动盘制作工具。</span></a>
                     <a class="external-tool-link" href="https://support.lenovo.com/us/en/downloads/ds031944-auto-scroll-utility-for-windows-10-32-bit-64-bit-laptop" target="_blank" rel="noopener"><b>Lenovo Auto Scroll Utility</b><span>联想自动滚屏工具，部分 ThinkPad/Lenovo 机型可用。</span></a>
-                </div>
-            </div>
-            <div class="tool-section">
-                <div class="tool-section-title">知乎工具清单 - 编程与文本</div>
-                <div class="external-links-grid">
+                    <div class="external-links-subtitle">编程与文本</div>
                     <a class="external-tool-link" href="https://git-scm.com/install/windows" target="_blank" rel="noopener"><b>Git for Windows</b><span>Windows 下使用 Git 和 bash shell。</span></a>
                     <a class="external-tool-link" href="https://github.com/BurntSushi/ripgrep" target="_blank" rel="noopener"><b>ripgrep</b><span>高速文本内容搜索工具。</span></a>
                     <a class="external-tool-link" href="https://eternallybored.org/misc/wget/" target="_blank" rel="noopener"><b>wget 新版</b><span>Windows 下的命令行下载工具新版构建。</span></a>
@@ -1105,11 +1159,7 @@
                     <a class="external-tool-link" href="https://typora.io/" target="_blank" rel="noopener"><b>Typora</b><span>Markdown 编辑器。</span></a>
                     <a class="external-tool-link" href="https://www.scootersoftware.com/" target="_blank" rel="noopener"><b>Beyond Compare</b><span>文本、文件夹和二进制比对。</span></a>
                     <a class="external-tool-link" href="https://mobaxterm.mobatek.net/download.html" target="_blank" rel="noopener"><b>MobaXterm</b><span>终端、SSH、SFTP 等综合远程连接工具。</span></a>
-                </div>
-            </div>
-            <div class="tool-section">
-                <div class="tool-section-title">知乎工具清单 - 媒体、护眼、字体与其他</div>
-                <div class="external-links-grid">
+                    <div class="external-links-subtitle">媒体、护眼、字体与其他</div>
                     <a class="external-tool-link" href="http://workaudiobook.com/" target="_blank" rel="noopener"><b>WorkAudioBook</b><span>英语听力练习工具，支持波形视图、自动暂停和变速。</span></a>
                     <a class="external-tool-link" href="https://potplayer.tv/" target="_blank" rel="noopener"><b>PotPlayer</b><span>视频播放器。</span></a>
                     <a class="external-tool-link" href="http://www.fadetop.com/" target="_blank" rel="noopener"><b>FadeTop</b><span>定时提醒休息的护眼工具。</span></a>
@@ -1118,7 +1168,7 @@
                     <a class="external-tool-link" href="https://fonts.google.com/noto/specimen/Noto+Sans+SC?preview.script=Hans" target="_blank" rel="noopener"><b>Noto Sans SC</b><span>适合中文显示的清晰无衬线字体。</span></a>
                     <a class="external-tool-link" href="https://github.com/SpaceTimee/Fusion-JetBrainsMapleMono" target="_blank" rel="noopener"><b>JetBrains Maple Mono</b><span>适合中英文混排的等宽编程字体。</span></a>
                     <a class="external-tool-link" href="https://yakoye.github.io/RegCalcTextTool/RegCalcTextTool.html" target="_blank" rel="noopener"><b>RegCalc TextTool</b><span>寄存器计算、进制转换、比特域和文本处理工具。</span></a>
-                    <a class="external-tool-link" href="https://zhuanlan.zhihu.com/p/2025958096351053583" target="_blank" rel="noopener"><b>原始知乎清单</b><span>Awesome-tools 超棒的工具清单推荐，便于回看原文。</span></a>
+                    <a class="external-tool-link" href="https://zhuanlan.zhihu.com/p/2025958096351053583" target="_blank" rel="noopener"><b>原始 Awesome-tools 清单</b><span>工具清单原文，便于后续回看和维护。</span></a>
                 </div>
             </div>
         </div>
@@ -1212,7 +1262,9 @@ Release note：
   2026.06.09  v0.9 外部工具增加图像处理链接
   2026.06.09  v0.10 调整 TextFormatter 序列区位置，收窄工具页宽度
   2026.06.09  v0.11 密码生成器记住指定符号和额外排除字符
-  2026.06.09  v0.12 外部工具增加知乎 Awesome-tools 清单
+  2026.06.09  v0.12 外部工具增加 Awesome-tools 清单
+  2026.06.09  v0.13 优化 Awesome-tools 清单内部分类展示
+  2026.06.09  v0.14 优化序列号码生成布局和位数限制
   
   yakoye
             `
@@ -1953,7 +2005,7 @@ Release note：
     function textconvert_generateSequenceText() {
         const start = Number(document.getElementById('sequence_start').value);
         const end = Number(document.getElementById('sequence_end').value);
-        const width = Math.max(0, Number(document.getElementById('sequence_width').value || 0));
+        const width = Math.max(0, Math.min(10, Number(document.getElementById('sequence_width').value || 0)));
         const countRaw = document.getElementById('sequence_count').value;
         const count = countRaw === '' ? null : Math.max(1, Number(countRaw));
         const order = document.getElementById('sequence_order').value;
