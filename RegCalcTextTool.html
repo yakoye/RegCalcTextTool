@@ -363,8 +363,8 @@
         }
         #timecalc-ui .timecalc-inline-field {
             display: grid;
-            grid-template-columns: 64px minmax(0, 1fr);
-            gap: 8px;
+            grid-template-columns: 54px minmax(0, 1fr);
+            gap: 4px;
             align-items: center;
             font-size: 13px;
         }
@@ -378,19 +378,40 @@
             font-size: 14px;
         }
         #timecalc-ui .timecalc-base-row {
-            grid-template-columns: minmax(0, 1fr) auto;
+            grid-template-columns: minmax(0, max-content) auto;
+            gap: 6px;
             align-items: end;
+        }
+        #timecalc-ui .timecalc-base-row .timecalc-inline-field {
+            grid-template-columns: 54px 180px;
         }
         #timecalc-ui .timecalc-convert-toggle {
             min-height: 28px;
+            min-width: 64px;
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 3px;
             white-space: nowrap;
             font-size: 13px;
         }
         #timecalc-ui .timecalc-convert-toggle input {
             margin: 0;
+        }
+        #timecalc-ui .timecalc-convert-text {
+            line-height: 1.1;
+        }
+        @media (max-width: 420px) {
+            #timecalc-ui .timecalc-base-row {
+                grid-template-columns: minmax(0, max-content) 44px;
+                gap: 4px;
+            }
+            #timecalc-ui .timecalc-convert-toggle {
+                min-width: 44px;
+                white-space: normal;
+            }
+            #timecalc-ui .timecalc-convert-text {
+                width: 2em;
+            }
         }
         .tool-panel h3 {
             margin: 8px 0 12px;
@@ -1138,7 +1159,7 @@
                     </label>
                     <label class="timecalc-convert-toggle" title="按 1年=12月=365天 换算">
                         <input type="checkbox" id="timecalc_convertMode" onchange="timecalc_toggleConvertMode()">
-                        时间转换
+                        <span class="timecalc-convert-text">时间转换</span>
                     </label>
                 </div>
                 <div class="timecalc-form-row timecalc-three-col">
@@ -1366,7 +1387,8 @@
 2026.06.09  v0.24  RegCalc 小数表达式改用 mathjs 计算
 2026.06.09  v0.25  RegCalc 计算输入支持 × ÷ 和全角运算符
 2026.06.09  v0.26  Bin(2) 输入框改为按内容动态高度
-2026.06.09  v0.27  密码生成器增加本地生成与不上传说明</pre>
+2026.06.09  v0.27  密码生成器增加本地生成与不上传说明
+2026.06.09  v0.28  优化 Time 基准时间与时间转换开关布局</pre>
             </div>
 
             <div class="tool-section">
@@ -1422,7 +1444,8 @@
 2026.06.09  v0.24  Switched RegCalc decimal expressions to mathjs
 2026.06.09  v0.25  Added RegCalc support for ×, ÷, and full-width operators
 2026.06.09  v0.26  Made the Bin(2) input height adjust to its content
-2026.06.09  v0.27  Added local-only and no-upload notice to Password Generator</pre>
+2026.06.09  v0.27  Added local-only and no-upload notice to Password Generator
+2026.06.09  v0.28  Optimized Time base-time and conversion toggle layout</pre>
             </div>
         </div>
     </div>
