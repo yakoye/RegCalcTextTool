@@ -345,6 +345,35 @@
         #password-ui {
             max-width: 680px;
         }
+        #timecalc-ui .timecalc-form-row {
+            display: grid;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        #timecalc-ui .timecalc-form-row:last-child {
+            margin-bottom: 0;
+        }
+        #timecalc-ui .timecalc-one-col {
+            grid-template-columns: 1fr;
+        }
+        #timecalc-ui .timecalc-three-col {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        #timecalc-ui .timecalc-inline-field {
+            display: grid;
+            grid-template-columns: 64px minmax(0, 1fr);
+            gap: 8px;
+            align-items: center;
+            font-size: 13px;
+        }
+        #timecalc-ui .timecalc-inline-field input {
+            width: 100%;
+            min-height: 32px;
+            padding: 5px 7px;
+            border: 1px solid #999;
+            font-family: inherit;
+            font-size: 14px;
+        }
         .tool-panel h3 {
             margin: 8px 0 12px;
         }
@@ -546,6 +575,9 @@
             }
             .tool-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            #timecalc-ui .timecalc-three-col {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
             }
             #textconvert-ui .sequence-grid {
                 display: grid;
@@ -1023,11 +1055,13 @@
             <h3>时间计算器</h3>
             <div class="tool-section">
                 <div class="tool-section-title">计算两个时间相隔</div>
-                <div class="tool-grid">
-                    <label class="tool-field">开始时间
+                <div class="timecalc-form-row timecalc-one-col">
+                    <label class="timecalc-inline-field">开始时间
                         <input type="datetime-local" id="timecalc_start">
                     </label>
-                    <label class="tool-field">结束时间
+                </div>
+                <div class="timecalc-form-row timecalc-one-col">
+                    <label class="timecalc-inline-field">结束时间
                         <input type="datetime-local" id="timecalc_end">
                     </label>
                 </div>
@@ -1040,10 +1074,12 @@
             </div>
             <div class="tool-section">
                 <div class="tool-section-title">计算未来或过去时间</div>
-                <div class="tool-grid">
-                    <label class="tool-field">基准时间
+                <div class="timecalc-form-row timecalc-one-col">
+                    <label class="timecalc-inline-field">基准时间
                         <input type="datetime-local" id="timecalc_base">
                     </label>
+                </div>
+                <div class="timecalc-form-row timecalc-three-col">
                     <label class="tool-field">年
                         <input type="number" id="timecalc_addYears" value="0">
                     </label>
@@ -1053,6 +1089,8 @@
                     <label class="tool-field">天
                         <input type="number" id="timecalc_addDays" value="0">
                     </label>
+                </div>
+                <div class="timecalc-form-row timecalc-three-col">
                     <label class="tool-field">小时
                         <input type="number" id="timecalc_addHours" value="0">
                     </label>
@@ -1302,6 +1340,8 @@ Release note：
   2026.06.09  v0.15 修复 TextFormatter 窄屏文本框高度
   2026.06.09  v0.16 TextFormatter 操作区改为滚动面板
   2026.06.09  v0.17 优化手机端标签栏短名称
+  2026.06.09  v0.18 调整时间计算器输入排列
+  2026.06.09  v0.19 时间计算器时间输入改为同排行
   
   yakoye
             `
