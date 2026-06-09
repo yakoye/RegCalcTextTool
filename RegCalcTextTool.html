@@ -192,11 +192,12 @@
         }
         #regcalc-ui #regcalc_bin {
             width: var(--regcalc-field-width) !important;
-            height: 3.5em !important;
+            min-height: calc(1.35em + 8px);
+            max-height: calc((1.35em * 3) + 10px);
             resize: none;
             white-space: pre-wrap;
             overflow-x: hidden;
-            overflow-y: auto;
+            overflow-y: hidden;
             overflow-wrap: anywhere;
             word-break: break-all;
         }
@@ -936,7 +937,7 @@
                             <tr>
                                 <td class="regcalc-label" title="二进制(Binary)">Bin(2)：</td>
                                 <td class="regcalc-control">
-                                    <textarea name="bin" id="regcalc_bin" placeholder="0" oninput="regcalc_set_text_value('bin')"></textarea>
+                                    <textarea name="bin" id="regcalc_bin" placeholder="0" oninput="regcalc_set_text_value('bin'); regcalc_resizeBinInput()"></textarea>
                                 </td>
                                 <td class="regcalc-actions"></td>
                             </tr>
@@ -1353,7 +1354,8 @@
 2026.06.07  v0.22  修改界面为英文，提示中文英文
 2026.06.09  v0.23  修复 RegCalc 精确小数计算，Time 增加时间转换联动
 2026.06.09  v0.24  RegCalc 小数表达式改用 mathjs 计算
-2026.06.09  v0.25  RegCalc 计算输入支持 × ÷ 和全角运算符</pre>
+2026.06.09  v0.25  RegCalc 计算输入支持 × ÷ 和全角运算符
+2026.06.09  v0.26  Bin(2) 输入框改为按内容动态高度</pre>
             </div>
 
             <div class="tool-section">
@@ -1407,7 +1409,8 @@
 2026.06.07  v0.22  Updated the UI to English and added bilingual Chinese-English tooltips
 2026.06.09  v0.23  Fixed exact decimal calculation in RegCalc, added linked time conversion in Time
 2026.06.09  v0.24  Switched RegCalc decimal expressions to mathjs
-2026.06.09  v0.25  Added RegCalc support for ×, ÷, and full-width operators</pre>
+2026.06.09  v0.25  Added RegCalc support for ×, ÷, and full-width operators
+2026.06.09  v0.26  Made the Bin(2) input height adjust to its content</pre>
             </div>
         </div>
     </div>
@@ -1492,11 +1495,33 @@
     let regcalc_isProgrammatic = false;
     const regcalc_units = ['', 'K', 'M', 'G', 'T', 'P', 'E'];
 
+    function regcalc_resizeBinInput() {
+        const input = document.getElementById('regcalc_bin');
+        if (!input) return;
+
+        const decInput = document.getElementById('regcalc_dec');
+        const style = window.getComputedStyle(input);
+        const lineHeight = parseFloat(style.lineHeight) || 19;
+        const verticalPadding =
+            (parseFloat(style.paddingTop) || 0) +
+            (parseFloat(style.paddingBottom) || 0) +
+            (parseFloat(style.borderTopWidth) || 0) +
+            (parseFloat(style.borderBottomWidth) || 0);
+        const oneLineHeight = decInput?.offsetHeight || Math.ceil(lineHeight + verticalPadding);
+        const maxHeight = Math.ceil(lineHeight * 3 + verticalPadding);
+
+        input.style.height = `${oneLineHeight}px`;
+        const nextHeight = Math.max(oneLineHeight, Math.min(input.scrollHeight, maxHeight));
+        input.style.height = `${nextHeight}px`;
+        input.style.overflowY = input.scrollHeight > maxHeight ? 'auto' : 'hidden';
+    }
+
     function regcalc_clear_bin_dec_hex() {
         document.getElementById("regcalc_bin").value = "";
         document.getElementById("regcalc_dec").value = "";
         document.getElementById("regcalc_hex").value = "";
         document.getElementById("regcalc_human").value = "";
+        regcalc_resizeBinInput();
     }
 
     function regcalc_str_to_bin() {
@@ -1527,6 +1552,7 @@
         const num = BigInt('0b' + bin_str);
         document.getElementById("regcalc_human").value = regcalc_convertToHumanReadable(num);
 
+        regcalc_resizeBinInput();
         regcalc_updateAllBitFields();
     }
 
@@ -1559,6 +1585,7 @@
             btn.value = bitVal;
             btn.style.color = (bitVal === '1') ? 'Red' : 'Black';
         }
+        regcalc_resizeBinInput();
         regcalc_updateAllBitFields();
     }
 
@@ -2253,6 +2280,7 @@
             document.getElementById('regcalc_' + id).value = "0";
             document.getElementById('regcalc_' + id).style.color = "Black"
         }
+        regcalc_resizeBinInput();
     }
 
     function regcalc_window_onload() {
@@ -2260,9 +2288,14 @@
         document.getElementById("regcalc_bin").value = "";
         document.getElementById("regcalc_dec").value = "";
         regcalc_refreshBitFieldButtons();
+        regcalc_resizeBinInput();
         regcalc_resizeCalcInput();
     }
     window.onload = regcalc_window_onload;
+    window.addEventListener('resize', regcalc_resizeBinInput);
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', regcalc_resizeBinInput);
+    }
     </script>
     <!-- END RegCalc -->
 
