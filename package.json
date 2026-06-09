@@ -9,5 +9,7 @@
     "deploy:cloudflare": "npm run build && npx wrangler deploy",
     "deploy:pages": "npm run build && npx wrangler pages deploy dist"
   },
-  "devDependencies": {}
+  "dependencies": {
+    "mathjs": "^15.2.0"
+  }
 }

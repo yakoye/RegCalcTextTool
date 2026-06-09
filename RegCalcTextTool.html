@@ -1351,7 +1351,9 @@
 2026.06.07  v0.20  RegCalc 计算输入支持三行自适应
 2026.06.07  v0.21  放宽 RegCalc 表达式限制并取消 128 位截断
 2026.06.07  v0.22  修改界面为英文，提示中文英文
-2026.06.09  v0.23  修复 RegCalc 精确小数计算，Time 增加时间转换联动</pre>
+2026.06.09  v0.23  修复 RegCalc 精确小数计算，Time 增加时间转换联动
+2026.06.09  v0.24  RegCalc 小数表达式改用 mathjs 计算
+2026.06.09  v0.25  RegCalc 计算输入支持 × ÷ 和全角运算符</pre>
             </div>
 
             <div class="tool-section">
@@ -1403,11 +1405,14 @@
 2026.06.07  v0.20  RegCalc calculation input now supports three-line auto-resizing
 2026.06.07  v0.21  Relaxed RegCalc expression restrictions and removed 128-bit truncation
 2026.06.07  v0.22  Updated the UI to English and added bilingual Chinese-English tooltips
-2026.06.09  v0.23  Fixed exact decimal calculation in RegCalc, added linked time conversion in Time</pre>
+2026.06.09  v0.23  Fixed exact decimal calculation in RegCalc, added linked time conversion in Time
+2026.06.09  v0.24  Switched RegCalc decimal expressions to mathjs
+2026.06.09  v0.25  Added RegCalc support for ×, ÷, and full-width operators</pre>
             </div>
         </div>
     </div>
 
+    <script src="vendor/mathjs/math.js?v=0.25"></script>
     <script>
         // Tab切换
         const tabs = document.querySelectorAll('.tab');
@@ -1967,6 +1972,7 @@
     const REGCALC_MAX_SHIFT_BITS = 4096n;
     const REGCALC_MAX_POWER_EXPONENT = 1024n;
     const REGCALC_MAX_REGISTER_VALUE = 0xFFFFFFFFFFFFFFFFn;
+    let regcalc_g_mathInstance = null;
 
     function regcalc_resizeCalcInput() {
         const input = document.getElementById('regcalc_calcInput');
@@ -2046,179 +2052,53 @@
         return String(value);
     }
 
-    function regcalc_bigIntAbs(value) {
-        return value < 0n ? -value : value;
+    function regcalc_normalizeExpression(input) {
+        return input
+            .trim()
+            .replace(/[＋﹢]/g, '+')
+            .replace(/[－−﹣]/g, '-')
+            .replace(/[×✕✖＊]/g, '*')
+            .replace(/[÷／]/g, '/')
+            .replace(/[％﹪]/g, '%')
+            .replace(/[\s_ULul]+/g, '');
     }
 
-    function regcalc_bigIntGcd(a, b) {
-        a = regcalc_bigIntAbs(a);
-        b = regcalc_bigIntAbs(b);
-        while (b !== 0n) {
-            const next = a % b;
-            a = b;
-            b = next;
+    function regcalc_getMathInstance() {
+        if (!window.math || typeof window.math.evaluate !== 'function') {
+            throw new Error("mathjs未加载，无法计算小数表达式");
         }
-        return a || 1n;
-    }
 
-    function regcalc_fraction(numerator, denominator = 1n) {
-        if (denominator === 0n) throw new Error("除数不能为0");
-        if (denominator < 0n) {
-            numerator = -numerator;
-            denominator = -denominator;
+        if (!regcalc_g_mathInstance) {
+            if (typeof window.math.create === 'function' && window.math.all) {
+                regcalc_g_mathInstance = window.math.create(window.math.all, {
+                    number: 'BigNumber',
+                    precision: 80
+                });
+            } else {
+                regcalc_g_mathInstance = window.math;
+                if (typeof regcalc_g_mathInstance.config === 'function') {
+                    regcalc_g_mathInstance.config({ number: 'BigNumber', precision: 80 });
+                }
+            }
         }
-        const divisor = regcalc_bigIntGcd(numerator, denominator);
-        return { n: numerator / divisor, d: denominator / divisor };
-    }
 
-    function regcalc_fractionAdd(a, b) {
-        return regcalc_fraction(a.n * b.d + b.n * a.d, a.d * b.d);
-    }
-
-    function regcalc_fractionSub(a, b) {
-        return regcalc_fraction(a.n * b.d - b.n * a.d, a.d * b.d);
-    }
-
-    function regcalc_fractionMul(a, b) {
-        return regcalc_fraction(a.n * b.n, a.d * b.d);
-    }
-
-    function regcalc_fractionDiv(a, b) {
-        return regcalc_fraction(a.n * b.d, a.d * b.n);
-    }
-
-    function regcalc_fractionPow(base, exponent) {
-        if (exponent.d !== 1n || exponent.n < 0n || exponent.n > REGCALC_MAX_POWER_EXPONENT) {
-            throw new Error(`浮点幂指数必须是0到${REGCALC_MAX_POWER_EXPONENT}之间的整数`);
-        }
-        return regcalc_fraction(base.n ** exponent.n, base.d ** exponent.n);
-    }
-
-    function regcalc_parseDecimalLiteral(literal) {
-        const match = literal.match(/^((?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e([+\-]?\d+))?$/i);
-        if (!match) throw new Error("浮点数字格式错误");
-        let [intPart, fracPart = ''] = match[1].split('.');
-        if (intPart === '') intPart = '0';
-        let digits = (intPart + fracPart).replace(/^0+(?=\d)/, '');
-        if (digits === '') digits = '0';
-        let scale = fracPart.length;
-        const exponent = match[2] ? Number(match[2]) : 0;
-        if (!Number.isSafeInteger(exponent) || Math.abs(exponent) > 1024) {
-            throw new Error("科学计数法指数过大");
-        }
-        scale -= exponent;
-        if (scale < 0) {
-            digits += '0'.repeat(-scale);
-            scale = 0;
-        }
-        return regcalc_fraction(BigInt(digits), 10n ** BigInt(scale));
-    }
-
-    function regcalc_formatFraction(value) {
-        if (value.n === 0n) return '0';
-        const sign = value.n < 0n ? '-' : '';
-        let numerator = regcalc_bigIntAbs(value.n);
-        let denominator = value.d;
-        const integerPart = numerator / denominator;
-        let remainder = numerator % denominator;
-        if (remainder === 0n) return sign + integerPart.toString();
-
-        let finiteDenominator = denominator;
-        while (finiteDenominator % 2n === 0n) finiteDenominator /= 2n;
-        while (finiteDenominator % 5n === 0n) finiteDenominator /= 5n;
-        const maxDigits = finiteDenominator === 1n ? 1024 : 24;
-        let decimal = '';
-        for (let i = 0; remainder !== 0n && i < maxDigits; i++) {
-            remainder *= 10n;
-            decimal += (remainder / denominator).toString();
-            remainder %= denominator;
-        }
-        decimal = decimal.replace(/0+$/, '');
-        return sign + integerPart.toString() + (decimal ? '.' + decimal : '');
+        return regcalc_g_mathInstance;
     }
 
     function regcalc_calculateFloat(rawInput) {
-        if (!/^[\d.eE()+\-*/\s]+$/.test(rawInput)) {
-            throw new Error("浮点计算只支持数字、小数点、科学计数法和 + - * / ()");
+        if (!/^[\d.eE()+\-*/%\s]+$/.test(rawInput)) {
+            throw new Error("浮点计算只支持数字、小数点、科学计数法和 + - * / % ()");
         }
 
-        let pos = 0;
-        const input = rawInput;
-
-        function peek() {
-            return input[pos];
+        const mathInstance = regcalc_getMathInstance();
+        const result = mathInstance.evaluate(rawInput);
+        if (!mathInstance.isBigNumber(result) || !result.isFinite()) {
+            throw new Error("浮点计算结果无效");
         }
 
-        function consume(char) {
-            if (input[pos] === char) {
-                pos++;
-                return true;
-            }
-            return false;
-        }
-
-        function parseExpression() {
-            let value = parseTerm();
-            while (true) {
-                if (consume('+')) value = regcalc_fractionAdd(value, parseTerm());
-                else if (consume('-')) value = regcalc_fractionSub(value, parseTerm());
-                else break;
-            }
-            return value;
-        }
-
-        function parseTerm() {
-            let value = parsePower();
-            while (true) {
-                if (consume('*')) {
-                    if (consume('*')) {
-                        pos -= 2;
-                        break;
-                    }
-                    value = regcalc_fractionMul(value, parsePower());
-                } else if (consume('/')) {
-                    value = regcalc_fractionDiv(value, parsePower());
-                } else {
-                    break;
-                }
-            }
-            return value;
-        }
-
-        function parsePower() {
-            let value = parseUnary();
-            if (input.slice(pos, pos + 2) === '**') {
-                pos += 2;
-                value = regcalc_fractionPow(value, parseUnary());
-            }
-            return value;
-        }
-
-        function parseUnary() {
-            if (consume('+')) return parseUnary();
-            if (consume('-')) {
-                const value = parseUnary();
-                return regcalc_fraction(-value.n, value.d);
-            }
-            return parsePrimary();
-        }
-
-        function parsePrimary() {
-            if (consume('(')) {
-                const value = parseExpression();
-                if (!consume(')')) throw new Error("括号不匹配");
-                return value;
-            }
-            const rest = input.slice(pos);
-            const match = rest.match(/^((?:\d+(?:\.\d*)?)|(?:\.\d+))(?:e[+\-]?\d+)?/i);
-            if (!match) throw new Error("表达式格式错误");
-            pos += match[0].length;
-            return regcalc_parseDecimalLiteral(match[0]);
-        }
-
-        const result = parseExpression();
-        if (pos !== input.length) throw new Error("表达式格式错误");
-        return regcalc_formatFraction(result);
+        return mathInstance
+            .format(result, { notation: 'fixed', precision: 80 })
+            .replace(/(?:\.(\d*?[1-9])?)0+$/, (_, digits = '') => digits ? `.${digits}` : '');
     }
 
     function regcalc_parseIntegerLiteral(literal) {
@@ -2231,7 +2111,7 @@
         const inputElement = document.getElementById('regcalc_calcInput');
 
         try {
-            const rawInput = inputElement.value.trim().replace(/[\s_ULul]+/g, '');
+            const rawInput = regcalc_normalizeExpression(inputElement.value);
             regcalc_g_floatResult = null;
             if (!rawInput) { document.getElementById('regcalc_calcResult').value = ''; return; }
             if (rawInput.length > REGCALC_MAX_EXPR_LENGTH) {
@@ -2255,7 +2135,7 @@
                 return '';
             });
 
-            const hasIntegerOnlyOperator = /(<<|>>|[%&|^~])/.test(rawInput);
+            const hasIntegerOnlyOperator = /(<<|>>|[&|^~])/.test(rawInput);
             const hasBaseLiteral = /0[xb]/i.test(rawInput);
             const shouldUseFloat = !hasIntegerOnlyOperator && !hasBaseLiteral && /(?:\d\.\d|\d\.|\.\d|\/|e[+\-]?\d)/i.test(rawInput);
 
