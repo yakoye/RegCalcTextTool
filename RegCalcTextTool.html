@@ -405,6 +405,15 @@
             font-weight: 700;
             margin-bottom: 8px;
         }
+        .tool-note {
+            margin: -4px 0 8px;
+            padding: 7px 8px;
+            border: 1px solid #d8e6d8;
+            background: #f5fbf5;
+            color: #2f5f38;
+            font-size: 13px;
+            line-height: 1.45;
+        }
         .tool-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -1167,6 +1176,7 @@
     <div class="tab-content" id="password">
         <div class="tool-panel" id="password-ui">
             <h3>密码生成器</h3>
+            <div class="tool-note">所有密码只在当前浏览器本地生成，不会保存或上传任何内容。生成的密码不会写入本地存储；仅“指定符号”和“额外排除字符”会保存在本机浏览器，方便下次使用。</div>
             <div class="tool-section">
                 <div class="tool-grid">
                     <label class="tool-field">长度
@@ -1355,7 +1365,8 @@
 2026.06.09  v0.23  修复 RegCalc 精确小数计算，Time 增加时间转换联动
 2026.06.09  v0.24  RegCalc 小数表达式改用 mathjs 计算
 2026.06.09  v0.25  RegCalc 计算输入支持 × ÷ 和全角运算符
-2026.06.09  v0.26  Bin(2) 输入框改为按内容动态高度</pre>
+2026.06.09  v0.26  Bin(2) 输入框改为按内容动态高度
+2026.06.09  v0.27  密码生成器增加本地生成与不上传说明</pre>
             </div>
 
             <div class="tool-section">
@@ -1410,7 +1421,8 @@
 2026.06.09  v0.23  Fixed exact decimal calculation in RegCalc, added linked time conversion in Time
 2026.06.09  v0.24  Switched RegCalc decimal expressions to mathjs
 2026.06.09  v0.25  Added RegCalc support for ×, ÷, and full-width operators
-2026.06.09  v0.26  Made the Bin(2) input height adjust to its content</pre>
+2026.06.09  v0.26  Made the Bin(2) input height adjust to its content
+2026.06.09  v0.27  Added local-only and no-upload notice to Password Generator</pre>
             </div>
         </div>
     </div>
