@@ -6,7 +6,7 @@ RegCalcTextTool 是一个静态网页工具，主要包含：
 - `reg_tools_cal-big-to-small_63-0_64bit.html`：旧版寄存器计算工具，保留但部署时不作为主入口
 - `TextFormatter.html`：旧版文本处理工具，保留但部署时不作为主入口
 
-仓库根目录的 `index.html` 会自动跳转到 `RegCalcTextTool.html`，因此 Cloudflare Pages 和 GitHub Pages 访问站点根路径时都能直接进入主工具。
+仓库根目录的 `index.html` 会无提示进入 `RegCalcTextTool.html`，因此 Cloudflare Pages 和 GitHub Pages 访问站点根路径时都能直接进入主工具。
 
 ## 在线使用
 
@@ -134,6 +134,7 @@ npm run build
 - 2026.06.09 v0.30 Time 标签与说明统一改为 DateTime
 - 2026.06.09 v0.31 TextFormatter 按钮按分类折叠为下拉组，新增颜色区隔、悬浮示例提示与清空所有
 - 2026.06.10 v0.32 外部工具增加 Unix 时间戳与万年历，首页改为无提示直接进入
+- 2026.06.10 v0.33 校准 README 入口说明并复核在线链接
 
 ## Refer
 
