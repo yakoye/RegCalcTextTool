@@ -82,6 +82,10 @@
             background: #f7fbcc;
             border-color: #22ca24;
         }
+        #hash_pick_file,
+        #hash_calc_selected {
+            font-weight: 700;
+        }
         button:disabled {
             cursor: default;
             opacity: 0.65;
@@ -103,6 +107,7 @@
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 8px;
             align-items: end;
+            margin-top: 8px;
         }
         .hash-field {
             display: flex;
@@ -128,12 +133,19 @@
             border: 1px solid #d8d8d8;
             background: #fff;
         }
-        details.hash-group summary {
+        details.hash-group summary,
+        details.hash-pref-details summary {
             padding: 7px 8px;
             cursor: pointer;
             font-weight: 700;
             background: #f5f5f5;
             user-select: none;
+        }
+        details.hash-pref-details {
+            padding: 0;
+        }
+        details.hash-pref-details > .hash-pref-body {
+            padding: 10px;
         }
         .hash-group-body {
             display: grid;
@@ -290,49 +302,57 @@
             <div class="tool-actions">
                 <button type="button" id="hash_pick_file">选择文件</button>
                 <button type="button" id="hash_clear">清空</button>
+            </div>
+            <div id="hash_file_info" class="file-info">当前来源：文本</div>
+        </div>
+
+        <details class="tool-section hash-pref-details" id="hash_pref_details">
+            <summary>偏好与 Key</summary>
+            <div class="hash-pref-body">
+                <div class="hash-prefs">
+                    <label class="hash-field">输出格式
+                        <select id="hash_output_format">
+                            <option value="hex-lower">lowercase hex</option>
+                            <option value="hex-upper">uppercase hex</option>
+                            <option value="base64">base64</option>
+                        </select>
+                    </label>
+                    <label class="hash-field">HMAC Key 模式
+                        <select id="hash_hmac_key_mode">
+                            <option value="text">普通文本</option>
+                            <option value="hex">Hex</option>
+                        </select>
+                    </label>
+                </div>
+                <div id="hash_key_area" class="hash-key-area">
+                    <label class="hash-field">HMAC / CMAC Key（不会保存）
+                        <input type="text" id="hash_hmac_key" placeholder="勾选 HMAC/CMAC 算法时填写 Key">
+                    </label>
+                </div>
+                <div class="tool-actions">
+                    <button type="button" id="hash_select_all">全选</button>
+                    <button type="button" id="hash_select_none">取消全选</button>
+                    <button type="button" id="hash_select_common">只选常用算法</button>
+                    <button type="button" id="hash_restore_default">恢复默认选择</button>
+                    <button type="button" id="hash_clear_prefs">清除本地偏好</button>
+                </div>
+            </div>
+        </details>
+
+        <div class="tool-section">
+            <div class="tool-section-title">算法选择</div>
+            <div id="hash_groups" class="hash-groups"></div>
+        </div>
+
+        <div class="tool-section">
+            <div class="tool-section-title">计算与导出</div>
+            <div class="tool-actions">
                 <button type="button" id="hash_calc_selected">计算选中算法</button>
                 <button type="button" id="hash_calc_all">计算所有算法</button>
                 <button type="button" id="hash_copy_all">复制全部结果</button>
                 <button type="button" id="hash_export_txt">导出 TXT</button>
                 <button type="button" id="hash_export_json">导出 JSON</button>
             </div>
-            <div id="hash_file_info" class="file-info">当前来源：文本</div>
-        </div>
-
-        <div class="tool-section">
-            <div class="tool-section-title">偏好与 Key</div>
-            <div class="hash-prefs">
-                <label class="hash-field">输出格式
-                    <select id="hash_output_format">
-                        <option value="hex-lower">lowercase hex</option>
-                        <option value="hex-upper">uppercase hex</option>
-                        <option value="base64">base64</option>
-                    </select>
-                </label>
-                <label class="hash-field">HMAC Key 模式
-                    <select id="hash_hmac_key_mode">
-                        <option value="text">普通文本</option>
-                        <option value="hex">Hex</option>
-                    </select>
-                </label>
-            </div>
-            <div id="hash_key_area" class="hash-key-area">
-                <label class="hash-field">HMAC / CMAC Key（不会保存）
-                    <input type="text" id="hash_hmac_key" placeholder="勾选 HMAC/CMAC 算法时填写 Key">
-                </label>
-            </div>
-            <div class="tool-actions">
-                <button type="button" id="hash_select_all">全选</button>
-                <button type="button" id="hash_select_none">取消全选</button>
-                <button type="button" id="hash_select_common">只选常用算法</button>
-                <button type="button" id="hash_restore_default">恢复默认选择</button>
-                <button type="button" id="hash_clear_prefs">清除本地偏好</button>
-            </div>
-        </div>
-
-        <div class="tool-section">
-            <div class="tool-section-title">算法选择</div>
-            <div id="hash_groups" class="hash-groups"></div>
         </div>
 
         <div class="tool-section">
@@ -360,9 +380,9 @@
     const HASH_TOOL_SETTINGS_KEY = "toolbox.hash.settings.v1";
     const HASH_DEFAULT_SELECTED = ["md5", "sha1", "sha256", "sha384", "sha512", "sha3-256", "blake2b-512", "blake3", "sm3", "crc32"];
     const HASH_DEFAULT_EXPANDED = {
-        common: true,
+        common: false,
         hmac: false,
-        checksum: true,
+        checksum: false,
         fast: false,
         password: false,
         fuzzy: false,
@@ -445,7 +465,7 @@
         { id: "compare-ctph", name: "Compare CTPH hashes", group: "fuzzy", type: "fuzzy", supported: false, reason: "第一版占位" },
 
         { id: "md2", name: "MD2", group: "legacy", type: "legacy", supported: false, reason: "历史算法，暂不支持" },
-        { id: "md4", name: "MD4", group: "legacy", type: "legacy", supported: false, reason: "历史算法，第一版占位" },
+        { id: "md4", name: "MD4", group: "legacy", type: "legacy", supported: true, create: "createMD4", reason: "历史算法，不建议用于安全用途" },
         { id: "md6", name: "MD6", group: "legacy", type: "legacy", supported: false, reason: "历史算法，暂不支持" },
         { id: "sha0", name: "SHA0", group: "legacy", type: "legacy", supported: false, reason: "历史算法，暂不支持" },
         { id: "sha1-legacy", name: "SHA1", group: "legacy", type: "legacy", supported: false, reason: "请使用常用 Hash 中的 SHA-1；不建议用于安全用途" },
