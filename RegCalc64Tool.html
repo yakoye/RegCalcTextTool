@@ -76,7 +76,7 @@
         }
         #regcalc-ui table {
             --regcalc-field-width: 280px;
-            --regcalc-gap: 4px;
+            --regcalc-gap: 3px;
             font-size: 14px;
             line-height: 1.45;
         }
@@ -170,7 +170,7 @@
             width: var(--regcalc-field-width) !important;
         }
         #regcalc-ui #regcalc_human {
-            width: 80px !important;
+            width: 66px !important;
         }
         #regcalc-ui .regcalc-bit-range {
             width: 54px !important;
@@ -186,12 +186,14 @@
         }
         #regcalc-ui .regcalc-bitfield-buttons button {
             min-width: 24px;
-            padding: 3px 6px;
+            padding: 3px 5px;
         }
         #regcalc-ui #regcalc_bin {
             width: var(--regcalc-field-width) !important;
+            font-size: 13px !important;
+            line-height: 1.25 !important;
             min-height: calc(1.35em + 8px);
-            max-height: calc((1.35em * 3) + 10px);
+            max-height: calc((1.25em * 2) + 12px);
             resize: none;
             white-space: pre-wrap;
             overflow-x: hidden;
@@ -1052,7 +1054,7 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
         }
 
         #regcalc-ui .regcalc-bit-grid .regcalc-bit-toggle {
-            width: 100% !important;
+            width: calc(100% - 3px) !important;
             min-width: 0 !important;
             height: 21px !important;
             min-height: 21px !important;
@@ -1115,8 +1117,14 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
         #regcalc-ui table input[type="button"],
         #regcalc-ui table button {
             min-height: 27px;
-            padding: 4px 9px !important;
+            padding: 4px 7px !important;
             font-weight: 700;
+        }
+
+        #regcalc-ui .regcalc-actions button {
+            min-width: 27px;
+            padding-left: 7px !important;
+            padding-right: 7px !important;
         }
 
         #regcalc-ui table input[type="text"]:focus,
@@ -1198,6 +1206,7 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
             }
 
             #regcalc-ui .regcalc-bit-grid .regcalc-bit-toggle {
+                width: calc(100% - 2px) !important;
                 height: 22px !important;
                 min-height: 22px !important;
                 border-radius: 7px !important;
@@ -1613,12 +1622,15 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', regc
             (parseFloat(style.borderTopWidth) || 0) +
             (parseFloat(style.borderBottomWidth) || 0);
         const oneLineHeight = decInput?.offsetHeight || Math.ceil(lineHeight + verticalPadding);
-        const maxHeight = Math.ceil(lineHeight * 3 + verticalPadding);
+        const maxHeight = Math.ceil(lineHeight * 2 + verticalPadding + 2);
 
         input.style.height = `${oneLineHeight}px`;
-        const nextHeight = Math.max(oneLineHeight, Math.min(input.scrollHeight, maxHeight));
+        const needsTwoLines = input.value.replace(/\s+/g, '').length > 32;
+        const nextHeight = needsTwoLines
+            ? maxHeight
+            : Math.max(oneLineHeight, Math.min(input.scrollHeight, maxHeight));
         input.style.height = `${nextHeight}px`;
-        input.style.overflowY = input.scrollHeight > maxHeight ? 'auto' : 'hidden';
+        input.style.overflowY = input.scrollHeight > maxHeight + 1 ? 'auto' : 'hidden';
     }
 
     function regcalc_clear_bin_dec_hex() {
@@ -1892,7 +1904,7 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', regc
         const tr = document.createElement('tr');
         tr.className = 'regcalc-bitfield-row';
         tr.innerHTML = `
-            <td class="regcalc-label">位域编辑：</td>
+            <td class="regcalc-label">Bit Field：</td>
             <td class="regcalc-control">
                 <input type="text" class="regcalc-bit-range" placeholder="14:12" value="${range}" oninput="regcalc_handleBitFieldRangeChange(this)">
                 <input type="text" class="regcalc-sub-hex" placeholder="0x0" oninput="regcalc_updateFromBitField(this, 'hex')">

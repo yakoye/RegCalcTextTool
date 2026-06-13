@@ -530,11 +530,16 @@
             min-width: 64px;
             display: flex;
             align-items: center;
+            justify-content: flex-start;
             gap: 3px;
             white-space: nowrap;
             font-size: 13px;
         }
         #timecalc-ui .timecalc-convert-toggle input {
+            width: 14px;
+            min-width: 14px;
+            min-height: 14px;
+            flex: 0 0 14px;
             margin: 0;
         }
         #timecalc-ui .timecalc-convert-text {
@@ -542,15 +547,19 @@
         }
         @media (max-width: 420px) {
             #timecalc-ui .timecalc-base-row {
-                grid-template-columns: minmax(0, max-content) 44px;
+                grid-template-columns: minmax(0, 1fr) auto;
                 gap: 4px;
             }
+            #timecalc-ui .timecalc-base-row .timecalc-inline-field {
+                grid-template-columns: 76px minmax(0, 1fr);
+            }
             #timecalc-ui .timecalc-convert-toggle {
-                min-width: 44px;
+                min-width: 54px;
                 white-space: normal;
             }
             #timecalc-ui .timecalc-convert-text {
-                width: 2em;
+                width: 2.2em;
+                text-align: center;
             }
         }
         #password-ui .password-list {

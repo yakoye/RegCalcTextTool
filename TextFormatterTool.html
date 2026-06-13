@@ -432,8 +432,14 @@
             white-space: nowrap;
         }
         #textconvert-ui .sequence-section .tool-section-title {
-
+            font-size: 13px !important;
             margin-bottom: 6px;
+        }
+        #textconvert-ui .sequence-section,
+        #textconvert-ui .sequence-section button,
+        #textconvert-ui .sequence-section input,
+        #textconvert-ui .sequence-section select {
+            font-size: 13px;
         }
         #textconvert-ui .sequence-grid {
             display: flex;
@@ -1010,8 +1016,8 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
                 </div>
 
 
-                <div class="tool-section sequence-section">
-                    <div class="tool-section-title">序列号码生成</div>
+                <details class="tool-section sequence-section">
+                    <summary class="tool-section-title">序列号码生成</summary>
                     <div class="tool-grid sequence-grid">
                         <label class="tool-field sequence-range-field">开始
                             <input type="number" id="sequence_start" value="1">
@@ -1048,7 +1054,7 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
                             <button type="button" onclick="textconvert_generateSequence()">生成到结果</button>
                         </div>
                     </div>
-                </div>
+                </details>
             </div>
             <div class="container">
                 <textarea id="textconvert_input" placeholder="输入原文..." autocomplete="off"></textarea>

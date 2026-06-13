@@ -213,6 +213,42 @@ details.hash-pref-details summary {
   color: var(--text-muted) !important;
 }
 
+#regcalc-ui .regcalc-title-table td,
+#textconvert-ui.tool-panel h3,
+#timecalc-ui.tool-panel h3,
+#password-ui.tool-panel h3,
+#hash-ui.tool-panel h3,
+#externallinks-ui.tool-panel h3,
+#about-ui.tool-panel h3,
+.tool-panel h3 {
+  font-size: 16px !important;
+  line-height: 1.25 !important;
+  font-weight: 800 !important;
+  margin: 6px 0 10px !important;
+  text-align: center !important;
+}
+
+#regcalc-ui .regcalc-title-table td {
+  font-size: 15px !important;
+}
+
+#about-ui.tool-panel h4,
+.tool-panel h4,
+.tool-section-title,
+details.tool-section > summary {
+  font-size: 14px !important;
+  line-height: 1.3 !important;
+  font-weight: 700 !important;
+}
+
+#about-ui.tool-panel h5,
+.tool-panel h5,
+.accordion-title {
+  font-size: 13px !important;
+  line-height: 1.3 !important;
+  font-weight: 700 !important;
+}
+
 button,
 input,
 textarea,
@@ -296,6 +332,10 @@ button:active {
 
 input[type="checkbox"] {
   accent-color: var(--primary);
+  width: auto !important;
+  min-width: 14px;
+  min-height: 14px;
+  flex: 0 0 auto;
 }
 
 .tool-output {
@@ -529,6 +569,45 @@ details[open] > summary.accordion-header .accordion-arrow {
     border-radius: 22px;
   }
 
+  #regcalc-ui .regcalc-title-table td,
+  #textconvert-ui.tool-panel h3,
+  #timecalc-ui.tool-panel h3,
+  #password-ui.tool-panel h3,
+  #hash-ui.tool-panel h3,
+  #externallinks-ui.tool-panel h3,
+  #about-ui.tool-panel h3,
+  .tool-panel h3 {
+    font-size: 15px !important;
+  }
+
+  #regcalc-ui .regcalc-title-table td {
+    font-size: 15px !important;
+  }
+
+  #about-ui.tool-panel h4,
+  .tool-panel h4,
+  .tool-section-title,
+  details.tool-section > summary {
+    font-size: 14px !important;
+  }
+
+  #about-ui.tool-panel h5,
+  .tool-panel h5,
+  .accordion-title {
+    font-size: 13px !important;
+  }
+
+  #textconvert-ui .tc-dropdown.tc-open,
+  #textconvert-ui .tc-dropdown.tc-open button,
+  #textconvert-ui .tc-dropdown-menu,
+  #textconvert-ui .tc-dropdown-menu button {
+    font-size: 13px !important;
+  }
+
+  button {
+    font-size: 13px !important;
+  }
+
   .tool-actions {
     gap: 7px !important;
   }
@@ -537,6 +616,11 @@ details[open] > summary.accordion-header .accordion-arrow {
   textarea,
   select {
     width: 100%;
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    width: auto !important;
   }
 
   .result-value {
