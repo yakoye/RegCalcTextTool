@@ -955,7 +955,7 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
 
             <div class="tool-section">
                 <h4>RegCalcTextTool 工具箱</h4>
-                <p>一个轻量、静态、偏本地运行的开发与文本处理工具箱。当前版本：v0.42。</p>
+                <p>一个轻量、静态、偏本地运行的开发与文本处理工具箱。当前版本：v0.43。</p>
                 <div class="tool-note">包含 RegCalc、TextFormatter、DateTime、Password、Hash、Links 等工具；主入口按需加载各工具页，并在后台预加载以提升切换速度。</div>
                 <h5>功能列表</h5>
                 <ul>
@@ -975,32 +975,66 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
             </div>
 
             <div class="tool-section">
-                <h4>64位寄存器计算（RegCalc）使用说明（快捷键与操作）</h4>
-
-                <h5>1) 输入方式</h5>
+                <h4>工具使用说明</h4>
+                <h5>RegCalc</h5>
                 <ul>
-                    <li>可直接在 Hex / Dec / Bin / Human 任一框输入，其他输入框会自动联动更新。</li>
-                    <li>位按钮可点选 0 / 1 生成数值。</li>
+                    <li>用于 64 位寄存器、位操作、Hex / Dec / Bin 互转和表达式计算。</li>
+                    <li>可直接输入 Hex(16)、Dec(10)、Bin(2) 或 Size，其他字段会自动联动。</li>
+                    <li>点击 64 个 bit 按钮可切换 0 / 1；绿色表示当前 bit 为 1。</li>
+                    <li>Bit Field 可查看或修改指定位域；Shift 可做左右位移。</li>
+                    <li>Expr 支持常见表达式，Result 可切换 16 / 10 / 2 进制显示。</li>
+                    <li>Alt + ↑：结果同步到 Hex；Alt + ↓：Hex 同步到表达式输入。</li>
                 </ul>
 
-                <h5>2) 计算器</h5>
+                <h5>TextFormatter</h5>
                 <ul>
-                    <li>在“计算”输入框中输入表达式，例如：0x43+10、(0x100>>4)|3。</li>
-                    <li>按回车键执行计算。</li>
+                    <li>用于文本格式化、编码转换、大小写转换、序列生成和常见文本处理。</li>
+                    <li>在原文框输入内容，选择对应操作后，结果会显示在结果框。</li>
+                    <li>支持 JSON、URL、Base64、十六进制分组、大小端、0x 添加/去除等处理。</li>
+                    <li>序列号码生成可设置位数、数量、顺序和分隔方式。</li>
                 </ul>
 
-                <h5>3) 快捷键</h5>
+                <h5>DateTime</h5>
                 <ul>
-                    <li>Alt + ↑：结果 → Hex，并联动刷新。</li>
-                    <li>Alt + ↓：Hex → 计算输入框。</li>
+                    <li>用于计算两个日期时间之间的间隔，也可计算未来或过去时间。</li>
+                    <li>开始时间和结束时间可直接填写，也可以一键设为当前时间。</li>
+                    <li>基准时间配合年、月、天、时、分、秒，可计算目标时间或精确差值。</li>
+                    <li>时间转换模式用于把输入的时间跨度换算到其他单位。</li>
                 </ul>
 
-                <h5>4) 双击复制</h5>
+                <h5>Password</h5>
                 <ul>
-                    <li>任意文本框或文本域双击，可复制该框内容到剪贴板。</li>
+                    <li>用于本地生成随机密码，默认生成多组结果。</li>
+                    <li>可设置长度、数量、字符类型、指定符号和额外排除字符。</li>
+                    <li>每一行密码可点击复制，桌面双击或手机长按/编辑按钮可编辑。</li>
+                    <li>生成的密码不会上传，也不会保存到本地偏好。</li>
                 </ul>
 
-                <h4>发布记录</h4>
+                <h5>Hash</h5>
+                <ul>
+                    <li>用于计算文本或文件的 Hash、Checksum、HMAC 等结果。</li>
+                    <li>可输入文本、拖入文件或点击选择文件，结果默认以小写 Hex 显示。</li>
+                    <li>算法选择支持两级折叠、常用算法、全选、取消全选和偏好保存。</li>
+                    <li>支持复制单个结果、复制全部结果，并导出 TXT 或 JSON。</li>
+                    <li>页面只保存算法选择等偏好，不保存原文、文件内容、HMAC key 或密码。</li>
+                </ul>
+
+                <h5>Links</h5>
+                <ul>
+                    <li>收集常用开发、文本、编码、图像处理、时间日历等外部工具链接。</li>
+                    <li>可按分类浏览，也可以使用搜索过滤快速定位工具。</li>
+                    <li>外部链接会在新标签页打开，方便和本工具箱配合使用。</li>
+                </ul>
+
+                <h5>About / Info</h5>
+                <ul>
+                    <li>用于查看工具箱说明、安全提示、各工具简要用法和中文修改记录。</li>
+                    <li>后续新增工具或调整部署方式时，也会在这里记录版本变化。</li>
+                </ul>
+            </div>
+
+            <div class="tool-section">
+                <h4>中文修改记录</h4>
                 <pre class="about-release-note">2025.07.25  v0.1   初版
 2026.03.28  v0.2   修改格式
 2026.06.06  v0.3   适配移动端显示，优化字体与 RegCalc 表单布局
@@ -1042,79 +1076,8 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
 2026.06.13  v0.39  主入口先快速打开 RegCalc，2 秒后后台预加载其他工具页
 2026.06.13  v0.40  统一现代浅色工具箱 UI，增强 Hash、Password、DateTime、Links 和 About 体验
 2026.06.13  v0.41  Hash 算法选择改为两级折叠，优化标题对齐、数量统计和状态保存
-2026.06.13  v0.42  RegCalc 页面升级为冷白磨砂玻璃风，并修复 bit 按钮列宽一致性</pre>
-
-            </div>
-
-            <div class="tool-section">
-                <h4>64-bit Register Calculator (RegCalc) User Guide</h4>
-
-                <h5>1) Input</h5>
-                <ul>
-                    <li>You can enter a value in any Hex / Dec / Bin / Human field. Other fields will update automatically.</li>
-                    <li>You can click bit buttons to set 0 / 1 and generate the value.</li>
-                </ul>
-
-                <h5>2) Calculator</h5>
-                <ul>
-                    <li>Enter an expression in the calculation input box, for example: 0x43+10, (0x100>>4)|3.</li>
-                    <li>Press Enter to calculate.</li>
-                </ul>
-
-                <h5>3) Shortcuts</h5>
-                <ul>
-                    <li>Alt + ↑: Result → Hex, then update related fields automatically.</li>
-                    <li>Alt + ↓: Hex → calculation input box.</li>
-                </ul>
-
-                <h5>4) Double-click to Copy</h5>
-                <ul>
-                    <li>Double-click any input box or text area to copy its content to the clipboard.</li>
-                </ul>
-
-                <h4>Release Notes</h4>
-                <pre class="about-release-note">2025.07.25  v0.1   Initial release
-2026.03.28  v0.2   Updated format
-2026.06.06  v0.3   Added mobile display support, optimized fonts and RegCalc form layout
-2026.06.06  v0.4   Optimized bit button matrix group spacing, added dynamic add/delete support for bit-field rows
-2026.06.06  v0.5   Added floating-point expression support to the calculator
-2026.06.06  v0.6   Optimized TextFormatter mobile button layout, added common text processing features
-2026.06.07  v0.7   Enhanced TextFormatter support for hex grouping, endian conversion, URL, Base64, and JSON processing
-2026.06.07  v0.8   Added sequence generator, DateTime calculator, password generator, and external tool links
-2026.06.07  v0.9   Added image processing links to external tools
-2026.06.07  v0.10  Adjusted TextFormatter sequence section position and reduced tool page width
-2026.06.07  v0.11  Password generator now remembers specified symbols and extra excluded characters
-2026.06.07  v0.12  Added Awesome-tools list to external tools
-2026.06.07  v0.13  Optimized category display inside the Awesome-tools list
-2026.06.07  v0.14  Optimized sequence number generator layout and digit limit
-2026.06.07  v0.15  Fixed TextFormatter text box height on narrow screens
-2026.06.07  v0.16  Changed TextFormatter operation area to a scrollable panel
-2026.06.07  v0.17  Optimized short tab names on mobile
-2026.06.07  v0.18  Adjusted DateTime calculator input layout
-2026.06.07  v0.19  Changed DateTime calculator inputs to same-row layout
-2026.06.07  v0.20  RegCalc calculation input now supports three-line auto-resizing
-2026.06.07  v0.21  Relaxed RegCalc expression restrictions and removed 128-bit truncation
-2026.06.07  v0.22  Updated the UI to English and added bilingual Chinese-English tooltips
-2026.06.09  v0.23  Fixed exact decimal calculation in RegCalc, added linked time conversion in DateTime
-2026.06.09  v0.24  Switched RegCalc decimal expressions to mathjs
-2026.06.09  v0.25  Added RegCalc support for ×, ÷, and full-width operators
-2026.06.09  v0.26  Made the Bin(2) input height adjust to its content
-2026.06.09  v0.27  Added local-only and no-upload notice to Password Generator
-2026.06.09  v0.28  Optimized DateTime base-time and conversion toggle layout
-2026.06.09  v0.29  Added precise DateTime difference from base time to now
-2026.06.09  v0.30  Renamed Time tab and descriptions to DateTime
-2026.06.09  v0.31  Collapsed TextFormatter buttons into colored dropdown groups with hover examples and clear-all
-2026.06.10  v0.32  Added Unix timestamp and calendar links, made the home entry silent
-2026.06.10  v0.33  Aligned README entry wording and rechecked online links
-2026.06.13  v0.34  Improved password result list, copy, and edit interactions
-2026.06.13  v0.35  Added standalone Hash tool page with lazy loading
-2026.06.13  v0.36  Split tab tools into standalone HTML pages and changed the main entry to a lazy-loading shell
-2026.06.13  v0.37  Refined Hash tool folding layout, moved action buttons, and added MD4 calculation support
-2026.06.13  v0.38  Moved Hash file and clear actions into the input section header
-2026.06.13  v0.39  Open RegCalc first, then preload inactive tool pages after 2 seconds
-2026.06.13  v0.40  Unified the modern light toolbox UI and improved Hash, Password, DateTime, Links, and About
-2026.06.13  v0.41  Changed Hash algorithm selection to a two-level accordion with aligned headers, counts, and saved state
-2026.06.13  v0.42  Restyled RegCalc as a cool-white glass calculator and fixed consistent bit-button column widths</pre>
+2026.06.13  v0.42  RegCalc 页面升级为冷白磨砂玻璃风，并修复 bit 按钮列宽一致性
+2026.06.13  v0.43  收紧 RegCalc 桌面布局，统一全站玻璃面板，并补充中文使用说明</pre>
             </div>
         </div>
     </div>

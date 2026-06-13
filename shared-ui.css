@@ -1,17 +1,18 @@
 :root {
-  --bg: #f6f8f7;
-  --card-bg: #ffffff;
-  --text-main: #1f2937;
-  --text-muted: #6b7280;
-  --border: #d9e1dc;
+  --bg: #eef3f8;
+  --card-bg: rgba(255, 255, 255, 0.66);
+  --glass-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.82), rgba(248, 251, 255, 0.56));
+  --text-main: #1b2533;
+  --text-muted: #64748b;
+  --border: rgba(203, 213, 225, 0.68);
   --primary: #2f8f57;
   --primary-hover: #27794a;
   --primary-soft: #e8f5ed;
   --focus-ring: rgba(47, 143, 87, 0.18);
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --shadow-soft: 0 4px 18px rgba(15, 23, 42, 0.06);
+  --radius-sm: 10px;
+  --radius-md: 18px;
+  --radius-lg: 28px;
+  --shadow-soft: 0 18px 54px rgba(71, 85, 105, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.82);
   --mono: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
 }
 
@@ -20,24 +21,44 @@
 }
 
 body {
-  background: var(--bg) !important;
+  background:
+    radial-gradient(circle at 16% 8%, rgba(255, 255, 255, 0.92), transparent 31%),
+    radial-gradient(circle at 84% 0%, rgba(224, 232, 244, 0.74), transparent 35%),
+    linear-gradient(145deg, #f7f9fc 0%, #eef3f8 48%, #f9fbfd 100%) !important;
   color: var(--text-main) !important;
   font-family: Inter, "Segoe UI", Arial, "Microsoft YaHei", sans-serif !important;
 }
 
-.tab-bar {
-  background: rgba(255, 255, 255, 0.92) !important;
-  border-bottom: 1px solid var(--border) !important;
-  box-shadow: var(--shadow-soft);
+body.toolbox-shell {
+  min-height: 100vh;
+  padding: 18px 12px 22px;
+}
+
+.toolbox-shell .tab-bar {
+  display: flex !important;
+  width: max-content !important;
+  max-width: calc(100vw - 24px);
+  margin: 0 auto 22px !important;
+  padding: 7px !important;
+  align-items: center !important;
+  gap: 3px !important;
+  overflow-x: auto;
+  background: rgba(255, 255, 255, 0.7) !important;
+  border: 1px solid rgba(203, 213, 225, 0.72) !important;
+  border-radius: 999px !important;
+  box-shadow: 0 18px 44px rgba(71, 85, 105, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
 }
 
 .tab {
   border: 0 !important;
-  border-bottom: 3px solid transparent !important;
+  border-bottom: 0 !important;
   background: transparent !important;
-  color: #374151 !important;
-  border-radius: var(--radius-sm) var(--radius-sm) 0 0 !important;
-  transition: color 0.16s ease, background-color 0.16s ease, border-color 0.16s ease;
+  color: #334155 !important;
+  border-radius: 999px !important;
+  transition: color 0.16s ease, background-color 0.16s ease, box-shadow 0.16s ease;
+  position: relative;
 }
 
 .tab:hover {
@@ -47,13 +68,42 @@ body {
 
 .tab.active {
   background: var(--primary-soft) !important;
-  border-bottom-color: var(--primary) !important;
   color: var(--primary) !important;
   font-weight: 700 !important;
+  box-shadow: 0 6px 18px rgba(47, 143, 87, 0.14);
+}
+
+.tab.active::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  width: 18px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--primary);
+  transform: translateX(-50%);
 }
 
 .tab-content {
   background: transparent !important;
+}
+
+.toolbox-shell .tab-content.active {
+  max-width: 1120px;
+  margin: 0 auto !important;
+  padding: 12px !important;
+  border: 1px solid rgba(203, 213, 225, 0.66) !important;
+  border-radius: var(--radius-lg) !important;
+  background: var(--glass-bg) !important;
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(22px) saturate(1.2);
+  -webkit-backdrop-filter: blur(22px) saturate(1.2);
+}
+
+.toolbox-shell .tool-frame {
+  background: transparent !important;
+  border-radius: 20px;
 }
 
 .tool-panel {
@@ -73,6 +123,8 @@ details.tool-section,
   border: 1px solid var(--border) !important;
   border-radius: var(--radius-md) !important;
   box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(18px) saturate(1.18);
+  -webkit-backdrop-filter: blur(18px) saturate(1.18);
 }
 
 .tool-section {
@@ -107,7 +159,7 @@ select {
 input,
 textarea,
 select {
-  background: #fff !important;
+  background: rgba(255, 255, 255, 0.68) !important;
 }
 
 textarea,
