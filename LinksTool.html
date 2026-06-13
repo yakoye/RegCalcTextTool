@@ -945,11 +945,18 @@
 body { margin: 0; padding: 8px; background: #f8f8f8; }
 .tab-content { display: block !important; margin: 0; border-radius: 0; min-height: auto; }
 </style>
+    <link rel="stylesheet" href="shared-ui.css">
+    <script defer src="shared-ui.js"></script>
 </head>
 <body>
 <div class="tab-content active" id="externallinks">
         <div class="tool-panel" id="externallinks-ui">
             <h3>外部工具链接</h3>
+            <div class="tool-section">
+                <label class="tool-field">搜索链接
+                    <input type="text" id="links_search" placeholder="输入名称、说明或网址关键词">
+                </label>
+            </div>
             <div class="tool-section">
                 <div class="tool-section-title">常用工具站</div>
                 <div class="external-links-grid">
@@ -1059,6 +1066,26 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
     </div>
 
     
+<script>
+window.addEventListener('DOMContentLoaded', function() {
+    const search = document.getElementById('links_search');
+    if (!search) return;
+    search.addEventListener('input', function() {
+        const keyword = search.value.trim().toLowerCase();
+        document.querySelectorAll('#externallinks-ui .tool-section').forEach(section => {
+            if (section.contains(search)) return;
+            let visibleCount = 0;
+            section.querySelectorAll('.external-tool-link').forEach(link => {
+                const text = (link.textContent + ' ' + link.href).toLowerCase();
+                const visible = !keyword || text.includes(keyword);
+                link.style.display = visible ? '' : 'none';
+                if (visible) visibleCount++;
+            });
+            section.style.display = visibleCount ? '' : 'none';
+        });
+    });
+});
+</script>
 
 </body>
 </html>

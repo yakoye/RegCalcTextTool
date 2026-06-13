@@ -308,6 +308,8 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="shared-ui.css">
+    <script defer src="shared-ui.js"></script>
 </head>
 <body>
     <div class="tool-panel" id="hash-ui">
@@ -608,6 +610,10 @@
     }
 
     function hash_showToast(message) {
+        if (window.toolboxToast) {
+            window.toolboxToast(message);
+            return;
+        }
         const toast = document.getElementById("hash_toast");
         toast.textContent = message;
         toast.classList.add("show");
@@ -632,14 +638,28 @@
             const weakNote = group.weak ? '<div class="weak-note">历史或兼容性算法，不建议用于安全用途。</div>' : "";
             const placeholder = hash_groupPlaceholder(group.id);
             const open = hashState.settings.expandedGroups[group.id] ? "open" : "";
-            return `<details class="hash-group" data-group="${group.id}" ${open}>
-                <summary>${hash_escapeHtml(group.name)}</summary>
+            const selectedCount = algorithms.filter(algorithm => selected.has(algorithm.id)).length;
+            const selectedClass = selectedCount > 0 ? "has-selected" : "";
+            return `<details class="hash-group ${selectedClass}" data-group="${group.id}" ${open}>
+                <summary><span>${hash_escapeHtml(group.name)}</span><span class="hash-group-count">${selectedCount}/${algorithms.length}</span></summary>
                 ${weakNote}
                 <div class="hash-group-body">${body}</div>
                 ${placeholder}
             </details>`;
         }).join("");
         hash_updateKeyVisibility();
+    }
+
+    function hash_updateGroupCounts() {
+        const selected = new Set(hashState.settings.selectedAlgorithmIds);
+        document.querySelectorAll(".hash-group").forEach(groupEl => {
+            const groupId = groupEl.dataset.group;
+            const algorithms = HASH_ALGORITHMS.filter(algorithm => algorithm.group === groupId);
+            const selectedCount = algorithms.filter(algorithm => selected.has(algorithm.id)).length;
+            groupEl.classList.toggle("has-selected", selectedCount > 0);
+            const countEl = groupEl.querySelector(".hash-group-count");
+            if (countEl) countEl.textContent = `${selectedCount}/${algorithms.length}`;
+        });
     }
 
     function hash_groupPlaceholder(groupId) {
@@ -666,6 +686,7 @@
         hashState.settings.selectedAlgorithmIds = Array.from(document.querySelectorAll(".hash-algo-check:checked")).map(input => input.value);
         hashState.settings.selectionMode = "custom";
         hash_updateKeyVisibility();
+        hash_updateGroupCounts();
         hash_saveSettings();
     }
 
@@ -677,6 +698,7 @@
         hashState.settings.selectedAlgorithmIds = Array.from(idSet);
         hashState.settings.selectionMode = mode || "custom";
         hash_updateKeyVisibility();
+        hash_updateGroupCounts();
         hash_saveSettings();
     }
 

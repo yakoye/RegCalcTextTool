@@ -945,6 +945,8 @@
 body { margin: 0; padding: 8px; background: #f8f8f8; }
 .tab-content { display: block !important; margin: 0; border-radius: 0; min-height: auto; }
 </style>
+    <link rel="stylesheet" href="shared-ui.css">
+    <script defer src="shared-ui.js"></script>
 </head>
 <body>
 <div class="tab-content active" id="timecalc">
@@ -966,6 +968,7 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
                     <button type="button" onclick="timecalc_calculateDiff()">计算间隔</button>
                     <button type="button" onclick="timecalc_setNow('timecalc_start')">开始=现在</button>
                     <button type="button" onclick="timecalc_setNow('timecalc_end')">结束=现在</button>
+                    <button type="button" onclick="timecalc_copyOutput('timecalc_diffOutput')">复制结果</button>
                 </div>
                 <div class="tool-output" id="timecalc_diffOutput"></div>
             </div>
@@ -1006,6 +1009,7 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
                     <button type="button" id="timecalc_futureBtn" onclick="timecalc_calculateOffset(1)">计算未来</button>
                     <button type="button" id="timecalc_pastBtn" onclick="timecalc_calculateOffset(-1)">计算过去</button>
                     <button type="button" id="timecalc_baseNowBtn" onclick="timecalc_setNow('timecalc_base')">基准=现在</button>
+                    <button type="button" onclick="timecalc_copyOutput('timecalc_offsetOutput')">复制结果</button>
                 </div>
                 <div class="tool-output" id="timecalc_offsetOutput"></div>
             </div>
@@ -1209,6 +1213,29 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
             `${direction > 0 ? '未来时间' : '过去时间'}：${timecalc_toLocalInputValue(shifted).replace('T', ' ')}`;
     }
 
+    function timecalc_copyOutput(id) {
+        const text = document.getElementById(id).textContent;
+        if (!text) {
+            if (window.toolboxToast) window.toolboxToast('暂无结果');
+            return;
+        }
+        if (window.toolboxCopyText) {
+            window.toolboxCopyText(text);
+            return;
+        }
+        try {
+            navigator.clipboard.writeText(text);
+        } catch {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+        }
+    }
 
 </script>
 <script>

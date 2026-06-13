@@ -945,11 +945,34 @@
 body { margin: 0; padding: 8px; background: #f8f8f8; }
 .tab-content { display: block !important; margin: 0; border-radius: 0; min-height: auto; }
 </style>
+    <link rel="stylesheet" href="shared-ui.css">
+    <script defer src="shared-ui.js"></script>
 </head>
 <body>
 <div class="tab-content active" id="about">
         <div class="tool-panel" id="about-ui">
             <h3>About / 使用说明</h3>
+
+            <div class="tool-section">
+                <h4>RegCalcTextTool 工具箱</h4>
+                <p>一个轻量、静态、偏本地运行的开发与文本处理工具箱。当前版本：v0.40。</p>
+                <div class="tool-note">包含 RegCalc、TextFormatter、DateTime、Password、Hash、Links 等工具；主入口按需加载各工具页，并在后台预加载以提升切换速度。</div>
+                <h5>功能列表</h5>
+                <ul>
+                    <li>64 位寄存器计算、位操作和表达式计算。</li>
+                    <li>文本格式化、编码转换、序列生成。</li>
+                    <li>日期时间差值、未来/过去时间计算。</li>
+                    <li>本地密码生成、单行复制和编辑。</li>
+                    <li>文本/文件 Hash、Checksum、HMAC 与结果导出。</li>
+                    <li>常用外部工具链接与搜索。</li>
+                </ul>
+                <h5>安全说明</h5>
+                <ul>
+                    <li>工具尽量在浏览器本地运行，不依赖后端服务保存数据。</li>
+                    <li>不建议输入真实密码、私钥、Token、证书私钥等敏感信息。</li>
+                    <li>Hash 页面不会保存原文、文件内容、HMAC key、密码或私钥，只保存算法选择等偏好。</li>
+                </ul>
+            </div>
 
             <div class="tool-section">
                 <h4>64位寄存器计算（RegCalc）使用说明（快捷键与操作）</h4>
@@ -1016,7 +1039,8 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
 2026.06.13  v0.36  将各标签页拆分为独立工具 HTML，主入口改为按需加载 shell
 2026.06.13  v0.37  优化 Hash 工具折叠布局、动作按钮位置，并补充 MD4 计算支持
 2026.06.13  v0.38  调整 Hash 输入区标题栏，将选择文件和清空按钮并入标题行
-2026.06.13  v0.39  主入口先快速打开 RegCalc，2 秒后后台预加载其他工具页</pre>
+2026.06.13  v0.39  主入口先快速打开 RegCalc，2 秒后后台预加载其他工具页
+2026.06.13  v0.40  统一现代浅色工具箱 UI，增强 Hash、Password、DateTime、Links 和 About 体验</pre>
 
             </div>
 
@@ -1085,7 +1109,8 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
 2026.06.13  v0.36  Split tab tools into standalone HTML pages and changed the main entry to a lazy-loading shell
 2026.06.13  v0.37  Refined Hash tool folding layout, moved action buttons, and added MD4 calculation support
 2026.06.13  v0.38  Moved Hash file and clear actions into the input section header
-2026.06.13  v0.39  Open RegCalc first, then preload inactive tool pages after 2 seconds</pre>
+2026.06.13  v0.39  Open RegCalc first, then preload inactive tool pages after 2 seconds
+2026.06.13  v0.40  Unified the modern light toolbox UI and improved Hash, Password, DateTime, Links, and About</pre>
             </div>
         </div>
     </div>
