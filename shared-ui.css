@@ -218,19 +218,78 @@ details.hash-group {
   box-shadow: var(--shadow-soft);
 }
 
+.accordion-header,
 details.hash-group summary {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  width: 100%;
+  gap: 8px;
+  text-align: left !important;
+  justify-content: flex-start;
   background: #fff !important;
 }
 
+.accordion-header::-webkit-details-marker,
+details.hash-group summary::-webkit-details-marker {
+  display: none;
+}
+
+.accordion-header::marker,
+details.hash-group summary::marker {
+  content: "";
+}
+
+.accordion-header:hover,
 details.hash-group summary:hover {
   background: var(--primary-soft) !important;
 }
 
+.accordion-arrow {
+  width: 16px;
+  flex: 0 0 16px;
+  color: var(--text-muted);
+  font-size: 12px;
+  transition: transform 0.16s ease;
+}
+
+details[open] > .accordion-header .accordion-arrow,
+details[open] > summary.accordion-header .accordion-arrow {
+  transform: rotate(90deg);
+}
+
+.accordion-dot {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 10px;
+  border-radius: 999px;
+}
+
+.accordion-dot.active {
+  background: var(--primary);
+}
+
+.accordion-dot.inactive {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px transparent;
+}
+
+.accordion-title {
+  flex: 0 0 auto;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.accordion-desc {
+  flex: 1 1 auto;
+  min-width: 80px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.accordion-count,
 .hash-group-count {
+  margin-left: auto;
   padding: 1px 8px;
   border-radius: 999px;
   background: #eef2f7;
@@ -239,17 +298,14 @@ details.hash-group summary:hover {
   font-size: 12px;
 }
 
-.hash-group.has-selected .hash-group-count {
+.hash-group.has-selected .hash-group-count,
+.hash-algorithm-panel.has-selected .accordion-count {
   background: var(--primary-soft);
   color: var(--primary);
 }
 
 .hash-group.has-selected summary::before {
-  content: "";
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: var(--primary);
+  content: none !important;
 }
 
 .hash-group-body,
@@ -364,5 +420,15 @@ details.hash-group summary:hover {
 
   .result-value {
     overflow-wrap: anywhere;
+  }
+
+  .accordion-desc {
+    flex-basis: 100%;
+    min-width: 0;
+  }
+
+  .accordion-count,
+  .hash-group-count {
+    flex: 0 0 auto;
   }
 }

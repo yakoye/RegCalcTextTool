@@ -362,10 +362,16 @@
             </div>
         </details>
 
-        <div class="tool-section">
-            <div class="tool-section-title">算法选择</div>
+        <details class="tool-section hash-algorithm-panel" id="hash_algorithm_panel">
+            <summary class="accordion-header">
+                <span class="accordion-arrow">▶</span>
+                <span class="accordion-dot inactive"></span>
+                <span class="accordion-title">算法选择</span>
+                <span class="accordion-desc">选择要计算的 Hash / Checksum / HMAC 算法</span>
+                <span class="accordion-count" id="hash_algorithm_total_count">0/0</span>
+            </summary>
             <div id="hash_groups" class="hash-groups"></div>
-        </div>
+        </details>
 
         <div class="tool-section">
             <div class="tool-section-title">计算与导出</div>
@@ -413,13 +419,13 @@
     };
 
     const HASH_GROUPS = [
-        { id: "common", name: "一、常用 Hash" },
-        { id: "hmac", name: "二、HMAC / MAC" },
-        { id: "checksum", name: "三、Checksum / 校验和" },
-        { id: "fast", name: "四、非加密高速 Hash" },
-        { id: "password", name: "五、密码 Hash" },
-        { id: "fuzzy", name: "六、模糊 Hash / 相似性 Hash" },
-        { id: "legacy", name: "七、历史 / 弱算法", weak: true }
+        { id: "common", name: "一、常用 Hash", desc: "文件校验 / 文本摘要" },
+        { id: "hmac", name: "二、HMAC / MAC", desc: "带 Key 的消息认证" },
+        { id: "checksum", name: "三、Checksum / 校验和", desc: "传输和完整性校验" },
+        { id: "fast", name: "四、非加密高速 Hash", desc: "高速非安全摘要" },
+        { id: "password", name: "五、密码 Hash", desc: "密码存储算法占位" },
+        { id: "fuzzy", name: "六、模糊 Hash / 相似性 Hash", desc: "相似度算法占位" },
+        { id: "legacy", name: "七、历史 / 弱算法", desc: "兼容性算法，不建议安全用途", weak: true }
     ];
 
     const HASH_ALGORITHMS = [
@@ -508,6 +514,7 @@
         settings: {
             selectedAlgorithmIds: HASH_DEFAULT_SELECTED.slice(),
             outputFormat: "hex-lower",
+            hashAlgorithmPanelExpanded: false,
             expandedGroups: Object.assign({}, HASH_DEFAULT_EXPANDED),
             hmacKeyMode: "text",
             selectionMode: "common"
@@ -571,6 +578,7 @@
         const defaults = {
             selectedAlgorithmIds: HASH_DEFAULT_SELECTED.slice(),
             outputFormat: "hex-lower",
+            hashAlgorithmPanelExpanded: false,
             expandedGroups: Object.assign({}, HASH_DEFAULT_EXPANDED),
             hmacKeyMode: "text",
             selectionMode: "common"
@@ -585,6 +593,7 @@
             return {
                 selectedAlgorithmIds,
                 outputFormat: ["hex-lower", "hex-upper", "base64"].includes(saved.outputFormat) ? saved.outputFormat : defaults.outputFormat,
+                hashAlgorithmPanelExpanded: typeof saved.hashAlgorithmPanelExpanded === "boolean" ? saved.hashAlgorithmPanelExpanded : defaults.hashAlgorithmPanelExpanded,
                 expandedGroups: Object.assign({}, HASH_DEFAULT_EXPANDED, saved.expandedGroups || {}),
                 hmacKeyMode: ["text", "hex"].includes(saved.hmacKeyMode) ? saved.hmacKeyMode : defaults.hmacKeyMode,
                 selectionMode: saved.selectionMode || "custom"
@@ -598,6 +607,7 @@
         const payload = {
             selectedAlgorithmIds: hashState.settings.selectedAlgorithmIds.filter(id => HASH_ALGORITHM_IDS.has(id)),
             outputFormat: hashState.settings.outputFormat,
+            hashAlgorithmPanelExpanded: !!hashState.settings.hashAlgorithmPanelExpanded,
             expandedGroups: hashState.settings.expandedGroups,
             hmacKeyMode: hashState.settings.hmacKeyMode,
             selectionMode: hashState.settings.selectionMode || "custom"
@@ -641,17 +651,25 @@
             const selectedCount = algorithms.filter(algorithm => selected.has(algorithm.id)).length;
             const selectedClass = selectedCount > 0 ? "has-selected" : "";
             return `<details class="hash-group ${selectedClass}" data-group="${group.id}" ${open}>
-                <summary><span>${hash_escapeHtml(group.name)}</span><span class="hash-group-count">${selectedCount}/${algorithms.length}</span></summary>
+                <summary class="accordion-header">
+                    <span class="accordion-arrow">▶</span>
+                    <span class="accordion-dot ${selectedCount > 0 ? "active" : "inactive"}"></span>
+                    <span class="accordion-title">${hash_escapeHtml(group.name)}</span>
+                    <span class="accordion-desc">${hash_escapeHtml(group.desc || "")}</span>
+                    <span class="accordion-count hash-group-count">${selectedCount}/${algorithms.length}</span>
+                </summary>
                 ${weakNote}
                 <div class="hash-group-body">${body}</div>
                 ${placeholder}
             </details>`;
         }).join("");
+        hash_updateAlgorithmPanelCount();
         hash_updateKeyVisibility();
     }
 
     function hash_updateGroupCounts() {
         const selected = new Set(hashState.settings.selectedAlgorithmIds);
+        hash_updateAlgorithmPanelCount();
         document.querySelectorAll(".hash-group").forEach(groupEl => {
             const groupId = groupEl.dataset.group;
             const algorithms = HASH_ALGORITHMS.filter(algorithm => algorithm.group === groupId);
@@ -659,6 +677,35 @@
             groupEl.classList.toggle("has-selected", selectedCount > 0);
             const countEl = groupEl.querySelector(".hash-group-count");
             if (countEl) countEl.textContent = `${selectedCount}/${algorithms.length}`;
+            const dotEl = groupEl.querySelector(".accordion-dot");
+            if (dotEl) {
+                dotEl.classList.toggle("active", selectedCount > 0);
+                dotEl.classList.toggle("inactive", selectedCount === 0);
+            }
+        });
+    }
+
+    function hash_updateAlgorithmPanelCount() {
+        const selectedCount = hashState.settings.selectedAlgorithmIds.filter(id => HASH_ALGORITHM_IDS.has(id)).length;
+        const totalCount = HASH_ALGORITHMS.length;
+        const countEl = document.getElementById("hash_algorithm_total_count");
+        const panel = document.getElementById("hash_algorithm_panel");
+        if (countEl) countEl.textContent = `${selectedCount}/${totalCount}`;
+        if (panel) {
+            panel.classList.toggle("has-selected", selectedCount > 0);
+            const dotEl = panel.querySelector(":scope > summary .accordion-dot");
+            if (dotEl) {
+                dotEl.classList.toggle("active", selectedCount > 0);
+                dotEl.classList.toggle("inactive", selectedCount === 0);
+            }
+        }
+    }
+
+    function hash_syncExpandedStateFromDom() {
+        const panel = document.getElementById("hash_algorithm_panel");
+        if (panel) hashState.settings.hashAlgorithmPanelExpanded = panel.open;
+        document.querySelectorAll(".hash-group").forEach(group => {
+            hashState.settings.expandedGroups[group.dataset.group] = group.open;
         });
     }
 
@@ -1023,6 +1070,7 @@
                 selectedAlgorithmIds: HASH_DEFAULT_SELECTED.slice(),
                 outputFormat: "hex-lower",
                 expandedGroups: Object.assign({}, HASH_DEFAULT_EXPANDED),
+                hashAlgorithmPanelExpanded: false,
                 hmacKeyMode: "text",
                 selectionMode: "common"
             };
@@ -1037,6 +1085,7 @@
                 selectedAlgorithmIds: HASH_DEFAULT_SELECTED.slice(),
                 outputFormat: "hex-lower",
                 expandedGroups: Object.assign({}, HASH_DEFAULT_EXPANDED),
+                hashAlgorithmPanelExpanded: false,
                 hmacKeyMode: "text",
                 selectionMode: "common"
             };
@@ -1061,6 +1110,11 @@
             hashState.settings.expandedGroups[group.dataset.group] = group.open;
             hash_saveSettings();
         }, true);
+        document.getElementById("hash_algorithm_panel").addEventListener("toggle", event => {
+            if (event.target.id !== "hash_algorithm_panel") return;
+            hashState.settings.hashAlgorithmPanelExpanded = event.target.open;
+            hash_saveSettings();
+        });
         document.getElementById("hash_results").addEventListener("click", event => {
             const copyButton = event.target.closest("[data-copy]");
             const row = event.target.closest(".result-row");
@@ -1069,11 +1123,16 @@
             const result = hashState.results.find(item => item.id === id);
             if (result && result.status === "ok") hash_copyText(result.value);
         });
+        window.addEventListener("beforeunload", () => {
+            hash_syncExpandedStateFromDom();
+            hash_saveSettings();
+        });
     }
 
     function hash_applySettingsToControls() {
         document.getElementById("hash_output_format").value = hashState.settings.outputFormat;
         document.getElementById("hash_hmac_key_mode").value = hashState.settings.hmacKeyMode;
+        document.getElementById("hash_algorithm_panel").open = !!hashState.settings.hashAlgorithmPanelExpanded;
     }
 
     function hash_init() {
