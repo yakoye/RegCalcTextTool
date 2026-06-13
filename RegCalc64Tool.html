@@ -946,6 +946,238 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
 .tab-content { display: block !important; margin: 0; border-radius: 0; min-height: auto; }
 </style>
     <link rel="stylesheet" href="shared-ui.css">
+    <style>
+        body {
+            background:
+                radial-gradient(circle at 18% 8%, rgba(255, 255, 255, 0.92), transparent 30%),
+                radial-gradient(circle at 82% 0%, rgba(224, 232, 244, 0.72), transparent 34%),
+                linear-gradient(145deg, #f7f9fc 0%, #eef3f8 48%, #f9fbfd 100%) !important;
+            color: #18212f !important;
+        }
+
+        .tab-content#regcalc {
+            border: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            padding: 10px !important;
+        }
+
+        #regcalc-ui {
+            max-width: 900px;
+            margin: 0 auto;
+            overflow-x: visible;
+            overflow-y: visible;
+        }
+
+        #regcalc-ui > table {
+            width: 100%;
+            max-width: 900px;
+            border: 1px solid rgba(203, 213, 225, 0.72) !important;
+            border-radius: 28px !important;
+            border-spacing: 0 !important;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.82), rgba(247, 250, 253, 0.58)) !important;
+            backdrop-filter: blur(22px) saturate(1.25);
+            -webkit-backdrop-filter: blur(22px) saturate(1.25);
+            box-shadow: 0 24px 70px rgba(71, 85, 105, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+            overflow: hidden;
+        }
+
+        #regcalc-ui > table > tbody > tr > td {
+            border: 0 !important;
+            padding: 0 22px 16px;
+        }
+
+        #regcalc-ui > table > tbody > tr:first-child > td {
+            padding-top: 18px;
+            padding-bottom: 10px;
+        }
+
+        #regcalc-ui .regcalc-title-table {
+            width: 100%;
+            margin: 0 auto 8px;
+        }
+
+        #regcalc-ui .regcalc-title-table td {
+            padding: 8px 12px 10px;
+            color: #111827;
+            font-size: 20px;
+            letter-spacing: 0;
+        }
+
+        #regcalc-ui .regcalc-bit-grid {
+            display: grid;
+            grid-template-columns: repeat(16, minmax(0, 1fr));
+            column-gap: 5px;
+            row-gap: 9px;
+            width: 100%;
+            padding: 14px;
+            border: 1px solid rgba(203, 213, 225, 0.58);
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.44);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86);
+        }
+
+        #regcalc-ui .regcalc-bit-cell {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            padding: 2px 0;
+            border-right: 1px solid transparent;
+        }
+
+        #regcalc-ui .regcalc-bit-cell.regcalc-group-end:not(.regcalc-row-end) {
+            border-right-color: rgba(148, 163, 184, 0.26);
+        }
+
+        #regcalc-ui .regcalc-bit-cell.regcalc-major-gap {
+            margin-top: 8px;
+        }
+
+        #regcalc-ui .regcalc-bit-index {
+            height: 17px;
+            color: #64748b;
+            font-size: 13px;
+            line-height: 17px;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+
+        #regcalc-ui .regcalc-bit-grid .regcalc-bit-toggle {
+            width: 100% !important;
+            min-width: 0 !important;
+            height: 30px !important;
+            min-height: 30px !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: 1px solid rgba(148, 163, 184, 0.5) !important;
+            border-radius: 10px !important;
+            background: rgba(255, 255, 255, 0.68) !important;
+            color: #334155 !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 5px 12px rgba(15, 23, 42, 0.06);
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace !important;
+            font-size: 15px !important;
+            font-weight: 700;
+            line-height: 1 !important;
+        }
+
+        #regcalc-ui .regcalc-bit-grid .regcalc-bit-toggle:hover {
+            background: rgba(248, 250, 252, 0.95) !important;
+            border-color: rgba(100, 116, 139, 0.75) !important;
+            color: #0f172a !important;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.96);
+        }
+
+        #regcalc-ui .regcalc-bit-grid .regcalc-bit-toggle.is-one {
+            background: linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(226, 232, 240, 0.84)) !important;
+            border-color: rgba(71, 85, 105, 0.82) !important;
+            color: #111827 !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92), 0 8px 20px rgba(51, 65, 85, 0.16);
+        }
+
+        #regcalc-ui .regcalc-form-table {
+            width: 100%;
+            border-spacing: 7px 7px;
+        }
+
+        #regcalc-ui .regcalc-label {
+            color: #475569;
+            font-weight: 700;
+        }
+
+        #regcalc-ui table input[type="text"],
+        #regcalc-ui table textarea,
+        #regcalc-ui table input[type="button"],
+        #regcalc-ui table button {
+            border-color: rgba(148, 163, 184, 0.52) !important;
+            border-radius: 12px !important;
+            background: rgba(255, 255, 255, 0.68) !important;
+            color: #18212f !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.84), 0 4px 13px rgba(15, 23, 42, 0.045);
+        }
+
+        #regcalc-ui table input[type="text"],
+        #regcalc-ui table textarea {
+            padding: 6px 9px !important;
+        }
+
+        #regcalc-ui table input[type="button"],
+        #regcalc-ui table button {
+            min-height: 31px;
+            padding: 5px 11px !important;
+            font-weight: 700;
+        }
+
+        #regcalc-ui table input[type="text"]:focus,
+        #regcalc-ui table textarea:focus {
+            border-color: rgba(71, 85, 105, 0.78) !important;
+            box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+        }
+
+        #regcalc-ui table input[type="button"]:hover,
+        #regcalc-ui table button:hover {
+            background: rgba(248, 250, 252, 0.94) !important;
+            border-color: rgba(100, 116, 139, 0.75) !important;
+            color: #0f172a !important;
+        }
+
+        #regcalc-ui #regcalc_calcResult {
+            background: rgba(248, 250, 252, 0.82) !important;
+            font-weight: 700;
+        }
+
+        #regcalc-ui #regcalc_syncResultToHex,
+        #regcalc-ui #regcalc_calc,
+        #regcalc-ui .regcalc-actions button {
+            background: rgba(255, 255, 255, 0.72) !important;
+            border-color: rgba(148, 163, 184, 0.55) !important;
+            color: #18212f !important;
+        }
+
+        #regcalc-ui #regcalc_clean {
+            width: auto !important;
+            min-width: 96px;
+            padding-left: 15px !important;
+            padding-right: 15px !important;
+        }
+
+        #regcalc-ui .regcalc-footer-actions a {
+            color: #64748b !important;
+            text-decoration-color: rgba(100, 116, 139, 0.45);
+        }
+
+        @media (max-width: 700px) {
+            .tab-content#regcalc {
+                padding: 5px !important;
+            }
+
+            #regcalc-ui > table > tbody > tr > td {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+
+            #regcalc-ui .regcalc-title-table td {
+                font-size: 18px;
+            }
+
+            #regcalc-ui .regcalc-bit-grid {
+                column-gap: 3px;
+                row-gap: 7px;
+                padding: 10px;
+            }
+
+            #regcalc-ui .regcalc-bit-index {
+                font-size: 12px;
+            }
+
+            #regcalc-ui .regcalc-bit-grid .regcalc-bit-toggle {
+                height: 28px !important;
+                min-height: 28px !important;
+                border-radius: 8px !important;
+            }
+        }
+    </style>
     <script defer src="shared-ui.js"></script>
 </head>
 <body>
@@ -1178,6 +1410,39 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
                                 })());
                             </script>-->
                         </table>
+                        <script>
+                            (function regcalc_renderModernBitGrid() {
+                                const legacyTable = document.querySelector("#regcalc-ui .regcalc-bit-table");
+                                if (!legacyTable) return;
+                                const grid = document.createElement("div");
+                                grid.className = "regcalc-bit-grid";
+                                for (let label = 63; label >= 0; label--) {
+                                    const idNumber = 63 - label;
+                                    const id = idNumber < 10 ? "0" + idNumber : "" + idNumber;
+                                    const cell = document.createElement("div");
+                                    cell.className = "regcalc-bit-cell";
+                                    if (label % 4 === 0) cell.classList.add("regcalc-group-end");
+                                    if (label % 16 === 0) cell.classList.add("regcalc-row-end");
+                                    if (label <= 31) cell.classList.add("regcalc-major-gap");
+
+                                    const bitIndex = document.createElement("div");
+                                    bitIndex.className = "regcalc-bit-index";
+                                    bitIndex.textContent = String(label);
+
+                                    const button = document.createElement("input");
+                                    button.type = "button";
+                                    button.value = "0";
+                                    button.id = "regcalc_" + id;
+                                    button.className = "regcalc-bit-toggle";
+                                    button.onclick = function () { regcalc_set_button_value(id); };
+
+                                    cell.appendChild(bitIndex);
+                                    cell.appendChild(button);
+                                    grid.appendChild(cell);
+                                }
+                                legacyTable.replaceWith(grid);
+                            })();
+                        </script>
                     </td>
                 </tr>
                 <tr>
@@ -1370,16 +1635,21 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', regc
         regcalc_updateAllBitFields();
     }
 
+    function regcalc_syncBitButtonStyle(button, bitValue) {
+        if (!button) return;
+        button.classList.toggle('is-one', String(bitValue) === '1');
+        button.style.color = '';
+    }
+
     function regcalc_set_button_value(id) {
         const obj = document.getElementById('regcalc_' + id);
         if (obj.value == 0) {
             obj.value = 1;
-            obj.style.color = "Red"
         }
         else if (obj.value == 1) {
             obj.value = 0;
-            obj.style.color = "Black"
         }
+        regcalc_syncBitButtonStyle(obj, obj.value);
         regcalc_str_to_bin();
     }
 
@@ -1397,7 +1667,7 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', regc
             const btnId = bitIndex <10 ? `0${bitIndex}` : bitIndex;
             const btn = document.getElementById('regcalc_' + btnId.toString());
             btn.value = bitVal;
-            btn.style.color = (bitVal === '1') ? 'Red' : 'Black';
+            regcalc_syncBitButtonStyle(btn, bitVal);
         }
         regcalc_resizeBinInput();
         regcalc_updateAllBitFields();
@@ -2091,8 +2361,9 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', regc
 
         for (i = 0; i < 64; i++) {
             const id = i < 10 ? "0" + i : "" + i;
-            document.getElementById('regcalc_' + id).value = "0";
-            document.getElementById('regcalc_' + id).style.color = "Black"
+            const button = document.getElementById('regcalc_' + id);
+            button.value = "0";
+            regcalc_syncBitButtonStyle(button, "0");
         }
         regcalc_resizeBinInput();
     }

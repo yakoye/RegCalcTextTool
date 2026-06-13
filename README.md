@@ -150,6 +150,7 @@ npm run build
 - 2026.06.13 v0.39 主入口先快速打开 RegCalc，2 秒后后台预加载其他工具页
 - 2026.06.13 v0.40 统一现代浅色工具箱 UI，增强 Hash、Password、DateTime、Links 和 About 体验
 - 2026.06.13 v0.41 Hash 算法选择改为两级折叠，优化标题对齐、数量统计和状态保存
+- 2026.06.13 v0.42 RegCalc 页面升级为冷白磨砂玻璃风，并修复 bit 按钮列宽一致性
 
 ## Refer
 
