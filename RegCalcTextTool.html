@@ -48,6 +48,11 @@
             const frame = contents[tabId] && contents[tabId].querySelector('iframe[data-src]');
             if (frame && !frame.getAttribute('src')) frame.setAttribute('src', frame.dataset.src);
         }
+        function preloadInactiveFrames() {
+            Object.keys(contents).forEach(tabId => {
+                if (tabId !== 'regcalc') loadFrame(tabId);
+            });
+        }
         function switchTab(tabId) {
             const tab = document.querySelector('.tab[data-tab="' + tabId + '"]');
             if (!tab || !contents[tabId]) return;
@@ -61,6 +66,7 @@
         window.addEventListener('message', event => {
             if (event.data && event.data.type === 'switch-tab') switchTab(event.data.tab);
         });
+        window.setTimeout(preloadInactiveFrames, 5000);
     </script>
 </body>
 </html>
