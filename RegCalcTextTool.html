@@ -555,6 +555,81 @@
                 width: 2em;
             }
         }
+        #password-ui .password-list {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            width: 100%;
+            min-height: 180px;
+            margin-top: 8px;
+            padding: 7px;
+            border: 1px solid #999;
+            background: #fff;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            font-size: 14px;
+        }
+        #password-ui .password-row {
+            position: relative;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 24px;
+            gap: 6px;
+            align-items: center;
+            min-height: 28px;
+            padding: 3px 5px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: background-color 0.12s ease, border-color 0.12s ease;
+        }
+        #password-ui .password-row:hover {
+            border-color: #c8d6c8;
+            background: #f5fbf5;
+        }
+        #password-ui .password-row:active {
+            background: #edf7ed;
+        }
+        #password-ui .password-row.is-editing {
+            cursor: default;
+            background: #fff;
+            border-color: #238625;
+        }
+        #password-ui .password-text {
+            overflow-wrap: anywhere;
+            user-select: text;
+            line-height: 1.35;
+        }
+        #password-ui .password-edit-input {
+            width: 100%;
+            min-height: 24px;
+            padding: 2px 4px;
+            border: 1px solid #999;
+            font: inherit;
+        }
+        #password-ui .password-edit-btn {
+            width: 22px;
+            min-width: 22px;
+            height: 22px;
+            padding: 0;
+            line-height: 1;
+            font-size: 13px;
+        }
+        #password-ui .password-toast {
+            position: absolute;
+            right: 8px;
+            bottom: 8px;
+            padding: 3px 8px;
+            border: 1px solid #b9d8b9;
+            background: #f5fbf5;
+            color: #2f5f38;
+            font-family: inherit;
+            font-size: 13px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.16s ease;
+        }
+        #password-ui .password-toast.show {
+            opacity: 1;
+        }
         .tool-panel h3 {
             margin: 8px 0 12px;
         }
@@ -1395,7 +1470,7 @@
                     <button type="button" onclick="password_generate()">生成密码</button>
                     <button type="button" onclick="password_copyOutput()">复制结果</button>
                 </div>
-                <textarea id="password_output" class="tool-output" style="width:100%; min-height:180px;"></textarea>
+                <div id="password_output" class="tool-output password-list" aria-live="polite"></div>
             </div>
         </div>
     </div>
@@ -1574,7 +1649,8 @@
 2026.06.09  v0.30  Time 标签与说明统一改为 DateTime
 2026.06.09  v0.31  TextFormatter 按钮按分类折叠为下拉组，新增颜色区隔、悬浮示例提示与清空所有
 2026.06.10  v0.32  外部工具增加 Unix 时间戳与万年历，首页改为无提示直接进入
-2026.06.10  v0.33  校准 README 入口说明并复核在线链接</pre>
+2026.06.10  v0.33  校准 README 入口说明并复核在线链接
+2026.06.13  v0.34  优化密码生成器结果列表、复制和编辑交互</pre>
 
             </div>
 
@@ -1637,7 +1713,8 @@
 2026.06.09  v0.30  Renamed Time tab and descriptions to DateTime
 2026.06.09  v0.31  Collapsed TextFormatter buttons into colored dropdown groups with hover examples and clear-all
 2026.06.10  v0.32  Added Unix timestamp and calendar links, made the home entry silent
-2026.06.10  v0.33  Aligned README entry wording and rechecked online links</pre>
+2026.06.10  v0.33  Aligned README entry wording and rechecked online links
+2026.06.13  v0.34  Improved password result list, copy, and edit interactions</pre>
             </div>
         </div>
     </div>
@@ -3005,6 +3082,13 @@
             `${direction > 0 ? '未来时间' : '过去时间'}：${timecalc_toLocalInputValue(shifted).replace('T', ' ')}`;
     }
 
+    let password_items = [];
+    let password_editingIndex = -1;
+    let password_editOriginal = '';
+    let password_longPressTimer = null;
+    let password_longPressTriggered = false;
+    let password_toastTimer = null;
+
     function password_getRandomIndex(max) {
         const array = new Uint32Array(1);
         crypto.getRandomValues(array);
@@ -3036,9 +3120,107 @@
         return password_shuffle(chars).join('');
     }
 
+    function password_escapeHtml(text) {
+        return String(text).replace(/[&<>"']/g, function(ch) {
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+        });
+    }
+
+    function password_getOutput() {
+        return document.getElementById('password_output');
+    }
+
+    function password_render() {
+        const output = password_getOutput();
+        const rows = password_items.map((password, index) => {
+            if (index === password_editingIndex) {
+                return `<div class="password-row is-editing" data-index="${index}">
+                    <input class="password-edit-input" type="text" value="${password_escapeHtml(password)}" aria-label="编辑密码">
+                    <button type="button" class="password-edit-btn" data-action="edit" tabindex="-1">✎</button>
+                </div>`;
+            }
+            return `<div class="password-row" data-index="${index}" title="单击复制，双击编辑；手机长按或点 ✎ 编辑">
+                <span class="password-text">${password_escapeHtml(password)}</span>
+                <button type="button" class="password-edit-btn" data-action="edit" aria-label="编辑密码">✎</button>
+            </div>`;
+        }).join('');
+        output.innerHTML = rows + '<div id="password_toast" class="password-toast">已复制</div>';
+
+        if (password_editingIndex >= 0) {
+            const input = output.querySelector('.password-edit-input');
+            if (input) {
+                input.focus();
+                input.select();
+            }
+        }
+    }
+
+    function password_showToast(message) {
+        const toast = document.getElementById('password_toast');
+        if (!toast) return;
+        toast.textContent = message;
+        toast.classList.add('show');
+        clearTimeout(password_toastTimer);
+        password_toastTimer = setTimeout(() => toast.classList.remove('show'), 1100);
+    }
+
+    async function password_copyText(text) {
+        if (!text) return;
+        try {
+            await navigator.clipboard.writeText(text);
+        } catch {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.setAttribute('readonly', '');
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+        }
+        password_showToast('已复制');
+    }
+
+    function password_copyRow(index) {
+        if (password_editingIndex >= 0) return;
+        const text = password_items[index] || '';
+        password_copyText(text);
+    }
+
+    function password_startEdit(index) {
+        clearTimeout(password_longPressTimer);
+        if (index < 0 || index >= password_items.length) return;
+        if (password_editingIndex >= 0 && password_editingIndex !== index) {
+            password_saveEdit();
+        }
+        password_editingIndex = index;
+        password_editOriginal = password_items[index];
+        password_render();
+    }
+
+    function password_saveEdit() {
+        if (password_editingIndex < 0) return;
+        const input = password_getOutput().querySelector('.password-edit-input');
+        if (input) {
+            password_items[password_editingIndex] = input.value;
+        }
+        password_editingIndex = -1;
+        password_editOriginal = '';
+        password_render();
+    }
+
+    function password_cancelEdit() {
+        if (password_editingIndex < 0) return;
+        password_items[password_editingIndex] = password_editOriginal;
+        password_editingIndex = -1;
+        password_editOriginal = '';
+        password_render();
+    }
+
     function password_generate() {
         const length = Math.max(1, Math.min(256, Number(document.getElementById('password_length').value || 16)));
-        const count = Math.max(1, Math.min(200, Number(document.getElementById('password_count').value || 1)));
+        const count = Math.max(1, Math.min(200, Number(document.getElementById('password_count').value || 8)));
         const groups = [];
         if (document.getElementById('password_lower').checked) groups.push('abcdefghijklmnopqrstuvwxyz');
         if (document.getElementById('password_upper').checked) groups.push('ABCDEFGHIJKLMNOPQRSTUVWXYZ');
@@ -3052,21 +3234,81 @@
         for (let i = 0; i < count; i++) {
             passwords.push(password_generateOne(length, groups, excluded));
         }
-        document.getElementById('password_output').value = passwords.join('\n');
+        password_items = passwords;
+        password_editingIndex = -1;
+        password_render();
     }
 
     async function password_copyOutput() {
-        const text = document.getElementById('password_output').value;
-        if (!text) return;
-        try {
-            await navigator.clipboard.writeText(text);
-        } catch {
-            const output = document.getElementById('password_output');
-            output.focus();
-            output.select();
-            document.execCommand('copy');
+        if (password_editingIndex >= 0) {
+            password_saveEdit();
         }
+        await password_copyText(password_items.join('\n'));
     }
+
+    document.getElementById('password_output').addEventListener('click', function(e) {
+        const editButton = e.target.closest('[data-action="edit"]');
+        const row = e.target.closest('.password-row');
+        if (!row) return;
+        const index = Number(row.dataset.index);
+        if (editButton) {
+            e.preventDefault();
+            e.stopPropagation();
+            password_startEdit(index);
+            return;
+        }
+        if (password_editingIndex >= 0 || password_longPressTriggered) {
+            password_longPressTriggered = false;
+            return;
+        }
+        if (e.detail > 1) return;
+        password_copyRow(index);
+    });
+
+    document.getElementById('password_output').addEventListener('dblclick', function(e) {
+        const row = e.target.closest('.password-row');
+        if (!row || e.target.closest('[data-action="edit"]')) return;
+        e.preventDefault();
+        password_startEdit(Number(row.dataset.index));
+    });
+
+    document.getElementById('password_output').addEventListener('pointerdown', function(e) {
+        const row = e.target.closest('.password-row');
+        if (!row || e.target.closest('[data-action="edit"]') || password_editingIndex >= 0) return;
+        const index = Number(row.dataset.index);
+        password_longPressTriggered = false;
+        clearTimeout(password_longPressTimer);
+        password_longPressTimer = setTimeout(() => {
+            password_longPressTriggered = true;
+            password_startEdit(index);
+        }, 650);
+    });
+
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(eventName => {
+        document.getElementById('password_output').addEventListener(eventName, function() {
+            clearTimeout(password_longPressTimer);
+        });
+    });
+
+    document.getElementById('password_output').addEventListener('keydown', function(e) {
+        if (!e.target.classList.contains('password-edit-input')) return;
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            password_saveEdit();
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            password_cancelEdit();
+        }
+    });
+
+    document.getElementById('password_output').addEventListener('focusout', function(e) {
+        if (!e.target.classList.contains('password-edit-input')) return;
+        setTimeout(() => {
+            if (password_editingIndex >= 0 && !password_getOutput().contains(document.activeElement)) {
+                password_saveEdit();
+            }
+        }, 0);
+    });
 
     // ---- 快捷键：Alt+↑ 结果->Hex；Alt+↓ Hex->表达式输入 ----
     document.addEventListener('keydown', function (e) {
