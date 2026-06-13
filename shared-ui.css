@@ -497,6 +497,7 @@ details[open] > summary.accordion-header .accordion-arrow {
 @media (max-width: 768px) {
   body {
     font-size: 14px !important;
+    padding: 1px !important;
   }
 
   button {
@@ -504,20 +505,20 @@ details[open] > summary.accordion-header .accordion-arrow {
   }
 
   .tool-section {
-    padding: 10px !important;
+    padding: 1px !important;
   }
 
   body.toolbox-shell {
-    padding: 10px 8px 14px;
+    padding: 1px !important;
   }
 
   .toolbox-shell .tab-bar {
-    max-width: calc(100vw - 16px);
+    max-width: calc(100vw - 2px);
     margin-bottom: 4px !important;
   }
 
   .tool-panel {
-    padding: 10px;
+    padding: 1px !important;
     border-radius: 22px;
   }
 
