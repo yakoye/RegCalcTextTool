@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DateTime</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans CJK SC", "PingFang SC", Arial, sans-serif;
+            background: #f9f9f9;
+            margin:0;
+            color: #222;
+            font-size: 15px;
+            line-height: 1.5;
+            -webkit-text-size-adjust: 100%;
+            text-rendering: optimizeLegibility;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        .tab-bar {
+            display: flex;
+            border-bottom: 2px solid #dedede;
+            background: #ededed;
+            height: 34px;
+            align-items: flex-end;
+            padding-left: 24px;
+        }
+        .tab {
+            padding: 5px 28px 6px 28px;
+            margin-right: 4px;
+            border: 1px solid #dedede;
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            background: #e5e5e5;
+            cursor: pointer;
+            color: #888;
+            font-size: 15px;
+            font-weight: 600;
+            position: relative;
+            top: 2px;
+            transition: all 0.2s;
+        }
+        .tab.active {
+            background: #fff;
+            color: #222;
+            border-bottom: 2px solid #fff;
+            z-index: 2;
+        }
+        .tab-content {
+            display: none;
+            background: #fff;
+            border: 1.5px solid #dedede;
+            border-radius: 0 0 8px 8px;
+            /* 第一个值 5px - 设置上下方向的内边距为 5 像素
+               第二个值 24px - 设置左右方向的内边距为 24 像素
+               等效：
+                padding-top: 5px;
+                padding-right: 24px;
+                padding-bottom: 5px;
+                padding-left: 24px;
+            */
+            margin: 0 24px 24px 24px;
+            padding: 5px 24px;
+            min-height: 400px;
+            box-sizing: border-box;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        #regcalc-ui {
+            max-width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+        #regcalc-ui table {
+            --regcalc-field-width: 280px;
+            --regcalc-gap: 4px;
+            font-size: 14px;
+            line-height: 1.45;
+        }
+        #regcalc-ui > table {
+            max-width: 100%;
+        }
+        /* RegCalc指定样式（防止干扰） */
+        #regcalc-ui table input[type="text"], #regcalc-ui table textarea {
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            font-size: 14px;
+            line-height: 1.35;
+            padding: 3px 5px;
+            border: 1px solid #999;
+            margin: 3px 0;
+        }
+        #regcalc-ui table input[type="button"], #regcalc-ui table button {
+            font-family: inherit;
+            font-size: 14px;
+            line-height: 1.2;
+        }
+        #regcalc-ui .regcalc-title-table {
+            margin: 4px auto 5px;
+        }
+        #regcalc-ui .regcalc-title-table td {
+            line-height: 1.1;
+        }
+        #regcalc-ui .regcalc-bit-table {
+            border-spacing: 1px 0;
+            font-size: 14px;
+        }
+        #regcalc-ui .regcalc-bit-table td {
+            padding: 0 1px;
+            line-height: 1;
+            vertical-align: bottom;
+        }
+        #regcalc-ui .regcalc-bit-label td {
+            padding-top: 0;
+            padding-bottom: 1px;
+        }
+        #regcalc-ui .regcalc-bit-label-small-gap td {
+            padding-top: 4px;
+        }
+        #regcalc-ui .regcalc-bit-label-mid-gap td {
+            padding-top: 12px;
+        }
+        #regcalc-ui .regcalc-bit-button td {
+            padding-top: 0;
+            padding-bottom: 0;
+            vertical-align: top;
+        }
+        #regcalc-ui .regcalc-bit-table input[type="button"] {
+            margin-top: 0;
+            padding-top: 1px;
+            padding-bottom: 1px;
+        }
+        #regcalc-ui .regcalc-bit-spacer td {
+            height: 0;
+            padding: 0;
+            line-height: 0;
+            font-size: 0;
+        }
+        #regcalc-ui .regcalc-form-table {
+            border-spacing: 3px 3px;
+        }
+        #regcalc-ui .regcalc-label {
+            width: 86px;
+            padding-right: 5px;
+            text-align: right;
+            white-space: nowrap;
+        }
+        #regcalc-ui .regcalc-control {
+            text-align: left;
+            white-space: nowrap;
+        }
+        #regcalc-ui .regcalc-actions {
+            text-align: left;
+            white-space: nowrap;
+            padding-left: 2px;
+            width: 1%;
+        }
+        #regcalc-ui .regcalc-control input,
+        #regcalc-ui .regcalc-control textarea,
+        #regcalc-ui .regcalc-actions button,
+        #regcalc-ui .regcalc-actions input {
+            margin-right: var(--regcalc-gap);
+        }
+        #regcalc-ui #regcalc_hex,
+        #regcalc-ui #regcalc_dec,
+        #regcalc-ui #regcalc_calcInput,
+        #regcalc-ui #regcalc_calcResult {
+            width: var(--regcalc-field-width) !important;
+        }
+        #regcalc-ui #regcalc_human {
+            width: 80px !important;
+        }
+        #regcalc-ui .regcalc-bit-range {
+            width: 54px !important;
+        }
+        #regcalc-ui .regcalc-sub-hex {
+            width: 86px !important;
+        }
+        #regcalc-ui .regcalc-sub-dec {
+            width: calc(var(--regcalc-field-width) - 54px - 86px - (var(--regcalc-gap) * 2)) !important;
+        }
+        #regcalc-ui .regcalc-bitfield-buttons {
+            white-space: nowrap;
+        }
+        #regcalc-ui .regcalc-bitfield-buttons button {
+            min-width: 24px;
+            padding: 3px 6px;
+        }
+        #regcalc-ui #regcalc_bin {
+            width: var(--regcalc-field-width) !important;
+            min-height: calc(1.35em + 8px);
+            max-height: calc((1.35em * 3) + 10px);
+            resize: none;
+            white-space: pre-wrap;
+            overflow-x: hidden;
+            overflow-y: hidden;
+            overflow-wrap: anywhere;
+            word-break: break-all;
+        }
+        #regcalc-ui #regcalc_calcInput {
+            min-height: calc(1.35em + 10px);
+            max-height: calc((1.35em * 3) + 10px);
+            resize: none;
+            white-space: pre-wrap;
+            overflow-x: hidden;
+            overflow-y: hidden;
+            overflow-wrap: anywhere;
+            word-break: break-all;
+        }
+        #regcalc-ui .regcalc-spacer td {
+            height: 5px;
+            padding: 0;
+            line-height: 0;
+        }
+        #regcalc-ui .regcalc-footer-actions {
+            padding-top: 4px;
+            text-align: center;
+        }
+        #regcalc-ui .regcalc-footer-actions a,
+        #regcalc-ui .regcalc-footer-actions input {
+            margin: 0 5px;
+        }
+        #regcalc-ui table textarea {
+            vertical-align: top;
+        }
+        /* TextConvert 指定样式（命名前缀隔离） */
+        #textconvert-ui {
+            max-width: 1040px;
+            margin: 0 auto;
+        }
+        #textconvert-ui .container {
+            display: flex;    /* 启用 flex 布局 */
+            gap: 5px;        /* 设置子元素之间的间距为 5px */
+            width: 100%;
+        }
+        /* TextConvert 文本框的宽度和高度 */
+        #textconvert-ui textarea {
+            flex: 1 1 0;
+            min-width: 0;
+            height: 300px;
+            padding: 10px;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            font-size: 14px;
+            line-height: 1.45;
+            box-sizing: border-box;
+        }
+        #textconvert-ui .swap-btn {
+            align-self: center;      /* 在 flex 容器中垂直居中对齐 */
+            padding: 10px;           /* 内边距：上下左右都是10px */
+            margin: 0 0px;           /* 外边距：上下0，左右0px */
+            background: #f0f0f0;     /* 浅灰色背景 */
+            border: 1px solid #ccc;  /* 浅灰色边框，1像素宽度 */
+            cursor: pointer;         /* 鼠标悬停时显示手型指针 */
+        }
+        #textconvert-ui .buttons {
+            margin: 10px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: flex-start;
+        }
+        /* 下拉折叠按钮组 */
+        #textconvert-ui .tc-dropdown {
+            position: relative;
+            display: inline-flex;
+        }
+        #textconvert-ui .tc-btn {
+            white-space: nowrap;
+            border: 1px solid #c8c8c8;
+            border-radius: 4px;
+            background: #f5f5f5;
+            color: #333;
+            font-weight: 600;
+            transition: background .15s, border-color .15s;
+        }
+        #textconvert-ui .tc-btn:hover {
+            background: #ececec;
+            border-color: #adadad;
+        }
+        /* 清洗类：常规灰色次要按钮 */
+        #textconvert-ui .tc-btn.tc-clean {
+            background: #f3f3f3;
+            border-color: #cfcfcf;
+            color: #444;
+        }
+        #textconvert-ui .tc-btn.tc-clean:hover {
+            background: #e7e7e7;
+            border-color: #b0b0b0;
+        }
+        /* 大小写/命名类：浅蓝 */
+        #textconvert-ui .tc-btn.tc-case {
+            background: #eef4fb;
+            border-color: #b9d3ee;
+            color: #1f4e79;
+        }
+        #textconvert-ui .tc-btn.tc-case:hover {
+            background: #dfeafa;
+            border-color: #8fbbe6;
+        }
+        /* 编码/格式化类：蓝色主题色 */
+        #textconvert-ui .tc-btn.tc-encode {
+            background: #2f6fb0;
+            border-color: #2a629c;
+            color: #fff;
+        }
+        #textconvert-ui .tc-btn.tc-encode:hover {
+            background: #285f97;
+            border-color: #224f7f;
+        }
+        /* Hex 转换类：极客感代码绿边框 */
+        #textconvert-ui .tc-btn.tc-hex {
+            background: #f1f8f2;
+            border: 1px solid #2e8b57;
+            color: #1b5e34;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+        }
+        #textconvert-ui .tc-btn.tc-hex:hover {
+            background: #e2f1e6;
+            border-color: #20693f;
+        }
+        /* 下拉展开时主按钮高亮 */
+        #textconvert-ui .tc-dropdown.tc-open .tc-dropdown-toggle {
+            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+            filter: brightness(0.97);
+        }
+        /* 下拉浮层菜单 */
+        #textconvert-ui .tc-dropdown-menu {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            z-index: 50;
+            display: none;
+            flex-direction: column;
+            min-width: 180px;
+            max-height: 320px;
+            overflow-y: auto;
+            padding: 5px;
+            gap: 4px;
+            background: #fff;
+            border: 1px solid #c8c8c8;
+            border-radius: 6px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+        }
+        #textconvert-ui .tc-dropdown.tc-open .tc-dropdown-menu {
+            display: flex;
+        }
+        #textconvert-ui .tc-dropdown-menu button {
+            width: 100%;
+            text-align: left;
+            white-space: nowrap;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            background: #f7f7f7;
+            color: #333;
+        }
+        #textconvert-ui .tc-dropdown-menu button:hover {
+            background: #eaf0f6;
+            border-color: #b9d3ee;
+        }
+        /* 各分类菜单内按钮的颜色提示（左侧色条） */
+        #textconvert-ui .tc-menu-clean button { border-left: 3px solid #c0c0c0; }
+        #textconvert-ui .tc-menu-case button { border-left: 3px solid #8fbbe6; }
+        #textconvert-ui .tc-menu-encode button { border-left: 3px solid #2f6fb0; }
+        #textconvert-ui .tc-dropdown-menu-hex button {
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            border-left: 3px solid #2e8b57;
+        }
+        /* 悬浮提示 (Tooltip) */
+        #textconvert-ui [data-tip] {
+            position: relative;
+        }
+        #textconvert-ui [data-tip]:hover::after {
+            content: attr(data-tip);
+            position: absolute;
+            left: 0;
+            top: calc(100% + 6px);
+            z-index: 70;
+            max-width: 300px;
+            width: max-content;
+            padding: 6px 9px;
+            background: #1f1f1f;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 400;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            line-height: 1.45;
+            border-radius: 4px;
+            white-space: normal;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            pointer-events: none;
+        }
+        /* 触屏设备隐藏 hover tooltip，避免点击残留 */
+        @media (hover: none) {
+            #textconvert-ui [data-tip]:hover::after {
+                display: none;
+            }
+        }
+        #textconvert-ui .textconvert-controls-panel {
+            overflow: visible;
+            border: 1px solid #d8d8d8;
+            padding: 10px;
+            margin: 10px 0;
+            background: #fff;
+        }
+        #textconvert-ui .textconvert-controls-panel .buttons {
+            margin: 0;
+        }
+
+        #textconvert-ui .textconvert-controls-panel .sequence-section {
+            border: 0;
+            border-top: 1px solid #e2e2e2;
+            padding: 10px 0 0;
+            margin: 10px 0 0;
+        }
+        #textconvert-ui button {
+            font-family: inherit;
+            font-size: 14px;
+            line-height: 1.25;
+            min-height: 24px;
+            padding: 3px 5px;
+            cursor: pointer;
+        }
+        #textconvert-ui .buttons button {
+            width: 100%;
+            white-space: normal;
+        }
+        /* 主按钮（下拉触发 + 清空）保持内容宽度，覆盖上面的 100% 规则 */
+        #textconvert-ui .buttons .tc-btn {
+            width: auto;
+            white-space: nowrap;
+        }
+        #textconvert-ui .sequence-section .tool-section-title {
+
+            margin-bottom: 6px;
+        }
+        #textconvert-ui .sequence-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: end;
+        }
+        #textconvert-ui .sequence-grid .tool-field {
+            flex: 0 0 auto;
+        }
+        #textconvert-ui .sequence-range-field {
+            width: 92px;
+        }
+        #textconvert-ui .sequence-width-field {
+            width: 58px;
+        }
+        #textconvert-ui .sequence-count-field {
+            width: 112px;
+        }
+        #textconvert-ui .sequence-order-field {
+            width: 72px;
+        }
+        #textconvert-ui .sequence-separator-mode-field {
+            width: 100px;
+        }
+        #textconvert-ui .sequence-separator-custom-field {
+            width: 84px;
+        }
+        #textconvert-ui .sequence-actions {
+            display: flex;
+            gap: 8px;
+            align-items: end;
+        }
+        #textconvert-ui .sequence-actions button {
+            min-width: 96px;
+        }
+        #textconvert-ui button.clear-btn {
+            background: #f0f0f0;
+            border-color: #238625;
+            color: #000000;
+        }
+        #textconvert-ui button.clear-btn:hover {
+            background: #f7fbcc;
+            border-color: #22ca24;
+        }
+        .tool-panel {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        #timecalc-ui,
+        #password-ui {
+            max-width: 500px;
+        }
+        #timecalc-ui .timecalc-form-row {
+            display: grid;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        #timecalc-ui .timecalc-form-row:last-child {
+            margin-bottom: 0;
+        }
+        #timecalc-ui .timecalc-one-col {
+            grid-template-columns: 1fr;
+        }
+        #timecalc-ui .timecalc-three-col {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        #timecalc-ui .timecalc-inline-field {
+            display: grid;
+            grid-template-columns: 78px minmax(0, 1fr);
+            gap: 4px;
+            align-items: center;
+            font-size: 13px;
+        }
+        #timecalc-ui .timecalc-inline-field input {
+            width: 100%;
+            max-width: 180px;
+            min-height: 28px;
+            padding: 1px 3px;
+            border: 1px solid #999;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        #timecalc-ui .timecalc-base-row {
+            grid-template-columns: minmax(0, max-content) auto;
+            gap: 6px;
+            align-items: end;
+        }
+        #timecalc-ui .timecalc-base-row .timecalc-inline-field {
+            grid-template-columns: 78px 180px;
+        }
+        #timecalc-ui .timecalc-convert-toggle {
+            min-height: 28px;
+            min-width: 64px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            white-space: nowrap;
+            font-size: 13px;
+        }
+        #timecalc-ui .timecalc-convert-toggle input {
+            margin: 0;
+        }
+        #timecalc-ui .timecalc-convert-text {
+            line-height: 1.1;
+        }
+        @media (max-width: 420px) {
+            #timecalc-ui .timecalc-base-row {
+                grid-template-columns: minmax(0, max-content) 44px;
+                gap: 4px;
+            }
+            #timecalc-ui .timecalc-convert-toggle {
+                min-width: 44px;
+                white-space: normal;
+            }
+            #timecalc-ui .timecalc-convert-text {
+                width: 2em;
+            }
+        }
+        #password-ui .password-list {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            width: 100%;
+            min-height: 180px;
+            margin-top: 8px;
+            padding: 7px;
+            border: 1px solid #999;
+            background: #fff;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            font-size: 14px;
+        }
+        #password-ui .password-row {
+            position: relative;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 24px;
+            gap: 6px;
+            align-items: center;
+            min-height: 28px;
+            padding: 3px 5px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: background-color 0.12s ease, border-color 0.12s ease;
+        }
+        #password-ui .password-row:hover {
+            border-color: #c8d6c8;
+            background: #f5fbf5;
+        }
+        #password-ui .password-row:active {
+            background: #edf7ed;
+        }
+        #password-ui .password-row.is-editing {
+            cursor: default;
+            background: #fff;
+            border-color: #238625;
+        }
+        #password-ui .password-text {
+            overflow-wrap: anywhere;
+            user-select: text;
+            line-height: 1.35;
+        }
+        #password-ui .password-edit-input {
+            width: 100%;
+            min-height: 24px;
+            padding: 2px 4px;
+            border: 1px solid #999;
+            font: inherit;
+        }
+        #password-ui .password-edit-btn {
+            width: 22px;
+            min-width: 22px;
+            height: 22px;
+            padding: 0;
+            line-height: 1;
+            font-size: 13px;
+        }
+        #password-ui .password-toast {
+            position: absolute;
+            right: 8px;
+            bottom: 8px;
+            padding: 3px 8px;
+            border: 1px solid #b9d8b9;
+            background: #f5fbf5;
+            color: #2f5f38;
+            font-family: inherit;
+            font-size: 13px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.16s ease;
+        }
+        #password-ui .password-toast.show {
+            opacity: 1;
+        }
+        #hash-ui {
+            max-width: 1000px;
+        }
+        .hash-frame {
+            display: block;
+            width: 100%;
+            min-height: calc(100vh - 58px);
+            border: 0;
+            background: #f8f8f8;
+        }
+        .tool-panel h3 {
+            margin: 8px 0 12px;
+        }
+        .tool-section {
+            border: 1px solid #d8d8d8;
+            padding: 10px;
+            margin: 10px 0;
+            background: #fff;
+        }
+        .tool-section-title {
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .tool-note {
+            margin: -4px 0 8px;
+            padding: 7px 8px;
+            border: 1px solid #d8e6d8;
+            background: #f5fbf5;
+            color: #2f5f38;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+        .tool-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 8px;
+            align-items: end;
+        }
+        .tool-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 13px;
+        }
+        .tool-field input,
+        .tool-field select,
+        .tool-field textarea {
+            width: 100%;
+            min-height: 24px;
+            padding: 3px 5px;
+            border: 1px solid #999;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        .tool-field textarea {
+            min-height: 80px;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+        }
+        .tool-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin-top: 8px;
+        }
+        .tool-actions button,
+        .tool-action-btn {
+            min-height: 24px;
+            padding: 3px 5px;
+            cursor: pointer;
+        }
+        .tool-output {
+            margin-top: 10px;
+            padding: 8px;
+            border: 1px solid #d0d0d0;
+            background: #fafafa;
+            white-space: pre-wrap;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            font-size: 14px;
+            min-height: 40px;
+        }
+        .checkbox-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 14px;
+            align-items: center;
+        }
+        .checkbox-row label {
+            white-space: nowrap;
+        }
+        .external-links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 10px;
+        }
+        .external-links-subtitle {
+            grid-column: 1 / -1;
+            margin: 8px 0 0;
+            padding: 6px 0 2px;
+            border-bottom: 1px solid #e4e4e4;
+            color: #333;
+            font-weight: 700;
+        }
+        .external-links-subtitle:first-child {
+            margin-top: 0;
+        }
+        .external-tool-link {
+            display: block;
+            padding: 10px;
+            border: 1px solid #d8d8d8;
+            color: #222;
+            text-decoration: none;
+            background: #fff;
+        }
+        .external-tool-link:hover {
+            background: #f7fbff;
+            border-color: #88b7e8;
+        }
+        .external-tool-link b {
+            display: block;
+            margin-bottom: 4px;
+        }
+        .external-tool-link span {
+            color: #555;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+
+        #about-ui {
+            max-width: 900px;
+        }
+        #about-ui h3 {
+            margin: 8px 0 12px;
+        }
+        #about-ui h4 {
+            margin: 8px 0 6px;
+        }
+        #about-ui h5 {
+            margin: 8px 0 4px;
+        }
+        #about-ui ul {
+            margin: 4px 0 10px 20px;
+            padding: 0;
+        }
+        .about-release-note {
+            margin: 6px 0 0;
+            padding: 8px;
+            border: 1px solid #e0e0e0;
+            background: #fafafa;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            word-break: break-word;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        @media (max-width:700px) {
+            body {
+                background: #fff;
+                font-size: 14px;
+            }
+            .tab-bar {
+                height: auto;
+                padding-left: 0;
+                align-items: stretch;
+                position: sticky;
+                top: 0;
+                z-index: 20;
+            }
+            .tab {
+                flex: 1 1 0;
+                min-width: 0;
+                margin-right: 0;
+                padding: 4px 6px;
+                text-align: center;
+                font-size: 0;
+                line-height: 1.15;
+                border-radius: 0;
+                top: 0;
+                overflow: hidden;
+                white-space: nowrap;
+            }
+            .tab::after {
+                content: attr(data-mobile-label);
+                display: block;
+                font-size: 13px;
+                line-height: 1.15;
+            }
+            .tab-content {
+                margin: 0;
+                padding: 6px;
+                border-left: 0;
+                border-right: 0;
+                border-radius: 0;
+                min-height: calc(100vh - 30px);
+            }
+            #regcalc-ui {
+                width: max-content;
+                max-width: none;
+                padding-bottom: 8px;
+                overflow: visible;
+                transform-origin: left top;
+            }
+            #regcalc-ui > table {
+                max-width: none;
+            }
+            #regcalc-ui table {
+                border-spacing: 2px;
+            }
+            #regcalc-ui table input[type="text"],
+            #regcalc-ui table textarea {
+                max-width: 100%;
+            }
+            #textconvert-ui h3 {
+                margin: 6px 0 12px;
+                font-size: 18px;
+            }
+            #textconvert-ui .buttons {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            /* 手机端下拉主按钮平铺成两列，菜单仍为浮层 */
+            #textconvert-ui .buttons > .tc-dropdown,
+            #textconvert-ui .buttons > .tc-btn {
+                flex: 1 1 calc(50% - 6px);
+            }
+            #textconvert-ui .buttons > .tc-dropdown .tc-dropdown-toggle {
+                width: 100%;
+            }
+            #textconvert-ui .textconvert-controls-panel {
+                padding: 8px;
+            }
+            #textconvert-ui button {
+                min-height: 24px;
+                padding: 3px 5px;
+                font-size: 14px;
+            }
+            #textconvert-ui .buttons button {
+                width: 100%;
+                white-space: normal;
+            }
+            /* 手机端下拉菜单自适应宽度 */
+            #textconvert-ui .tc-dropdown-menu {
+                min-width: 60vw;
+                max-height: 50vh;
+            }
+
+            #textconvert-ui .container {
+                gap: 8px;
+            }
+            #textconvert-ui textarea {
+                min-height: 160px;
+                font-size: 16px;
+            }
+            #textconvert-ui .swap-btn {
+                width: 100%;
+                align-self: stretch;
+            }
+            .tool-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            #timecalc-ui .timecalc-three-col {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+            #textconvert-ui .sequence-grid {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            #textconvert-ui .sequence-range-field,
+            #textconvert-ui .sequence-width-field,
+            #textconvert-ui .sequence-count-field,
+            #textconvert-ui .sequence-order-field,
+            #textconvert-ui .sequence-separator-mode-field,
+            #textconvert-ui .sequence-separator-custom-field {
+                width: auto;
+            }
+            #textconvert-ui .sequence-actions {
+                grid-column: 1 / -1;
+            }
+            #textconvert-ui .sequence-actions button {
+                flex: 1 1 0;
+                min-width: 0;
+            }
+            .tool-section {
+                padding: 8px;
+            }
+            .external-links-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width:380px) {
+            .tab {
+                font-size: 14px;
+            }
+            .tab-content {
+                padding: 8px;
+            }
+        }
+
+        @media (max-width:1100px) {
+            #textconvert-ui .container {
+                flex-direction: column;
+            }
+            #textconvert-ui textarea {
+                flex: none;
+                width: 100%;
+                height: 160px;
+            }
+        }
+    
+body { margin: 0; padding: 8px; background: #f8f8f8; }
+.tab-content { display: block !important; margin: 0; border-radius: 0; min-height: auto; }
+</style>
+</head>
+<body>
+<div class="tab-content active" id="timecalc">
+        <div class="tool-panel" id="timecalc-ui">
+            <h3>日期时间计算器</h3>
+            <div class="tool-section">
+                <div class="tool-section-title">计算两个日期时间相隔</div>
+                <div class="timecalc-form-row timecalc-one-col">
+                    <label class="timecalc-inline-field">开始日期时间
+                        <input type="datetime-local" id="timecalc_start" step="1">
+                    </label>
+                </div>
+                <div class="timecalc-form-row timecalc-one-col">
+                    <label class="timecalc-inline-field">结束日期时间
+                        <input type="datetime-local" id="timecalc_end" step="1">
+                    </label>
+                </div>
+                <div class="tool-actions">
+                    <button type="button" onclick="timecalc_calculateDiff()">计算间隔</button>
+                    <button type="button" onclick="timecalc_setNow('timecalc_start')">开始=现在</button>
+                    <button type="button" onclick="timecalc_setNow('timecalc_end')">结束=现在</button>
+                </div>
+                <div class="tool-output" id="timecalc_diffOutput"></div>
+            </div>
+            <div class="tool-section">
+                <div class="tool-section-title">计算未来或过去日期时间</div>
+                <div class="timecalc-form-row timecalc-base-row">
+                    <label class="timecalc-inline-field">基准日期时间
+                        <input type="datetime-local" id="timecalc_base" step="1">
+                    </label>
+                    <label class="timecalc-convert-toggle" title="按 1年=12月=365天 换算">
+                        <input type="checkbox" id="timecalc_convertMode" onchange="timecalc_toggleConvertMode()">
+                        <span class="timecalc-convert-text">时间转换</span>
+                    </label>
+                </div>
+                <div class="timecalc-form-row timecalc-three-col">
+                    <label class="tool-field">年
+                        <input type="number" id="timecalc_addYears" value="0" oninput="timecalc_handleConvertInput('years')">
+                    </label>
+                    <label class="tool-field">月
+                        <input type="number" id="timecalc_addMonths" value="0" oninput="timecalc_handleConvertInput('months')">
+                    </label>
+                    <label class="tool-field">天
+                        <input type="number" id="timecalc_addDays" value="0" oninput="timecalc_handleConvertInput('days')">
+                    </label>
+                </div>
+                <div class="timecalc-form-row timecalc-three-col">
+                    <label class="tool-field">小时
+                        <input type="number" id="timecalc_addHours" value="0" oninput="timecalc_handleConvertInput('hours')">
+                    </label>
+                    <label class="tool-field">分钟
+                        <input type="number" id="timecalc_addMinutes" value="0" oninput="timecalc_handleConvertInput('minutes')">
+                    </label>
+                    <label class="tool-field">秒
+                        <input type="number" id="timecalc_addSeconds" value="0" oninput="timecalc_handleConvertInput('seconds')">
+                    </label>
+                </div>
+                <div class="tool-actions">
+                    <button type="button" id="timecalc_futureBtn" onclick="timecalc_calculateOffset(1)">计算未来</button>
+                    <button type="button" id="timecalc_pastBtn" onclick="timecalc_calculateOffset(-1)">计算过去</button>
+                    <button type="button" id="timecalc_baseNowBtn" onclick="timecalc_setNow('timecalc_base')">基准=现在</button>
+                </div>
+                <div class="tool-output" id="timecalc_offsetOutput"></div>
+            </div>
+        </div>
+    </div>
+
+    
+<script>
+    function timecalc_pad(n) {
+        return String(n).padStart(2, '0');
+    }
+
+    function timecalc_toLocalInputValue(date) {
+        return `${date.getFullYear()}-${timecalc_pad(date.getMonth() + 1)}-${timecalc_pad(date.getDate())}T${timecalc_pad(date.getHours())}:${timecalc_pad(date.getMinutes())}:${timecalc_pad(date.getSeconds())}`;
+    }
+
+    function timecalc_setNow(id) {
+        document.getElementById(id).value = timecalc_toLocalInputValue(new Date());
+    }
+
+    function timecalc_parseInput(id) {
+        const value = document.getElementById(id).value;
+        if (!value) return null;
+        return new Date(value);
+    }
+
+    const timecalc_convertUnits = {
+        years: 365 * 24 * 60 * 60,
+        months: 365 * 24 * 60 * 60 / 12,
+        days: 24 * 60 * 60,
+        hours: 60 * 60,
+        minutes: 60,
+        seconds: 1
+    };
+    const timecalc_convertFieldIds = {
+        years: 'timecalc_addYears',
+        months: 'timecalc_addMonths',
+        days: 'timecalc_addDays',
+        hours: 'timecalc_addHours',
+        minutes: 'timecalc_addMinutes',
+        seconds: 'timecalc_addSeconds'
+    };
+    let timecalc_isConverting = false;
+
+    function timecalc_formatConvertNumber(value) {
+        if (!Number.isFinite(value)) return '0';
+        if (Object.is(value, -0)) value = 0;
+        if (Number.isInteger(value)) return String(value);
+        return Number(value.toPrecision(12)).toString();
+    }
+
+    function timecalc_clearOffsetFields() {
+        Object.values(timecalc_convertFieldIds).forEach(id => {
+            document.getElementById(id).value = '0';
+        });
+        document.getElementById('timecalc_offsetOutput').textContent = '';
+    }
+
+    function timecalc_toggleConvertMode() {
+        const enabled = document.getElementById('timecalc_convertMode').checked;
+        timecalc_clearOffsetFields();
+        document.getElementById('timecalc_base').disabled = enabled;
+        document.getElementById('timecalc_futureBtn').disabled = enabled;
+        document.getElementById('timecalc_pastBtn').disabled = enabled;
+        document.getElementById('timecalc_baseNowBtn').disabled = enabled;
+    }
+
+    function timecalc_handleConvertInput(unit) {
+        if (!document.getElementById('timecalc_convertMode').checked || timecalc_isConverting) return;
+        const source = document.getElementById(timecalc_convertFieldIds[unit]);
+        const rawValue = Number(source.value || 0);
+        if (!Number.isFinite(rawValue)) return;
+
+        timecalc_isConverting = true;
+        const totalSeconds = rawValue * timecalc_convertUnits[unit];
+        Object.keys(timecalc_convertFieldIds).forEach(key => {
+            if (key === unit) return;
+            document.getElementById(timecalc_convertFieldIds[key]).value =
+                timecalc_formatConvertNumber(totalSeconds / timecalc_convertUnits[key]);
+        });
+        timecalc_isConverting = false;
+    }
+
+    function timecalc_daysInMonth(year, monthIndex) {
+        return new Date(year, monthIndex + 1, 0).getDate();
+    }
+
+    function timecalc_addMonthsSafe(date, months) {
+        const result = new Date(date);
+        const day = result.getDate();
+        result.setDate(1);
+        result.setMonth(result.getMonth() + months);
+        result.setDate(Math.min(day, timecalc_daysInMonth(result.getFullYear(), result.getMonth())));
+        return result;
+    }
+
+    function timecalc_getPreciseDiff(start, end) {
+        const reversed = end < start;
+        if (reversed) [start, end] = [end, start];
+
+        let cursor = new Date(start);
+        let years = 0;
+        while (timecalc_addMonthsSafe(cursor, 12) <= end) {
+            cursor = timecalc_addMonthsSafe(cursor, 12);
+            years++;
+        }
+        let months = 0;
+        while (timecalc_addMonthsSafe(cursor, 1) <= end) {
+            cursor = timecalc_addMonthsSafe(cursor, 1);
+            months++;
+        }
+
+        let remainingMs = end - cursor;
+        const days = Math.floor(remainingMs / 86400000);
+        remainingMs -= days * 86400000;
+        const hours = Math.floor(remainingMs / 3600000);
+        remainingMs -= hours * 3600000;
+        const minutes = Math.floor(remainingMs / 60000);
+        remainingMs -= minutes * 60000;
+        const seconds = Math.floor(remainingMs / 1000);
+        const totalSeconds = Math.floor((end - start) / 1000);
+
+        return { years, months, days, hours, minutes, seconds, totalSeconds, reversed };
+    }
+
+    function timecalc_formatPreciseDiff(prefix, diff) {
+        return `${prefix}${diff.years} 年 ${diff.months} 月 ${diff.days} 天 ${diff.hours} 小时 ${diff.minutes} 分 ${diff.seconds} 秒\n` +
+            `总天数：${Math.floor(diff.totalSeconds / 86400)} 天\n` +
+            `总小时：${Math.floor(diff.totalSeconds / 3600)} 小时\n` +
+            `总分钟：${Math.floor(diff.totalSeconds / 60)} 分钟\n` +
+            `总秒数：${diff.totalSeconds} 秒`;
+    }
+
+    function timecalc_hasOffsetValues() {
+        return Object.values(timecalc_convertFieldIds).some(id => {
+            const value = Number(document.getElementById(id).value || 0);
+            return Number.isFinite(value) && value !== 0;
+        });
+    }
+
+    function timecalc_calculateDiff() {
+        const start = timecalc_parseInput('timecalc_start');
+        const end = timecalc_parseInput('timecalc_end');
+        const output = document.getElementById('timecalc_diffOutput');
+        if (!start || !end || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+            output.textContent = '请选择开始时间和结束时间。';
+            return;
+        }
+
+        const diff = timecalc_getPreciseDiff(start, end);
+        output.textContent =
+            timecalc_formatPreciseDiff(diff.reversed ? '反向间隔：' : '时间间隔：', diff);
+    }
+
+    function timecalc_calculateOffset(direction) {
+        if (document.getElementById('timecalc_convertMode').checked) return;
+        const output = document.getElementById('timecalc_offsetOutput');
+        const parsedBase = timecalc_parseInput('timecalc_base');
+        const hasOffsetValues = timecalc_hasOffsetValues();
+        if (!parsedBase && !hasOffsetValues) {
+            output.textContent = '请选择基准时间，或填写要加减的时间。';
+            return;
+        }
+
+        const base = parsedBase || new Date();
+        if (Number.isNaN(base.getTime())) {
+            output.textContent = '基准时间格式无效。';
+            return;
+        }
+
+        if (!hasOffsetValues) {
+            const now = new Date();
+            const diff = direction > 0
+                ? timecalc_getPreciseDiff(now, base)
+                : timecalc_getPreciseDiff(base, now);
+            let prefix;
+            if (direction > 0) {
+                prefix = diff.reversed ? '基准时间在过去，已过去：' : '距离未来：';
+            } else {
+                prefix = diff.reversed ? '基准时间在未来，还差：' : '已过去：';
+            }
+            output.textContent = timecalc_formatPreciseDiff(prefix, diff);
+            return;
+        }
+
+        const result = new Date(base);
+        const years = Number(document.getElementById('timecalc_addYears').value || 0) * direction;
+        const months = Number(document.getElementById('timecalc_addMonths').value || 0) * direction;
+        const days = Number(document.getElementById('timecalc_addDays').value || 0) * direction;
+        const hours = Number(document.getElementById('timecalc_addHours').value || 0) * direction;
+        const minutes = Number(document.getElementById('timecalc_addMinutes').value || 0) * direction;
+        const seconds = Number(document.getElementById('timecalc_addSeconds').value || 0) * direction;
+
+        let shifted = timecalc_addMonthsSafe(result, years * 12 + months);
+        shifted.setDate(shifted.getDate() + days);
+        shifted.setHours(shifted.getHours() + hours);
+        shifted.setMinutes(shifted.getMinutes() + minutes);
+        shifted.setSeconds(shifted.getSeconds() + seconds);
+
+        output.textContent =
+            `${direction > 0 ? '未来时间' : '过去时间'}：${timecalc_toLocalInputValue(shifted).replace('T', ' ')}`;
+    }
+
+
+</script>
+<script>
+window.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    const tomorrow = new Date(now.getTime() + 86400000);
+    document.getElementById('timecalc_start').value = timecalc_toLocalInputValue(now);
+    document.getElementById('timecalc_end').value = timecalc_toLocalInputValue(tomorrow);
+    document.getElementById('timecalc_base').value = timecalc_toLocalInputValue(now);
+    timecalc_toggleConvertMode();
+});
+</script>
+<script>
+window.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('input[type="text"], textarea').forEach(function (el) {
+    el.addEventListener('dblclick', async function () {
+      const text = (el.value ?? '').toString();
+      if (!text) return;
+      try { await navigator.clipboard.writeText(text); }
+      catch { el.focus(); el.select(); document.execCommand('copy'); }
+    });
+  });
+});
+</script>
+</body>
+</html>

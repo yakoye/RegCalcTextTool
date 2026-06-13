@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TextFormatter</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans CJK SC", "PingFang SC", Arial, sans-serif;
+            background: #f9f9f9;
+            margin:0;
+            color: #222;
+            font-size: 15px;
+            line-height: 1.5;
+            -webkit-text-size-adjust: 100%;
+            text-rendering: optimizeLegibility;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        .tab-bar {
+            display: flex;
+            border-bottom: 2px solid #dedede;
+            background: #ededed;
+            height: 34px;
+            align-items: flex-end;
+            padding-left: 24px;
+        }
+        .tab {
+            padding: 5px 28px 6px 28px;
+            margin-right: 4px;
+            border: 1px solid #dedede;
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            background: #e5e5e5;
+            cursor: pointer;
+            color: #888;
+            font-size: 15px;
+            font-weight: 600;
+            position: relative;
+            top: 2px;
+            transition: all 0.2s;
+        }
+        .tab.active {
+            background: #fff;
+            color: #222;
+            border-bottom: 2px solid #fff;
+            z-index: 2;
+        }
+        .tab-content {
+            display: none;
+            background: #fff;
+            border: 1.5px solid #dedede;
+            border-radius: 0 0 8px 8px;
+            /* 第一个值 5px - 设置上下方向的内边距为 5 像素
+               第二个值 24px - 设置左右方向的内边距为 24 像素
+               等效：
+                padding-top: 5px;
+                padding-right: 24px;
+                padding-bottom: 5px;
+                padding-left: 24px;
+            */
+            margin: 0 24px 24px 24px;
+            padding: 5px 24px;
+            min-height: 400px;
+            box-sizing: border-box;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        #regcalc-ui {
+            max-width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+        #regcalc-ui table {
+            --regcalc-field-width: 280px;
+            --regcalc-gap: 4px;
+            font-size: 14px;
+            line-height: 1.45;
+        }
+        #regcalc-ui > table {
+            max-width: 100%;
+        }
+        /* RegCalc指定样式（防止干扰） */
+        #regcalc-ui table input[type="text"], #regcalc-ui table textarea {
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            font-size: 14px;
+            line-height: 1.35;
+            padding: 3px 5px;
+            border: 1px solid #999;
+            margin: 3px 0;
+        }
+        #regcalc-ui table input[type="button"], #regcalc-ui table button {
+            font-family: inherit;
+            font-size: 14px;
+            line-height: 1.2;
+        }
+        #regcalc-ui .regcalc-title-table {
+            margin: 4px auto 5px;
+        }
+        #regcalc-ui .regcalc-title-table td {
+            line-height: 1.1;
+        }
+        #regcalc-ui .regcalc-bit-table {
+            border-spacing: 1px 0;
+            font-size: 14px;
+        }
+        #regcalc-ui .regcalc-bit-table td {
+            padding: 0 1px;
+            line-height: 1;
+            vertical-align: bottom;
+        }
+        #regcalc-ui .regcalc-bit-label td {
+            padding-top: 0;
+            padding-bottom: 1px;
+        }
+        #regcalc-ui .regcalc-bit-label-small-gap td {
+            padding-top: 4px;
+        }
+        #regcalc-ui .regcalc-bit-label-mid-gap td {
+            padding-top: 12px;
+        }
+        #regcalc-ui .regcalc-bit-button td {
+            padding-top: 0;
+            padding-bottom: 0;
+            vertical-align: top;
+        }
+        #regcalc-ui .regcalc-bit-table input[type="button"] {
+            margin-top: 0;
+            padding-top: 1px;
+            padding-bottom: 1px;
+        }
+        #regcalc-ui .regcalc-bit-spacer td {
+            height: 0;
+            padding: 0;
+            line-height: 0;
+            font-size: 0;
+        }
+        #regcalc-ui .regcalc-form-table {
+            border-spacing: 3px 3px;
+        }
+        #regcalc-ui .regcalc-label {
+            width: 86px;
+            padding-right: 5px;
+            text-align: right;
+            white-space: nowrap;
+        }
+        #regcalc-ui .regcalc-control {
+            text-align: left;
+            white-space: nowrap;
+        }
+        #regcalc-ui .regcalc-actions {
+            text-align: left;
+            white-space: nowrap;
+            padding-left: 2px;
+            width: 1%;
+        }
+        #regcalc-ui .regcalc-control input,
+        #regcalc-ui .regcalc-control textarea,
+        #regcalc-ui .regcalc-actions button,
+        #regcalc-ui .regcalc-actions input {
+            margin-right: var(--regcalc-gap);
+        }
+        #regcalc-ui #regcalc_hex,
+        #regcalc-ui #regcalc_dec,
+        #regcalc-ui #regcalc_calcInput,
+        #regcalc-ui #regcalc_calcResult {
+            width: var(--regcalc-field-width) !important;
+        }
+        #regcalc-ui #regcalc_human {
+            width: 80px !important;
+        }
+        #regcalc-ui .regcalc-bit-range {
+            width: 54px !important;
+        }
+        #regcalc-ui .regcalc-sub-hex {
+            width: 86px !important;
+        }
+        #regcalc-ui .regcalc-sub-dec {
+            width: calc(var(--regcalc-field-width) - 54px - 86px - (var(--regcalc-gap) * 2)) !important;
+        }
+        #regcalc-ui .regcalc-bitfield-buttons {
+            white-space: nowrap;
+        }
+        #regcalc-ui .regcalc-bitfield-buttons button {
+            min-width: 24px;
+            padding: 3px 6px;
+        }
+        #regcalc-ui #regcalc_bin {
+            width: var(--regcalc-field-width) !important;
+            min-height: calc(1.35em + 8px);
+            max-height: calc((1.35em * 3) + 10px);
+            resize: none;
+            white-space: pre-wrap;
+            overflow-x: hidden;
+            overflow-y: hidden;
+            overflow-wrap: anywhere;
+            word-break: break-all;
+        }
+        #regcalc-ui #regcalc_calcInput {
+            min-height: calc(1.35em + 10px);
+            max-height: calc((1.35em * 3) + 10px);
+            resize: none;
+            white-space: pre-wrap;
+            overflow-x: hidden;
+            overflow-y: hidden;
+            overflow-wrap: anywhere;
+            word-break: break-all;
+        }
+        #regcalc-ui .regcalc-spacer td {
+            height: 5px;
+            padding: 0;
+            line-height: 0;
+        }
+        #regcalc-ui .regcalc-footer-actions {
+            padding-top: 4px;
+            text-align: center;
+        }
+        #regcalc-ui .regcalc-footer-actions a,
+        #regcalc-ui .regcalc-footer-actions input {
+            margin: 0 5px;
+        }
+        #regcalc-ui table textarea {
+            vertical-align: top;
+        }
+        /* TextConvert 指定样式（命名前缀隔离） */
+        #textconvert-ui {
+            max-width: 1040px;
+            margin: 0 auto;
+        }
+        #textconvert-ui .container {
+            display: flex;    /* 启用 flex 布局 */
+            gap: 5px;        /* 设置子元素之间的间距为 5px */
+            width: 100%;
+        }
+        /* TextConvert 文本框的宽度和高度 */
+        #textconvert-ui textarea {
+            flex: 1 1 0;
+            min-width: 0;
+            height: 300px;
+            padding: 10px;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            font-size: 14px;
+            line-height: 1.45;
+            box-sizing: border-box;
+        }
+        #textconvert-ui .swap-btn {
+            align-self: center;      /* 在 flex 容器中垂直居中对齐 */
+            padding: 10px;           /* 内边距：上下左右都是10px */
+            margin: 0 0px;           /* 外边距：上下0，左右0px */
+            background: #f0f0f0;     /* 浅灰色背景 */
+            border: 1px solid #ccc;  /* 浅灰色边框，1像素宽度 */
+            cursor: pointer;         /* 鼠标悬停时显示手型指针 */
+        }
+        #textconvert-ui .buttons {
+            margin: 10px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: flex-start;
+        }
+        /* 下拉折叠按钮组 */
+        #textconvert-ui .tc-dropdown {
+            position: relative;
+            display: inline-flex;
+        }
+        #textconvert-ui .tc-btn {
+            white-space: nowrap;
+            border: 1px solid #c8c8c8;
+            border-radius: 4px;
+            background: #f5f5f5;
+            color: #333;
+            font-weight: 600;
+            transition: background .15s, border-color .15s;
+        }
+        #textconvert-ui .tc-btn:hover {
+            background: #ececec;
+            border-color: #adadad;
+        }
+        /* 清洗类：常规灰色次要按钮 */
+        #textconvert-ui .tc-btn.tc-clean {
+            background: #f3f3f3;
+            border-color: #cfcfcf;
+            color: #444;
+        }
+        #textconvert-ui .tc-btn.tc-clean:hover {
+            background: #e7e7e7;
+            border-color: #b0b0b0;
+        }
+        /* 大小写/命名类：浅蓝 */
+        #textconvert-ui .tc-btn.tc-case {
+            background: #eef4fb;
+            border-color: #b9d3ee;
+            color: #1f4e79;
+        }
+        #textconvert-ui .tc-btn.tc-case:hover {
+            background: #dfeafa;
+            border-color: #8fbbe6;
+        }
+        /* 编码/格式化类：蓝色主题色 */
+        #textconvert-ui .tc-btn.tc-encode {
+            background: #2f6fb0;
+            border-color: #2a629c;
+            color: #fff;
+        }
+        #textconvert-ui .tc-btn.tc-encode:hover {
+            background: #285f97;
+            border-color: #224f7f;
+        }
+        /* Hex 转换类：极客感代码绿边框 */
+        #textconvert-ui .tc-btn.tc-hex {
+            background: #f1f8f2;
+            border: 1px solid #2e8b57;
+            color: #1b5e34;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+        }
+        #textconvert-ui .tc-btn.tc-hex:hover {
+            background: #e2f1e6;
+            border-color: #20693f;
+        }
+        /* 下拉展开时主按钮高亮 */
+        #textconvert-ui .tc-dropdown.tc-open .tc-dropdown-toggle {
+            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+            filter: brightness(0.97);
+        }
+        /* 下拉浮层菜单 */
+        #textconvert-ui .tc-dropdown-menu {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            z-index: 50;
+            display: none;
+            flex-direction: column;
+            min-width: 180px;
+            max-height: 320px;
+            overflow-y: auto;
+            padding: 5px;
+            gap: 4px;
+            background: #fff;
+            border: 1px solid #c8c8c8;
+            border-radius: 6px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+        }
+        #textconvert-ui .tc-dropdown.tc-open .tc-dropdown-menu {
+            display: flex;
+        }
+        #textconvert-ui .tc-dropdown-menu button {
+            width: 100%;
+            text-align: left;
+            white-space: nowrap;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            background: #f7f7f7;
+            color: #333;
+        }
+        #textconvert-ui .tc-dropdown-menu button:hover {
+            background: #eaf0f6;
+            border-color: #b9d3ee;
+        }
+        /* 各分类菜单内按钮的颜色提示（左侧色条） */
+        #textconvert-ui .tc-menu-clean button { border-left: 3px solid #c0c0c0; }
+        #textconvert-ui .tc-menu-case button { border-left: 3px solid #8fbbe6; }
+        #textconvert-ui .tc-menu-encode button { border-left: 3px solid #2f6fb0; }
+        #textconvert-ui .tc-dropdown-menu-hex button {
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            border-left: 3px solid #2e8b57;
+        }
+        /* 悬浮提示 (Tooltip) */
+        #textconvert-ui [data-tip] {
+            position: relative;
+        }
+        #textconvert-ui [data-tip]:hover::after {
+            content: attr(data-tip);
+            position: absolute;
+            left: 0;
+            top: calc(100% + 6px);
+            z-index: 70;
+            max-width: 300px;
+            width: max-content;
+            padding: 6px 9px;
+            background: #1f1f1f;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 400;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            line-height: 1.45;
+            border-radius: 4px;
+            white-space: normal;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            pointer-events: none;
+        }
+        /* 触屏设备隐藏 hover tooltip，避免点击残留 */
+        @media (hover: none) {
+            #textconvert-ui [data-tip]:hover::after {
+                display: none;
+            }
+        }
+        #textconvert-ui .textconvert-controls-panel {
+            overflow: visible;
+            border: 1px solid #d8d8d8;
+            padding: 10px;
+            margin: 10px 0;
+            background: #fff;
+        }
+        #textconvert-ui .textconvert-controls-panel .buttons {
+            margin: 0;
+        }
+
+        #textconvert-ui .textconvert-controls-panel .sequence-section {
+            border: 0;
+            border-top: 1px solid #e2e2e2;
+            padding: 10px 0 0;
+            margin: 10px 0 0;
+        }
+        #textconvert-ui button {
+            font-family: inherit;
+            font-size: 14px;
+            line-height: 1.25;
+            min-height: 24px;
+            padding: 3px 5px;
+            cursor: pointer;
+        }
+        #textconvert-ui .buttons button {
+            width: 100%;
+            white-space: normal;
+        }
+        /* 主按钮（下拉触发 + 清空）保持内容宽度，覆盖上面的 100% 规则 */
+        #textconvert-ui .buttons .tc-btn {
+            width: auto;
+            white-space: nowrap;
+        }
+        #textconvert-ui .sequence-section .tool-section-title {
+
+            margin-bottom: 6px;
+        }
+        #textconvert-ui .sequence-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: end;
+        }
+        #textconvert-ui .sequence-grid .tool-field {
+            flex: 0 0 auto;
+        }
+        #textconvert-ui .sequence-range-field {
+            width: 92px;
+        }
+        #textconvert-ui .sequence-width-field {
+            width: 58px;
+        }
+        #textconvert-ui .sequence-count-field {
+            width: 112px;
+        }
+        #textconvert-ui .sequence-order-field {
+            width: 72px;
+        }
+        #textconvert-ui .sequence-separator-mode-field {
+            width: 100px;
+        }
+        #textconvert-ui .sequence-separator-custom-field {
+            width: 84px;
+        }
+        #textconvert-ui .sequence-actions {
+            display: flex;
+            gap: 8px;
+            align-items: end;
+        }
+        #textconvert-ui .sequence-actions button {
+            min-width: 96px;
+        }
+        #textconvert-ui button.clear-btn {
+            background: #f0f0f0;
+            border-color: #238625;
+            color: #000000;
+        }
+        #textconvert-ui button.clear-btn:hover {
+            background: #f7fbcc;
+            border-color: #22ca24;
+        }
+        .tool-panel {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        #timecalc-ui,
+        #password-ui {
+            max-width: 500px;
+        }
+        #timecalc-ui .timecalc-form-row {
+            display: grid;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        #timecalc-ui .timecalc-form-row:last-child {
+            margin-bottom: 0;
+        }
+        #timecalc-ui .timecalc-one-col {
+            grid-template-columns: 1fr;
+        }
+        #timecalc-ui .timecalc-three-col {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        #timecalc-ui .timecalc-inline-field {
+            display: grid;
+            grid-template-columns: 78px minmax(0, 1fr);
+            gap: 4px;
+            align-items: center;
+            font-size: 13px;
+        }
+        #timecalc-ui .timecalc-inline-field input {
+            width: 100%;
+            max-width: 180px;
+            min-height: 28px;
+            padding: 1px 3px;
+            border: 1px solid #999;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        #timecalc-ui .timecalc-base-row {
+            grid-template-columns: minmax(0, max-content) auto;
+            gap: 6px;
+            align-items: end;
+        }
+        #timecalc-ui .timecalc-base-row .timecalc-inline-field {
+            grid-template-columns: 78px 180px;
+        }
+        #timecalc-ui .timecalc-convert-toggle {
+            min-height: 28px;
+            min-width: 64px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            white-space: nowrap;
+            font-size: 13px;
+        }
+        #timecalc-ui .timecalc-convert-toggle input {
+            margin: 0;
+        }
+        #timecalc-ui .timecalc-convert-text {
+            line-height: 1.1;
+        }
+        @media (max-width: 420px) {
+            #timecalc-ui .timecalc-base-row {
+                grid-template-columns: minmax(0, max-content) 44px;
+                gap: 4px;
+            }
+            #timecalc-ui .timecalc-convert-toggle {
+                min-width: 44px;
+                white-space: normal;
+            }
+            #timecalc-ui .timecalc-convert-text {
+                width: 2em;
+            }
+        }
+        #password-ui .password-list {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            width: 100%;
+            min-height: 180px;
+            margin-top: 8px;
+            padding: 7px;
+            border: 1px solid #999;
+            background: #fff;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            font-size: 14px;
+        }
+        #password-ui .password-row {
+            position: relative;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 24px;
+            gap: 6px;
+            align-items: center;
+            min-height: 28px;
+            padding: 3px 5px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: background-color 0.12s ease, border-color 0.12s ease;
+        }
+        #password-ui .password-row:hover {
+            border-color: #c8d6c8;
+            background: #f5fbf5;
+        }
+        #password-ui .password-row:active {
+            background: #edf7ed;
+        }
+        #password-ui .password-row.is-editing {
+            cursor: default;
+            background: #fff;
+            border-color: #238625;
+        }
+        #password-ui .password-text {
+            overflow-wrap: anywhere;
+            user-select: text;
+            line-height: 1.35;
+        }
+        #password-ui .password-edit-input {
+            width: 100%;
+            min-height: 24px;
+            padding: 2px 4px;
+            border: 1px solid #999;
+            font: inherit;
+        }
+        #password-ui .password-edit-btn {
+            width: 22px;
+            min-width: 22px;
+            height: 22px;
+            padding: 0;
+            line-height: 1;
+            font-size: 13px;
+        }
+        #password-ui .password-toast {
+            position: absolute;
+            right: 8px;
+            bottom: 8px;
+            padding: 3px 8px;
+            border: 1px solid #b9d8b9;
+            background: #f5fbf5;
+            color: #2f5f38;
+            font-family: inherit;
+            font-size: 13px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.16s ease;
+        }
+        #password-ui .password-toast.show {
+            opacity: 1;
+        }
+        #hash-ui {
+            max-width: 1000px;
+        }
+        .hash-frame {
+            display: block;
+            width: 100%;
+            min-height: calc(100vh - 58px);
+            border: 0;
+            background: #f8f8f8;
+        }
+        .tool-panel h3 {
+            margin: 8px 0 12px;
+        }
+        .tool-section {
+            border: 1px solid #d8d8d8;
+            padding: 10px;
+            margin: 10px 0;
+            background: #fff;
+        }
+        .tool-section-title {
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .tool-note {
+            margin: -4px 0 8px;
+            padding: 7px 8px;
+            border: 1px solid #d8e6d8;
+            background: #f5fbf5;
+            color: #2f5f38;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+        .tool-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 8px;
+            align-items: end;
+        }
+        .tool-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 13px;
+        }
+        .tool-field input,
+        .tool-field select,
+        .tool-field textarea {
+            width: 100%;
+            min-height: 24px;
+            padding: 3px 5px;
+            border: 1px solid #999;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        .tool-field textarea {
+            min-height: 80px;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+        }
+        .tool-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin-top: 8px;
+        }
+        .tool-actions button,
+        .tool-action-btn {
+            min-height: 24px;
+            padding: 3px 5px;
+            cursor: pointer;
+        }
+        .tool-output {
+            margin-top: 10px;
+            padding: 8px;
+            border: 1px solid #d0d0d0;
+            background: #fafafa;
+            white-space: pre-wrap;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            font-size: 14px;
+            min-height: 40px;
+        }
+        .checkbox-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 14px;
+            align-items: center;
+        }
+        .checkbox-row label {
+            white-space: nowrap;
+        }
+        .external-links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 10px;
+        }
+        .external-links-subtitle {
+            grid-column: 1 / -1;
+            margin: 8px 0 0;
+            padding: 6px 0 2px;
+            border-bottom: 1px solid #e4e4e4;
+            color: #333;
+            font-weight: 700;
+        }
+        .external-links-subtitle:first-child {
+            margin-top: 0;
+        }
+        .external-tool-link {
+            display: block;
+            padding: 10px;
+            border: 1px solid #d8d8d8;
+            color: #222;
+            text-decoration: none;
+            background: #fff;
+        }
+        .external-tool-link:hover {
+            background: #f7fbff;
+            border-color: #88b7e8;
+        }
+        .external-tool-link b {
+            display: block;
+            margin-bottom: 4px;
+        }
+        .external-tool-link span {
+            color: #555;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+
+        #about-ui {
+            max-width: 900px;
+        }
+        #about-ui h3 {
+            margin: 8px 0 12px;
+        }
+        #about-ui h4 {
+            margin: 8px 0 6px;
+        }
+        #about-ui h5 {
+            margin: 8px 0 4px;
+        }
+        #about-ui ul {
+            margin: 4px 0 10px 20px;
+            padding: 0;
+        }
+        .about-release-note {
+            margin: 6px 0 0;
+            padding: 8px;
+            border: 1px solid #e0e0e0;
+            background: #fafafa;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            word-break: break-word;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        @media (max-width:700px) {
+            body {
+                background: #fff;
+                font-size: 14px;
+            }
+            .tab-bar {
+                height: auto;
+                padding-left: 0;
+                align-items: stretch;
+                position: sticky;
+                top: 0;
+                z-index: 20;
+            }
+            .tab {
+                flex: 1 1 0;
+                min-width: 0;
+                margin-right: 0;
+                padding: 4px 6px;
+                text-align: center;
+                font-size: 0;
+                line-height: 1.15;
+                border-radius: 0;
+                top: 0;
+                overflow: hidden;
+                white-space: nowrap;
+            }
+            .tab::after {
+                content: attr(data-mobile-label);
+                display: block;
+                font-size: 13px;
+                line-height: 1.15;
+            }
+            .tab-content {
+                margin: 0;
+                padding: 6px;
+                border-left: 0;
+                border-right: 0;
+                border-radius: 0;
+                min-height: calc(100vh - 30px);
+            }
+            #regcalc-ui {
+                width: max-content;
+                max-width: none;
+                padding-bottom: 8px;
+                overflow: visible;
+                transform-origin: left top;
+            }
+            #regcalc-ui > table {
+                max-width: none;
+            }
+            #regcalc-ui table {
+                border-spacing: 2px;
+            }
+            #regcalc-ui table input[type="text"],
+            #regcalc-ui table textarea {
+                max-width: 100%;
+            }
+            #textconvert-ui h3 {
+                margin: 6px 0 12px;
+                font-size: 18px;
+            }
+            #textconvert-ui .buttons {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            /* 手机端下拉主按钮平铺成两列，菜单仍为浮层 */
+            #textconvert-ui .buttons > .tc-dropdown,
+            #textconvert-ui .buttons > .tc-btn {
+                flex: 1 1 calc(50% - 6px);
+            }
+            #textconvert-ui .buttons > .tc-dropdown .tc-dropdown-toggle {
+                width: 100%;
+            }
+            #textconvert-ui .textconvert-controls-panel {
+                padding: 8px;
+            }
+            #textconvert-ui button {
+                min-height: 24px;
+                padding: 3px 5px;
+                font-size: 14px;
+            }
+            #textconvert-ui .buttons button {
+                width: 100%;
+                white-space: normal;
+            }
+            /* 手机端下拉菜单自适应宽度 */
+            #textconvert-ui .tc-dropdown-menu {
+                min-width: 60vw;
+                max-height: 50vh;
+            }
+
+            #textconvert-ui .container {
+                gap: 8px;
+            }
+            #textconvert-ui textarea {
+                min-height: 160px;
+                font-size: 16px;
+            }
+            #textconvert-ui .swap-btn {
+                width: 100%;
+                align-self: stretch;
+            }
+            .tool-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            #timecalc-ui .timecalc-three-col {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+            #textconvert-ui .sequence-grid {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            #textconvert-ui .sequence-range-field,
+            #textconvert-ui .sequence-width-field,
+            #textconvert-ui .sequence-count-field,
+            #textconvert-ui .sequence-order-field,
+            #textconvert-ui .sequence-separator-mode-field,
+            #textconvert-ui .sequence-separator-custom-field {
+                width: auto;
+            }
+            #textconvert-ui .sequence-actions {
+                grid-column: 1 / -1;
+            }
+            #textconvert-ui .sequence-actions button {
+                flex: 1 1 0;
+                min-width: 0;
+            }
+            .tool-section {
+                padding: 8px;
+            }
+            .external-links-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width:380px) {
+            .tab {
+                font-size: 14px;
+            }
+            .tab-content {
+                padding: 8px;
+            }
+        }
+
+        @media (max-width:1100px) {
+            #textconvert-ui .container {
+                flex-direction: column;
+            }
+            #textconvert-ui textarea {
+                flex: none;
+                width: 100%;
+                height: 160px;
+            }
+        }
+    
+body { margin: 0; padding: 8px; background: #f8f8f8; }
+.tab-content { display: block !important; margin: 0; border-radius: 0; min-height: auto; }
+</style>
+</head>
+<body>
+<div class="tab-content active" id="textconvert">
+        <div id="textconvert-ui">
+            <h3>文本处理工具 (TextFormatter)</h3>
+            <div class="textconvert-controls-panel">
+                <div class="buttons">
+                    <div class="tc-dropdown">
+                        <button class="tc-btn tc-clean tc-dropdown-toggle" onclick="textconvert_toggleDropdown(this)">清洗 ▾</button>
+                        <div class="tc-dropdown-menu tc-menu-clean">
+                            <button data-tip="删除所有空白行：保留有内容的行" onclick="textconvert_processText('removeEmptyLines')">去除空行</button>
+                            <button data-tip="a b c → abc：删除所有半角空格" onclick="textconvert_processText('removeSpaces')">去除空格</button>
+                            <button data-tip="去掉每行开头和结尾的空格" onclick="textconvert_processText('trimLines')">去首尾空格</button>
+                            <button data-tip="多个连续空格/Tab → 单个空格" onclick="textconvert_processText('collapseSpaces')">合并空白</button>
+                            <button data-tip="把所有换行删掉，合并成一行" onclick="textconvert_processText('removeAllLineBreaks')">去除所有换行</button>
+                            <button data-tip="拼接被错误断开的行（保留句末换行）" onclick="textconvert_processText('removeInterruptedBreaks')">去除中断换行</button>
+                            <button data-tip="删除重复出现的行，仅保留首次" onclick="textconvert_processText('dedupeLines')">行去重</button>
+                            <button data-tip="按拼音/字典序对每一行排序" onclick="textconvert_processText('sortLines')">行排序</button>
+                            <button data-tip="每行前加序号：1. 2. 3. ..." onclick="textconvert_processText('addLineNumbers')">添加行号</button>
+                            <button data-tip="去掉行首的 1. / 1) / 1、 等序号" onclick="textconvert_processText('removeLineNumbers')">移除行号</button>
+                            <button data-tip="把一行用空格/逗号拆成多行" onclick="textconvert_processText('verticalLayout')">--|横转竖</button>
+                            <button data-tip="把多行用空格拼接成一行" onclick="textconvert_processText('horizontalLayout')">|--竖转横</button>
+                        </div>
+                    </div>
+                    <div class="tc-dropdown">
+                        <button class="tc-btn tc-case tc-dropdown-toggle" onclick="textconvert_toggleDropdown(this)">大小写 / 命名 ▾</button>
+                        <div class="tc-dropdown-menu tc-menu-case">
+                            <button data-tip="hello World → HELLO WORLD" onclick="textconvert_processText('upperCase')">AA 大写</button>
+                            <button data-tip="Hello WORLD → hello world" onclick="textconvert_processText('lowerCase')">aa 小写</button>
+                            <button data-tip="user name → UserName" onclick="textconvert_processText('pascalCase')">AaBb 大驼峰</button>
+                            <button data-tip="user name → userName" onclick="textconvert_processText('camelCase')">aaBb 小驼峰</button>
+                            <button data-tip="user name → user_name" onclick="textconvert_processText('snakeCase')">a_b 下划线</button>
+                            <button data-tip="user name → user-name" onclick="textconvert_processText('kebabCase')">a-b 短横线</button>
+                            <button data-tip="UserName → user name" onclick="textconvert_processText('spaceCase')">a␣b 空格</button>
+                        </div>
+                    </div>
+                    <div class="tc-dropdown">
+                        <button class="tc-btn tc-encode tc-dropdown-toggle" onclick="textconvert_toggleDropdown(this)">编码 / 格式化 ▾</button>
+                        <div class="tc-dropdown-menu tc-menu-encode">
+                            <button data-tip="中文/特殊字符 → %E4%B8%AD 形式" onclick="textconvert_processText('urlEncode')">🔗URL编码</button>
+                            <button data-tip="%E4%B8%AD → 中文：URL 反转义" onclick="textconvert_processText('urlDecode')">🔗URL解码</button>
+                            <button data-tip="文本 → Base64（支持中文 UTF-8）" onclick="textconvert_processText('base64Encode')">🔒Base64编码</button>
+                            <button data-tip="Base64 → 文本（支持中文 UTF-8）" onclick="textconvert_processText('base64Decode')">🔓Base64解码</button>
+                            <button data-tip='{"a":1} → 带缩进的多行 JSON' onclick="textconvert_processText('jsonFormat')">{ }JSON格式化</button>
+                            <button data-tip="多行 JSON → 压缩成一行" onclick="textconvert_processText('jsonMinify')">{}JSON压缩</button>
+                        </div>
+                    </div>
+                    <div class="tc-dropdown">
+                        <button class="tc-btn tc-hex tc-dropdown-toggle" onclick="textconvert_toggleDropdown(this)">+0x Hex 转换 ▾</button>
+                        <div class="tc-dropdown-menu tc-dropdown-menu-hex tc-menu-hex">
+                            <button data-tip="80 01 02 00 → 0x80, 0x01, 0x02, 0x00" onclick="textconvert_processText('hexFormat1Byte')">+0x (1B 逐字节)</button>
+                            <button data-tip="12345678 → 0x12345678" onclick="textconvert_processText('hexFormat4Byte')">+0x (4B 大端)</button>
+                            <button data-tip="12345678 → 0x78563412" onclick="textconvert_processText('hexFormat4ByteLe')">+0x (4B 小端)</button>
+                            <button data-tip="1122334455667788 → 0x1122334455667788" onclick="textconvert_processText('hexFormat8Byte')">+0x (8B 大端)</button>
+                            <button data-tip="1122334455667788 → 0x8877665544332211" onclick="textconvert_processText('hexFormat8ByteLe')">+0x (8B 小端)</button>
+                            <button data-tip="0x12345678 → 12 34 56 78" onclick="textconvert_processText('hexReverse')">-0x 移除前缀</button>
+                        </div>
+                    </div>
+                    <button class="tc-btn clear-btn" data-tip="清空左侧原文输入框" onclick="textconvert_clearInput()">清空原文</button>
+                    <button class="tc-btn clear-btn" data-tip="清空原文与结果两个文本框" onclick="textconvert_clearAll()">清空所有</button>
+                </div>
+
+
+                <div class="tool-section sequence-section">
+                    <div class="tool-section-title">序列号码生成</div>
+                    <div class="tool-grid sequence-grid">
+                        <label class="tool-field sequence-range-field">开始
+                            <input type="number" id="sequence_start" value="1">
+                        </label>
+                        <label class="tool-field sequence-range-field">结束
+                            <input type="number" id="sequence_end" value="50">
+                        </label>
+                        <label class="tool-field sequence-width-field">位数
+                            <input type="number" id="sequence_width" value="0" min="0" max="10">
+                        </label>
+                        <label class="tool-field sequence-count-field">生成个数
+                            <input type="number" id="sequence_count" placeholder="留空=全部" min="1">
+                        </label>
+                        <label class="tool-field sequence-order-field">顺序
+                            <select id="sequence_order">
+                                <option value="asc">正序</option>
+                                <option value="desc">逆序</option>
+                                <option value="random">乱序</option>
+                            </select>
+                        </label>
+                        <label class="tool-field sequence-separator-mode-field">分隔方式
+                            <select id="sequence_separator_mode" onchange="textconvert_updateSequenceSeparator()">
+                                <option value="newline">一行一个</option>
+                                <option value="space">空格</option>
+                                <option value="comma">逗号</option>
+                                <option value="custom">自定义</option>
+                            </select>
+                        </label>
+                        <label class="tool-field sequence-separator-custom-field">自定义分割符
+                            <input type="text" id="sequence_separator_custom" value="," disabled>
+                        </label>
+                        <div class="sequence-actions">
+                            <button type="button" onclick="textconvert_useSequenceAsInput()">生成到原文</button>
+                            <button type="button" onclick="textconvert_generateSequence()">生成到结果</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container">
+                <textarea id="textconvert_input" placeholder="输入原文..." autocomplete="off"></textarea>
+                <button class="swap-btn" onclick="textconvert_swapText()">⇄</button>
+                <textarea id="textconvert_output" placeholder="处理结果..." autocomplete="off"></textarea>
+            </div>
+        </div>
+    </div>
+
+    
+<script>
+    function textconvert_swapText() {
+        const inputElem = document.getElementById('textconvert_input');
+        const outputElem = document.getElementById('textconvert_output');
+        [inputElem.value, outputElem.value] = [outputElem.value, inputElem.value];
+        localStorage.setItem('textconvert_textInput', inputElem.value);
+        localStorage.setItem('textconvert_textOutput', outputElem.value);
+    }
+
+    function textconvert_updateSequenceSeparator() {
+        const mode = document.getElementById('sequence_separator_mode').value;
+        document.getElementById('sequence_separator_custom').disabled = mode !== 'custom';
+    }
+
+    function textconvert_getSequenceSeparator() {
+        const mode = document.getElementById('sequence_separator_mode').value;
+        if (mode === 'newline') return '\n';
+        if (mode === 'space') return ' ';
+        if (mode === 'comma') return ',';
+        return document.getElementById('sequence_separator_custom').value;
+    }
+
+    function textconvert_generateSequenceText() {
+        const start = Number(document.getElementById('sequence_start').value);
+        const end = Number(document.getElementById('sequence_end').value);
+        const width = Math.max(0, Math.min(10, Number(document.getElementById('sequence_width').value || 0)));
+        const countRaw = document.getElementById('sequence_count').value;
+        const count = countRaw === '' ? null : Math.max(1, Number(countRaw));
+        const order = document.getElementById('sequence_order').value;
+        if (!Number.isFinite(start) || !Number.isFinite(end)) return '';
+
+        const step = start <= end ? 1 : -1;
+        const values = [];
+        for (let n = start; step > 0 ? n <= end : n >= end; n += step) {
+            values.push(n);
+            if (values.length > 10000) break;
+        }
+
+        let ordered = values;
+        if (order === 'desc') ordered = values.slice().reverse();
+        if (order === 'random') {
+            ordered = values.slice();
+            for (let i = ordered.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [ordered[i], ordered[j]] = [ordered[j], ordered[i]];
+            }
+        }
+
+        const limited = count ? ordered.slice(0, count) : ordered;
+        const formatNumber = (num) => {
+            const sign = num < 0 ? '-' : '';
+            return sign + Math.abs(num).toString().padStart(width, '0');
+        };
+        return limited.map(formatNumber).join(textconvert_getSequenceSeparator());
+    }
+
+    function textconvert_generateSequence() {
+        const output = textconvert_generateSequenceText();
+        document.getElementById('textconvert_output').value = output;
+        localStorage.setItem('textconvert_textOutput', output);
+    }
+
+    function textconvert_useSequenceAsInput() {
+        const output = textconvert_generateSequenceText();
+        document.getElementById('textconvert_input').value = output;
+        localStorage.setItem('textconvert_textInput', output);
+    }
+
+    function textconvert_processText(action) {
+        const input = document.getElementById('textconvert_input').value;
+        let output = input;
+        const cleanHex = (text) => text.replace(/0x/gi, '').replace(/[^0-9A-Fa-f]/g, '');
+        const splitHexBytes = (hex) => hex.match(/.{1,2}/g) || [];
+        const formatHexGroups = (text, byteCount, littleEndian = false) => {
+            const bytes = splitHexBytes(cleanHex(text));
+            const groups = [];
+            for (let i = 0; i < bytes.length; i += byteCount) {
+                const group = bytes.slice(i, i + byteCount);
+                if (group.length < byteCount) break;
+                groups.push('0x' + (littleEndian ? group.reverse() : group).join('').toUpperCase());
+            }
+            return groups.join(', ');
+        };
+        const base64EncodeUnicode = (text) => {
+            const bytes = new TextEncoder().encode(text);
+            let binary = '';
+            bytes.forEach(byte => { binary += String.fromCharCode(byte); });
+            return btoa(binary);
+        };
+        const base64DecodeUnicode = (text) => {
+            const binary = atob(text.replace(/\s+/g, ''));
+            const bytes = Uint8Array.from(binary, char => char.charCodeAt(0));
+            return new TextDecoder().decode(bytes);
+        };
+        const words = (text) => text
+            .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+            .split(/[^0-9A-Za-z\u4e00-\u9fa5]+/)
+            .filter(Boolean);
+        const capitalize = (word) => word ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : '';
+        const pascalCase = (text) => words(text).map(capitalize).join('');
+        switch(action) {
+            case 'removeEmptyLines':
+                output = input.split('\n').filter(line => line.trim() !== '').join('\n');
+                break;
+            case 'removeSpaces':
+                output = input.replace(/ /g, '');
+                break;
+            case 'trimLines':
+                output = input.split('\n').map(line => line.trim()).join('\n');
+                break;
+            case 'collapseSpaces':
+                output = input.replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n');
+                break;
+            case 'removeAllLineBreaks':
+                output = input.replace(/\n/g, '');
+                break;
+            case 'removeInterruptedBreaks':
+                output = input.replace(/([^\.!\?。！？\”’\]）】])[\r\n]+/g, '$1');
+                break;
+            case 'dedupeLines':
+                output = Array.from(new Set(input.split('\n'))).join('\n');
+                break;
+            case 'sortLines':
+                output = input.split('\n').sort((a, b) => a.localeCompare(b, 'zh-Hans-CN')).join('\n');
+                break;
+            case 'addLineNumbers':
+                output = input.split('\n').map((line, index) => `${index + 1}. ${line}`).join('\n');
+                break;
+            case 'removeLineNumbers':
+                output = input.split('\n').map(line => line.replace(/^\s*\d+[\.\)、\)]\s*/, '')).join('\n');
+                break;
+            case 'upperCase':
+                output = input.toUpperCase();
+                break;
+            case 'lowerCase':
+                output = input.toLowerCase();
+                break;
+            case 'pascalCase':
+                output = pascalCase(input);
+                break;
+            case 'camelCase':
+                output = pascalCase(input);
+                output = output.charAt(0).toLowerCase() + output.slice(1);
+                break;
+            case 'snakeCase':
+                output = words(input).map(word => word.toLowerCase()).join('_');
+                break;
+            case 'kebabCase':
+                output = words(input).map(word => word.toLowerCase()).join('-');
+                break;
+            case 'spaceCase':
+                output = words(input).map(word => word.toLowerCase()).join(' ');
+                break;
+            case 'urlEncode':
+                output = encodeURIComponent(input);
+                break;
+            case 'urlDecode':
+                try { output = decodeURIComponent(input); } catch { output = input; }
+                break;
+            case 'base64Encode':
+                output = base64EncodeUnicode(input);
+                break;
+            case 'base64Decode':
+                try { output = base64DecodeUnicode(input); } catch { output = input; }
+                break;
+            case 'jsonFormat':
+                try { output = JSON.stringify(JSON.parse(input), null, 2); } catch { output = input; }
+                break;
+            case 'jsonMinify':
+                try { output = JSON.stringify(JSON.parse(input)); } catch { output = input; }
+                break;
+            case 'verticalLayout':
+                output = input.split(/[ ,?	]+/).join('\n');
+                break;
+            case 'horizontalLayout':
+                output = input.split('\n')
+                    .filter(line => line.trim() !== '')
+                    .join(' ');
+                break;
+            case 'hexFormat':
+            case 'hexFormat1Byte':
+                output = formatHexGroups(input, 1);
+                break;
+            case 'hexFormat4Byte':
+                output = formatHexGroups(input, 4);
+                break;
+            case 'hexFormat4ByteLe':
+                output = formatHexGroups(input, 4, true);
+                break;
+            case 'hexFormat8Byte':
+                output = formatHexGroups(input, 8);
+                break;
+            case 'hexFormat8ByteLe':
+                output = formatHexGroups(input, 8, true);
+                break;
+            case 'hexReverse':
+                output = cleanHex(input).toUpperCase().match(/.{1,2}/g)?.join(' ') || '';
+                break;
+        }
+        document.getElementById('textconvert_output').value = output;
+        localStorage.setItem('textconvert_textOutput', output);
+    }
+
+    function textconvert_clearInput() {
+        document.getElementById('textconvert_input').value = '';
+        localStorage.removeItem('textconvert_textInput');
+    }
+
+    function textconvert_clearAll() {
+        document.getElementById('textconvert_input').value = '';
+        document.getElementById('textconvert_output').value = '';
+        localStorage.removeItem('textconvert_textInput');
+        localStorage.removeItem('textconvert_textOutput');
+    }
+
+    // 折叠下拉：互斥展开 + 点击外部/选项后自动关闭
+    function textconvert_closeAllDropdowns(except) {
+        document.querySelectorAll('#textconvert-ui .tc-dropdown.tc-open').forEach(dropdown => {
+            if (dropdown !== except) dropdown.classList.remove('tc-open');
+        });
+    }
+
+    function textconvert_toggleDropdown(button) {
+        const dropdown = button.closest('.tc-dropdown');
+        if (!dropdown) return;
+        const willOpen = !dropdown.classList.contains('tc-open');
+        textconvert_closeAllDropdowns(dropdown);
+        dropdown.classList.toggle('tc-open', willOpen);
+    }
+
+    // 点击下拉菜单里的某个操作后，自动收起菜单
+    document.addEventListener('click', function (event) {
+        const insideDropdown = event.target.closest('#textconvert-ui .tc-dropdown');
+        if (!insideDropdown) {
+            // 点击下拉之外的任意位置：全部关闭
+            textconvert_closeAllDropdowns(null);
+            return;
+        }
+        // 点击的是菜单内的操作按钮（非主触发按钮）：执行后关闭
+        if (event.target.closest('.tc-dropdown-menu')) {
+            textconvert_closeAllDropdowns(null);
+        }
+    });
+
+    // 按 Esc 关闭所有下拉
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') textconvert_closeAllDropdowns(null);
+    });
+
+
+
+</script>
+<script>
+window.addEventListener('DOMContentLoaded', function() {
+    const savedInput = localStorage.getItem('textconvert_textInput');
+    const savedOutput = localStorage.getItem('textconvert_textOutput');
+    if (savedInput) document.getElementById('textconvert_input').value = savedInput;
+    if (savedOutput) document.getElementById('textconvert_output').value = savedOutput;
+    textconvert_updateSequenceSeparator();
+    document.getElementById('textconvert_input').addEventListener('input', function() { localStorage.setItem('textconvert_textInput', this.value); });
+    document.getElementById('textconvert_output').addEventListener('input', function() { localStorage.setItem('textconvert_textOutput', this.value); });
+});
+</script>
+<script>
+window.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('input[type="text"], textarea').forEach(function (el) {
+    el.addEventListener('dblclick', async function () {
+      const text = (el.value ?? '').toString();
+      if (!text) return;
+      try { await navigator.clipboard.writeText(text); }
+      catch { el.focus(); el.select(); document.execCommand('copy'); }
+    });
+  });
+});
+</script>
+</body>
+</html>

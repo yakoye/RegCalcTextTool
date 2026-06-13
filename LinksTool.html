@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Links</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans CJK SC", "PingFang SC", Arial, sans-serif;
+            background: #f9f9f9;
+            margin:0;
+            color: #222;
+            font-size: 15px;
+            line-height: 1.5;
+            -webkit-text-size-adjust: 100%;
+            text-rendering: optimizeLegibility;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        .tab-bar {
+            display: flex;
+            border-bottom: 2px solid #dedede;
+            background: #ededed;
+            height: 34px;
+            align-items: flex-end;
+            padding-left: 24px;
+        }
+        .tab {
+            padding: 5px 28px 6px 28px;
+            margin-right: 4px;
+            border: 1px solid #dedede;
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            background: #e5e5e5;
+            cursor: pointer;
+            color: #888;
+            font-size: 15px;
+            font-weight: 600;
+            position: relative;
+            top: 2px;
+            transition: all 0.2s;
+        }
+        .tab.active {
+            background: #fff;
+            color: #222;
+            border-bottom: 2px solid #fff;
+            z-index: 2;
+        }
+        .tab-content {
+            display: none;
+            background: #fff;
+            border: 1.5px solid #dedede;
+            border-radius: 0 0 8px 8px;
+            /* 第一个值 5px - 设置上下方向的内边距为 5 像素
+               第二个值 24px - 设置左右方向的内边距为 24 像素
+               等效：
+                padding-top: 5px;
+                padding-right: 24px;
+                padding-bottom: 5px;
+                padding-left: 24px;
+            */
+            margin: 0 24px 24px 24px;
+            padding: 5px 24px;
+            min-height: 400px;
+            box-sizing: border-box;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        #regcalc-ui {
+            max-width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+        #regcalc-ui table {
+            --regcalc-field-width: 280px;
+            --regcalc-gap: 4px;
+            font-size: 14px;
+            line-height: 1.45;
+        }
+        #regcalc-ui > table {
+            max-width: 100%;
+        }
+        /* RegCalc指定样式（防止干扰） */
+        #regcalc-ui table input[type="text"], #regcalc-ui table textarea {
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            font-size: 14px;
+            line-height: 1.35;
+            padding: 3px 5px;
+            border: 1px solid #999;
+            margin: 3px 0;
+        }
+        #regcalc-ui table input[type="button"], #regcalc-ui table button {
+            font-family: inherit;
+            font-size: 14px;
+            line-height: 1.2;
+        }
+        #regcalc-ui .regcalc-title-table {
+            margin: 4px auto 5px;
+        }
+        #regcalc-ui .regcalc-title-table td {
+            line-height: 1.1;
+        }
+        #regcalc-ui .regcalc-bit-table {
+            border-spacing: 1px 0;
+            font-size: 14px;
+        }
+        #regcalc-ui .regcalc-bit-table td {
+            padding: 0 1px;
+            line-height: 1;
+            vertical-align: bottom;
+        }
+        #regcalc-ui .regcalc-bit-label td {
+            padding-top: 0;
+            padding-bottom: 1px;
+        }
+        #regcalc-ui .regcalc-bit-label-small-gap td {
+            padding-top: 4px;
+        }
+        #regcalc-ui .regcalc-bit-label-mid-gap td {
+            padding-top: 12px;
+        }
+        #regcalc-ui .regcalc-bit-button td {
+            padding-top: 0;
+            padding-bottom: 0;
+            vertical-align: top;
+        }
+        #regcalc-ui .regcalc-bit-table input[type="button"] {
+            margin-top: 0;
+            padding-top: 1px;
+            padding-bottom: 1px;
+        }
+        #regcalc-ui .regcalc-bit-spacer td {
+            height: 0;
+            padding: 0;
+            line-height: 0;
+            font-size: 0;
+        }
+        #regcalc-ui .regcalc-form-table {
+            border-spacing: 3px 3px;
+        }
+        #regcalc-ui .regcalc-label {
+            width: 86px;
+            padding-right: 5px;
+            text-align: right;
+            white-space: nowrap;
+        }
+        #regcalc-ui .regcalc-control {
+            text-align: left;
+            white-space: nowrap;
+        }
+        #regcalc-ui .regcalc-actions {
+            text-align: left;
+            white-space: nowrap;
+            padding-left: 2px;
+            width: 1%;
+        }
+        #regcalc-ui .regcalc-control input,
+        #regcalc-ui .regcalc-control textarea,
+        #regcalc-ui .regcalc-actions button,
+        #regcalc-ui .regcalc-actions input {
+            margin-right: var(--regcalc-gap);
+        }
+        #regcalc-ui #regcalc_hex,
+        #regcalc-ui #regcalc_dec,
+        #regcalc-ui #regcalc_calcInput,
+        #regcalc-ui #regcalc_calcResult {
+            width: var(--regcalc-field-width) !important;
+        }
+        #regcalc-ui #regcalc_human {
+            width: 80px !important;
+        }
+        #regcalc-ui .regcalc-bit-range {
+            width: 54px !important;
+        }
+        #regcalc-ui .regcalc-sub-hex {
+            width: 86px !important;
+        }
+        #regcalc-ui .regcalc-sub-dec {
+            width: calc(var(--regcalc-field-width) - 54px - 86px - (var(--regcalc-gap) * 2)) !important;
+        }
+        #regcalc-ui .regcalc-bitfield-buttons {
+            white-space: nowrap;
+        }
+        #regcalc-ui .regcalc-bitfield-buttons button {
+            min-width: 24px;
+            padding: 3px 6px;
+        }
+        #regcalc-ui #regcalc_bin {
+            width: var(--regcalc-field-width) !important;
+            min-height: calc(1.35em + 8px);
+            max-height: calc((1.35em * 3) + 10px);
+            resize: none;
+            white-space: pre-wrap;
+            overflow-x: hidden;
+            overflow-y: hidden;
+            overflow-wrap: anywhere;
+            word-break: break-all;
+        }
+        #regcalc-ui #regcalc_calcInput {
+            min-height: calc(1.35em + 10px);
+            max-height: calc((1.35em * 3) + 10px);
+            resize: none;
+            white-space: pre-wrap;
+            overflow-x: hidden;
+            overflow-y: hidden;
+            overflow-wrap: anywhere;
+            word-break: break-all;
+        }
+        #regcalc-ui .regcalc-spacer td {
+            height: 5px;
+            padding: 0;
+            line-height: 0;
+        }
+        #regcalc-ui .regcalc-footer-actions {
+            padding-top: 4px;
+            text-align: center;
+        }
+        #regcalc-ui .regcalc-footer-actions a,
+        #regcalc-ui .regcalc-footer-actions input {
+            margin: 0 5px;
+        }
+        #regcalc-ui table textarea {
+            vertical-align: top;
+        }
+        /* TextConvert 指定样式（命名前缀隔离） */
+        #textconvert-ui {
+            max-width: 1040px;
+            margin: 0 auto;
+        }
+        #textconvert-ui .container {
+            display: flex;    /* 启用 flex 布局 */
+            gap: 5px;        /* 设置子元素之间的间距为 5px */
+            width: 100%;
+        }
+        /* TextConvert 文本框的宽度和高度 */
+        #textconvert-ui textarea {
+            flex: 1 1 0;
+            min-width: 0;
+            height: 300px;
+            padding: 10px;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            font-size: 14px;
+            line-height: 1.45;
+            box-sizing: border-box;
+        }
+        #textconvert-ui .swap-btn {
+            align-self: center;      /* 在 flex 容器中垂直居中对齐 */
+            padding: 10px;           /* 内边距：上下左右都是10px */
+            margin: 0 0px;           /* 外边距：上下0，左右0px */
+            background: #f0f0f0;     /* 浅灰色背景 */
+            border: 1px solid #ccc;  /* 浅灰色边框，1像素宽度 */
+            cursor: pointer;         /* 鼠标悬停时显示手型指针 */
+        }
+        #textconvert-ui .buttons {
+            margin: 10px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: flex-start;
+        }
+        /* 下拉折叠按钮组 */
+        #textconvert-ui .tc-dropdown {
+            position: relative;
+            display: inline-flex;
+        }
+        #textconvert-ui .tc-btn {
+            white-space: nowrap;
+            border: 1px solid #c8c8c8;
+            border-radius: 4px;
+            background: #f5f5f5;
+            color: #333;
+            font-weight: 600;
+            transition: background .15s, border-color .15s;
+        }
+        #textconvert-ui .tc-btn:hover {
+            background: #ececec;
+            border-color: #adadad;
+        }
+        /* 清洗类：常规灰色次要按钮 */
+        #textconvert-ui .tc-btn.tc-clean {
+            background: #f3f3f3;
+            border-color: #cfcfcf;
+            color: #444;
+        }
+        #textconvert-ui .tc-btn.tc-clean:hover {
+            background: #e7e7e7;
+            border-color: #b0b0b0;
+        }
+        /* 大小写/命名类：浅蓝 */
+        #textconvert-ui .tc-btn.tc-case {
+            background: #eef4fb;
+            border-color: #b9d3ee;
+            color: #1f4e79;
+        }
+        #textconvert-ui .tc-btn.tc-case:hover {
+            background: #dfeafa;
+            border-color: #8fbbe6;
+        }
+        /* 编码/格式化类：蓝色主题色 */
+        #textconvert-ui .tc-btn.tc-encode {
+            background: #2f6fb0;
+            border-color: #2a629c;
+            color: #fff;
+        }
+        #textconvert-ui .tc-btn.tc-encode:hover {
+            background: #285f97;
+            border-color: #224f7f;
+        }
+        /* Hex 转换类：极客感代码绿边框 */
+        #textconvert-ui .tc-btn.tc-hex {
+            background: #f1f8f2;
+            border: 1px solid #2e8b57;
+            color: #1b5e34;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+        }
+        #textconvert-ui .tc-btn.tc-hex:hover {
+            background: #e2f1e6;
+            border-color: #20693f;
+        }
+        /* 下拉展开时主按钮高亮 */
+        #textconvert-ui .tc-dropdown.tc-open .tc-dropdown-toggle {
+            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+            filter: brightness(0.97);
+        }
+        /* 下拉浮层菜单 */
+        #textconvert-ui .tc-dropdown-menu {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            z-index: 50;
+            display: none;
+            flex-direction: column;
+            min-width: 180px;
+            max-height: 320px;
+            overflow-y: auto;
+            padding: 5px;
+            gap: 4px;
+            background: #fff;
+            border: 1px solid #c8c8c8;
+            border-radius: 6px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+        }
+        #textconvert-ui .tc-dropdown.tc-open .tc-dropdown-menu {
+            display: flex;
+        }
+        #textconvert-ui .tc-dropdown-menu button {
+            width: 100%;
+            text-align: left;
+            white-space: nowrap;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            background: #f7f7f7;
+            color: #333;
+        }
+        #textconvert-ui .tc-dropdown-menu button:hover {
+            background: #eaf0f6;
+            border-color: #b9d3ee;
+        }
+        /* 各分类菜单内按钮的颜色提示（左侧色条） */
+        #textconvert-ui .tc-menu-clean button { border-left: 3px solid #c0c0c0; }
+        #textconvert-ui .tc-menu-case button { border-left: 3px solid #8fbbe6; }
+        #textconvert-ui .tc-menu-encode button { border-left: 3px solid #2f6fb0; }
+        #textconvert-ui .tc-dropdown-menu-hex button {
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            border-left: 3px solid #2e8b57;
+        }
+        /* 悬浮提示 (Tooltip) */
+        #textconvert-ui [data-tip] {
+            position: relative;
+        }
+        #textconvert-ui [data-tip]:hover::after {
+            content: attr(data-tip);
+            position: absolute;
+            left: 0;
+            top: calc(100% + 6px);
+            z-index: 70;
+            max-width: 300px;
+            width: max-content;
+            padding: 6px 9px;
+            background: #1f1f1f;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 400;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            line-height: 1.45;
+            border-radius: 4px;
+            white-space: normal;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            pointer-events: none;
+        }
+        /* 触屏设备隐藏 hover tooltip，避免点击残留 */
+        @media (hover: none) {
+            #textconvert-ui [data-tip]:hover::after {
+                display: none;
+            }
+        }
+        #textconvert-ui .textconvert-controls-panel {
+            overflow: visible;
+            border: 1px solid #d8d8d8;
+            padding: 10px;
+            margin: 10px 0;
+            background: #fff;
+        }
+        #textconvert-ui .textconvert-controls-panel .buttons {
+            margin: 0;
+        }
+
+        #textconvert-ui .textconvert-controls-panel .sequence-section {
+            border: 0;
+            border-top: 1px solid #e2e2e2;
+            padding: 10px 0 0;
+            margin: 10px 0 0;
+        }
+        #textconvert-ui button {
+            font-family: inherit;
+            font-size: 14px;
+            line-height: 1.25;
+            min-height: 24px;
+            padding: 3px 5px;
+            cursor: pointer;
+        }
+        #textconvert-ui .buttons button {
+            width: 100%;
+            white-space: normal;
+        }
+        /* 主按钮（下拉触发 + 清空）保持内容宽度，覆盖上面的 100% 规则 */
+        #textconvert-ui .buttons .tc-btn {
+            width: auto;
+            white-space: nowrap;
+        }
+        #textconvert-ui .sequence-section .tool-section-title {
+
+            margin-bottom: 6px;
+        }
+        #textconvert-ui .sequence-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: end;
+        }
+        #textconvert-ui .sequence-grid .tool-field {
+            flex: 0 0 auto;
+        }
+        #textconvert-ui .sequence-range-field {
+            width: 92px;
+        }
+        #textconvert-ui .sequence-width-field {
+            width: 58px;
+        }
+        #textconvert-ui .sequence-count-field {
+            width: 112px;
+        }
+        #textconvert-ui .sequence-order-field {
+            width: 72px;
+        }
+        #textconvert-ui .sequence-separator-mode-field {
+            width: 100px;
+        }
+        #textconvert-ui .sequence-separator-custom-field {
+            width: 84px;
+        }
+        #textconvert-ui .sequence-actions {
+            display: flex;
+            gap: 8px;
+            align-items: end;
+        }
+        #textconvert-ui .sequence-actions button {
+            min-width: 96px;
+        }
+        #textconvert-ui button.clear-btn {
+            background: #f0f0f0;
+            border-color: #238625;
+            color: #000000;
+        }
+        #textconvert-ui button.clear-btn:hover {
+            background: #f7fbcc;
+            border-color: #22ca24;
+        }
+        .tool-panel {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        #timecalc-ui,
+        #password-ui {
+            max-width: 500px;
+        }
+        #timecalc-ui .timecalc-form-row {
+            display: grid;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        #timecalc-ui .timecalc-form-row:last-child {
+            margin-bottom: 0;
+        }
+        #timecalc-ui .timecalc-one-col {
+            grid-template-columns: 1fr;
+        }
+        #timecalc-ui .timecalc-three-col {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        #timecalc-ui .timecalc-inline-field {
+            display: grid;
+            grid-template-columns: 78px minmax(0, 1fr);
+            gap: 4px;
+            align-items: center;
+            font-size: 13px;
+        }
+        #timecalc-ui .timecalc-inline-field input {
+            width: 100%;
+            max-width: 180px;
+            min-height: 28px;
+            padding: 1px 3px;
+            border: 1px solid #999;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        #timecalc-ui .timecalc-base-row {
+            grid-template-columns: minmax(0, max-content) auto;
+            gap: 6px;
+            align-items: end;
+        }
+        #timecalc-ui .timecalc-base-row .timecalc-inline-field {
+            grid-template-columns: 78px 180px;
+        }
+        #timecalc-ui .timecalc-convert-toggle {
+            min-height: 28px;
+            min-width: 64px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            white-space: nowrap;
+            font-size: 13px;
+        }
+        #timecalc-ui .timecalc-convert-toggle input {
+            margin: 0;
+        }
+        #timecalc-ui .timecalc-convert-text {
+            line-height: 1.1;
+        }
+        @media (max-width: 420px) {
+            #timecalc-ui .timecalc-base-row {
+                grid-template-columns: minmax(0, max-content) 44px;
+                gap: 4px;
+            }
+            #timecalc-ui .timecalc-convert-toggle {
+                min-width: 44px;
+                white-space: normal;
+            }
+            #timecalc-ui .timecalc-convert-text {
+                width: 2em;
+            }
+        }
+        #password-ui .password-list {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            width: 100%;
+            min-height: 180px;
+            margin-top: 8px;
+            padding: 7px;
+            border: 1px solid #999;
+            background: #fff;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            font-size: 14px;
+        }
+        #password-ui .password-row {
+            position: relative;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 24px;
+            gap: 6px;
+            align-items: center;
+            min-height: 28px;
+            padding: 3px 5px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: background-color 0.12s ease, border-color 0.12s ease;
+        }
+        #password-ui .password-row:hover {
+            border-color: #c8d6c8;
+            background: #f5fbf5;
+        }
+        #password-ui .password-row:active {
+            background: #edf7ed;
+        }
+        #password-ui .password-row.is-editing {
+            cursor: default;
+            background: #fff;
+            border-color: #238625;
+        }
+        #password-ui .password-text {
+            overflow-wrap: anywhere;
+            user-select: text;
+            line-height: 1.35;
+        }
+        #password-ui .password-edit-input {
+            width: 100%;
+            min-height: 24px;
+            padding: 2px 4px;
+            border: 1px solid #999;
+            font: inherit;
+        }
+        #password-ui .password-edit-btn {
+            width: 22px;
+            min-width: 22px;
+            height: 22px;
+            padding: 0;
+            line-height: 1;
+            font-size: 13px;
+        }
+        #password-ui .password-toast {
+            position: absolute;
+            right: 8px;
+            bottom: 8px;
+            padding: 3px 8px;
+            border: 1px solid #b9d8b9;
+            background: #f5fbf5;
+            color: #2f5f38;
+            font-family: inherit;
+            font-size: 13px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.16s ease;
+        }
+        #password-ui .password-toast.show {
+            opacity: 1;
+        }
+        #hash-ui {
+            max-width: 1000px;
+        }
+        .hash-frame {
+            display: block;
+            width: 100%;
+            min-height: calc(100vh - 58px);
+            border: 0;
+            background: #f8f8f8;
+        }
+        .tool-panel h3 {
+            margin: 8px 0 12px;
+        }
+        .tool-section {
+            border: 1px solid #d8d8d8;
+            padding: 10px;
+            margin: 10px 0;
+            background: #fff;
+        }
+        .tool-section-title {
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .tool-note {
+            margin: -4px 0 8px;
+            padding: 7px 8px;
+            border: 1px solid #d8e6d8;
+            background: #f5fbf5;
+            color: #2f5f38;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+        .tool-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 8px;
+            align-items: end;
+        }
+        .tool-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 13px;
+        }
+        .tool-field input,
+        .tool-field select,
+        .tool-field textarea {
+            width: 100%;
+            min-height: 24px;
+            padding: 3px 5px;
+            border: 1px solid #999;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        .tool-field textarea {
+            min-height: 80px;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+        }
+        .tool-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin-top: 8px;
+        }
+        .tool-actions button,
+        .tool-action-btn {
+            min-height: 24px;
+            padding: 3px 5px;
+            cursor: pointer;
+        }
+        .tool-output {
+            margin-top: 10px;
+            padding: 8px;
+            border: 1px solid #d0d0d0;
+            background: #fafafa;
+            white-space: pre-wrap;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            font-size: 14px;
+            min-height: 40px;
+        }
+        .checkbox-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 14px;
+            align-items: center;
+        }
+        .checkbox-row label {
+            white-space: nowrap;
+        }
+        .external-links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 10px;
+        }
+        .external-links-subtitle {
+            grid-column: 1 / -1;
+            margin: 8px 0 0;
+            padding: 6px 0 2px;
+            border-bottom: 1px solid #e4e4e4;
+            color: #333;
+            font-weight: 700;
+        }
+        .external-links-subtitle:first-child {
+            margin-top: 0;
+        }
+        .external-tool-link {
+            display: block;
+            padding: 10px;
+            border: 1px solid #d8d8d8;
+            color: #222;
+            text-decoration: none;
+            background: #fff;
+        }
+        .external-tool-link:hover {
+            background: #f7fbff;
+            border-color: #88b7e8;
+        }
+        .external-tool-link b {
+            display: block;
+            margin-bottom: 4px;
+        }
+        .external-tool-link span {
+            color: #555;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+
+        #about-ui {
+            max-width: 900px;
+        }
+        #about-ui h3 {
+            margin: 8px 0 12px;
+        }
+        #about-ui h4 {
+            margin: 8px 0 6px;
+        }
+        #about-ui h5 {
+            margin: 8px 0 4px;
+        }
+        #about-ui ul {
+            margin: 4px 0 10px 20px;
+            padding: 0;
+        }
+        .about-release-note {
+            margin: 6px 0 0;
+            padding: 8px;
+            border: 1px solid #e0e0e0;
+            background: #fafafa;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            word-break: break-word;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        @media (max-width:700px) {
+            body {
+                background: #fff;
+                font-size: 14px;
+            }
+            .tab-bar {
+                height: auto;
+                padding-left: 0;
+                align-items: stretch;
+                position: sticky;
+                top: 0;
+                z-index: 20;
+            }
+            .tab {
+                flex: 1 1 0;
+                min-width: 0;
+                margin-right: 0;
+                padding: 4px 6px;
+                text-align: center;
+                font-size: 0;
+                line-height: 1.15;
+                border-radius: 0;
+                top: 0;
+                overflow: hidden;
+                white-space: nowrap;
+            }
+            .tab::after {
+                content: attr(data-mobile-label);
+                display: block;
+                font-size: 13px;
+                line-height: 1.15;
+            }
+            .tab-content {
+                margin: 0;
+                padding: 6px;
+                border-left: 0;
+                border-right: 0;
+                border-radius: 0;
+                min-height: calc(100vh - 30px);
+            }
+            #regcalc-ui {
+                width: max-content;
+                max-width: none;
+                padding-bottom: 8px;
+                overflow: visible;
+                transform-origin: left top;
+            }
+            #regcalc-ui > table {
+                max-width: none;
+            }
+            #regcalc-ui table {
+                border-spacing: 2px;
+            }
+            #regcalc-ui table input[type="text"],
+            #regcalc-ui table textarea {
+                max-width: 100%;
+            }
+            #textconvert-ui h3 {
+                margin: 6px 0 12px;
+                font-size: 18px;
+            }
+            #textconvert-ui .buttons {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            /* 手机端下拉主按钮平铺成两列，菜单仍为浮层 */
+            #textconvert-ui .buttons > .tc-dropdown,
+            #textconvert-ui .buttons > .tc-btn {
+                flex: 1 1 calc(50% - 6px);
+            }
+            #textconvert-ui .buttons > .tc-dropdown .tc-dropdown-toggle {
+                width: 100%;
+            }
+            #textconvert-ui .textconvert-controls-panel {
+                padding: 8px;
+            }
+            #textconvert-ui button {
+                min-height: 24px;
+                padding: 3px 5px;
+                font-size: 14px;
+            }
+            #textconvert-ui .buttons button {
+                width: 100%;
+                white-space: normal;
+            }
+            /* 手机端下拉菜单自适应宽度 */
+            #textconvert-ui .tc-dropdown-menu {
+                min-width: 60vw;
+                max-height: 50vh;
+            }
+
+            #textconvert-ui .container {
+                gap: 8px;
+            }
+            #textconvert-ui textarea {
+                min-height: 160px;
+                font-size: 16px;
+            }
+            #textconvert-ui .swap-btn {
+                width: 100%;
+                align-self: stretch;
+            }
+            .tool-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            #timecalc-ui .timecalc-three-col {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+            #textconvert-ui .sequence-grid {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            #textconvert-ui .sequence-range-field,
+            #textconvert-ui .sequence-width-field,
+            #textconvert-ui .sequence-count-field,
+            #textconvert-ui .sequence-order-field,
+            #textconvert-ui .sequence-separator-mode-field,
+            #textconvert-ui .sequence-separator-custom-field {
+                width: auto;
+            }
+            #textconvert-ui .sequence-actions {
+                grid-column: 1 / -1;
+            }
+            #textconvert-ui .sequence-actions button {
+                flex: 1 1 0;
+                min-width: 0;
+            }
+            .tool-section {
+                padding: 8px;
+            }
+            .external-links-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width:380px) {
+            .tab {
+                font-size: 14px;
+            }
+            .tab-content {
+                padding: 8px;
+            }
+        }
+
+        @media (max-width:1100px) {
+            #textconvert-ui .container {
+                flex-direction: column;
+            }
+            #textconvert-ui textarea {
+                flex: none;
+                width: 100%;
+                height: 160px;
+            }
+        }
+    
+body { margin: 0; padding: 8px; background: #f8f8f8; }
+.tab-content { display: block !important; margin: 0; border-radius: 0; min-height: auto; }
+</style>
+</head>
+<body>
+<div class="tab-content active" id="externallinks">
+        <div class="tool-panel" id="externallinks-ui">
+            <h3>外部工具链接</h3>
+            <div class="tool-section">
+                <div class="tool-section-title">常用工具站</div>
+                <div class="external-links-grid">
+                    <a class="external-tool-link" href="https://tool.lu/tool/" target="_blank" rel="noopener"><b>tool.lu</b><span>开发、编码、格式化等常用在线工具合集。</span></a>
+                    <a class="external-tool-link" href="https://www.toolzt.com/" target="_blank" rel="noopener"><b>紫图工具</b><span>时间、文本、图片、编码等综合工具。</span></a>
+                    <a class="external-tool-link" href="https://tool.chinaz.com/tools/base64.aspx" target="_blank" rel="noopener"><b>站长工具 Base64</b><span>Base64 编码解码专项工具。</span></a>
+                    <a class="external-tool-link" href="https://tool.oschina.net/" target="_blank" rel="noopener"><b>OSCHINA 在线工具</b><span>程序员常用格式化、加密、转换工具。</span></a>
+                    <a class="external-tool-link" href="http://www.nicetool.net/" target="_blank" rel="noopener"><b>NiceTool</b><span>轻量综合工具导航。</span></a>
+                    <a class="external-tool-link" href="https://tools.jb51.net/" target="_blank" rel="noopener"><b>脚本之家工具</b><span>站长、编码、格式转换类工具。</span></a>
+                    <a class="external-tool-link" href="https://toolshu.com/" target="_blank" rel="noopener"><b>Toolshu</b><span>文本、编码、开发辅助工具合集。</span></a>
+                    <a class="external-tool-link" href="https://www.freetoolhouse.com/all-tools" target="_blank" rel="noopener"><b>FreeToolHouse</b><span>英文在线工具合集，适合补充查找。</span></a>
+                    <a class="external-tool-link" href="https://tools.miku.ac/" target="_blank" rel="noopener"><b>MikuTools</b><span>偏开发和日常转换的在线工具箱。</span></a>
+                    <a class="external-tool-link" href="https://devtoolbox.org.cn/" target="_blank" rel="noopener"><b>DevToolBox</b><span>开发者工具箱，适合编码和调试。</span></a>
+                    <a class="external-tool-link" href="https://www.toolfk.com/" target="_blank" rel="noopener"><b>ToolFK</b><span>代码格式化、加解密、网络工具等。</span></a>
+                </div>
+            </div>
+            <div class="tool-section">
+                <div class="tool-section-title">日期时间</div>
+                <div class="external-links-grid">
+                    <a class="external-tool-link" href="https://tool.lu/timestamp/" target="_blank" rel="noopener"><b>tool.lu Unix 时间戳</b><span>Unix 时间戳与本地日期时间互转，适合开发调试。</span></a>
+                    <a class="external-tool-link" href="https://wannianli.tianqi.com/" target="_blank" rel="noopener"><b>天气网万年历</b><span>查看公历、农历、节假日和黄历信息。</span></a>
+                    <a class="external-tool-link" href="https://www.rili.com.cn/wannianli/" target="_blank" rel="noopener"><b>日历网万年历</b><span>万年历、农历、节日节气等日期查询。</span></a>
+                    <a class="external-tool-link" href="https://tools.2345.com/rili.htm" target="_blank" rel="noopener"><b>2345 万年历</b><span>常用万年历入口，适合快速查日期和农历。</span></a>
+                    <a class="external-tool-link" href="https://www.sogou.com/web?query=%E4%B8%87%E5%B9%B4%E5%8E%86&_ast=1780996077&_asf=www.sogou.com&w=01029901&p=40040100&dp=1&cid=&s_from=result_up&sourceid=5_01_03&sessiontime=1780996085700" target="_blank" rel="noopener"><b>搜狗万年历搜索</b><span>搜狗万年历搜索入口，可作为备用查询。</span></a>
+                </div>
+            </div>
+            <div class="tool-section">
+                <div class="tool-section-title">图像处理</div>
+                <div class="external-links-grid">
+                    <a class="external-tool-link" href="https://zh.recompressor.com/" target="_blank" rel="noopener"><b>Recompressor</b><span>对比不同压缩质量，适合精细压缩图片体积。</span></a>
+                    <a class="external-tool-link" href="https://squoosh.app/" target="_blank" rel="noopener"><b>Squoosh</b><span>浏览器内图片压缩、格式转换和质量预览。</span></a>
+                    <a class="external-tool-link" href="https://riot-optimizer.com/" target="_blank" rel="noopener"><b>RIOT</b><span>桌面图片优化工具，适合批量压缩和本地处理。</span></a>
+                    <a class="external-tool-link" href="https://www.996day.com/squoosh.html" target="_blank" rel="noopener"><b>996day Squoosh</b><span>Squoosh 镜像入口，官方站访问不稳时可备用。</span></a>
+                </div>
+            </div>
+            <div class="tool-section">
+                <div class="tool-section-title">Awesome-tools 清单</div>
+                <div class="external-links-grid">
+                    <div class="external-links-subtitle">PDF</div>
+                    <a class="external-tool-link" href="https://www.pdf-xchange.com/product/downloads" target="_blank" rel="noopener"><b>PDF-Xchange Editor</b><span>PDF 阅读、标注、编辑和转换，功能很完整。</span></a>
+                    <a class="external-tool-link" href="https://github.com/wmjordan/PDFPatcher" target="_blank" rel="noopener"><b>PDFPatcher</b><span>开源 PDF 合并、拆分、压缩、编辑和转换工具。</span></a>
+                    <a class="external-tool-link" href="https://tools.pdf24.org/zh/all-tools" target="_blank" rel="noopener"><b>PDF24 Tools</b><span>在线 PDF 工具合集，覆盖合并、拆分、压缩、转换等。</span></a>
+                    <div class="external-links-subtitle">截图与录屏</div>
+                    <a class="external-tool-link" href="https://pixpin.cn/" target="_blank" rel="noopener"><b>PixPin</b><span>截图、贴图、长截图、OCR 和标注，适合日常高频使用。</span></a>
+                    <a class="external-tool-link" href="https://www.snipaste.com/" target="_blank" rel="noopener"><b>Snipaste</b><span>截图、贴图、标注工具，轻量稳定。</span></a>
+                    <a class="external-tool-link" href="https://www.faststone.org/" target="_blank" rel="noopener"><b>FastStone Capture</b><span>截图、延迟截图、尺子、放大镜等桌面辅助功能。</span></a>
+                    <a class="external-tool-link" href="https://www.screentogif.com/" target="_blank" rel="noopener"><b>ScreenToGif</b><span>屏幕录制并生成 GIF，适合演示和教程素材。</span></a>
+                    <div class="external-links-subtitle">图像处理</div>
+                    <a class="external-tool-link" href="https://www.adobe.com/products/photoshop.html" target="_blank" rel="noopener"><b>Photoshop</b><span>专业图像处理工具，建议从官方渠道获取并注意授权。</span></a>
+                    <div class="external-links-subtitle">图像制作与看图</div>
+                    <a class="external-tool-link" href="https://github.com/jgraph/drawio-desktop/releases" target="_blank" rel="noopener"><b>Draw.io Desktop</b><span>流程图和架构图桌面版。</span></a>
+                    <a class="external-tool-link" href="https://app.diagrams.net/" target="_blank" rel="noopener"><b>diagrams.net</b><span>Draw.io 在线版，浏览器中绘制流程图。</span></a>
+                    <a class="external-tool-link" href="https://xmind.cn/" target="_blank" rel="noopener"><b>Xmind</b><span>思维导图工具，适合梳理结构化内容。</span></a>
+                    <a class="external-tool-link" href="https://github.com/excalidraw/excalidraw" target="_blank" rel="noopener"><b>Excalidraw GitHub</b><span>手绘风白板工具源码和项目页。</span></a>
+                    <a class="external-tool-link" href="https://excalidraw.com/" target="_blank" rel="noopener"><b>Excalidraw</b><span>在线手绘风流程图、草图和白板。</span></a>
+                    <a class="external-tool-link" href="https://asciiflow.com/#/" target="_blank" rel="noopener"><b>ASCIIFlow</b><span>在线 ASCII 文本画图。</span></a>
+                    <a class="external-tool-link" href="https://naduma.github.io/asciiflow2/" target="_blank" rel="noopener"><b>ASCIIFlow 旧版</b><span>旧版 ASCII 文本画图入口。</span></a>
+                    <a class="external-tool-link" href="https://github.com/plait-board/drawnix" target="_blank" rel="noopener"><b>Drawnix GitHub</b><span>白板、思维导图、流程图工具源码。</span></a>
+                    <a class="external-tool-link" href="https://drawnix.com/" target="_blank" rel="noopener"><b>Drawnix</b><span>在线白板，支持自由画、流程图和思维导图。</span></a>
+                    <a class="external-tool-link" href="https://imageglass.org/" target="_blank" rel="noopener"><b>ImageGlass</b><span>开源图片查看器，轻量清爽。</span></a>
+                    <a class="external-tool-link" href="https://github.com/jark006/jarkViewer" target="_blank" rel="noopener"><b>JarkViewer</b><span>轻量级看图工具，强调快速打开。</span></a>
+                    <div class="external-links-subtitle">Windows 系统与装机</div>
+                    <a class="external-tool-link" href="https://efotinis.neocities.org/deskpins/" target="_blank" rel="noopener"><b>DeskPins</b><span>把任意窗口置顶。</span></a>
+                    <a class="external-tool-link" href="https://github.com/RamonUnch/AltSnap" target="_blank" rel="noopener"><b>AltSnap</b><span>窗口拖动和缩放增强，适合处理超出屏幕的对话框。</span></a>
+                    <a class="external-tool-link" href="https://schinagl.priv.at/nt/hardlinkshellext/linkshellextension.html" target="_blank" rel="noopener"><b>Link Shell Extension</b><span>软链接、硬链接、符号链接的右键扩展。</span></a>
+                    <a class="external-tool-link" href="https://github.com/BluePointLilac/ContextMenuManager" target="_blank" rel="noopener"><b>ContextMenuManager</b><span>Windows 右键菜单管理工具。</span></a>
+                    <a class="external-tool-link" href="https://diskanalyzer.com/download" target="_blank" rel="noopener"><b>WizTree</b><span>磁盘空间分析工具，快速定位大文件。</span></a>
+                    <a class="external-tool-link" href="https://www.voidtools.com/zh-cn/downloads/" target="_blank" rel="noopener"><b>Everything</b><span>Windows 秒级文件搜索。</span></a>
+                    <a class="external-tool-link" href="https://geekuninstaller.com/download" target="_blank" rel="noopener"><b>Geek Uninstaller</b><span>轻量卸载工具。</span></a>
+                    <a class="external-tool-link" href="https://www.7-zip.org/" target="_blank" rel="noopener"><b>7-Zip</b><span>免费压缩和解压缩工具。</span></a>
+                    <a class="external-tool-link" href="https://www.win-rar.com/start.html?&L=0" target="_blank" rel="noopener"><b>WinRAR</b><span>RAR 压缩和解压缩工具。</span></a>
+                    <a class="external-tool-link" href="https://github.com/CrankZ/li-calendar" target="_blank" rel="noopener"><b>松鼠日历</b><span>开源日历工具，显示农历和节假日。</span></a>
+                    <a class="external-tool-link" href="https://www.ventoy.net/cn/index.html" target="_blank" rel="noopener"><b>Ventoy</b><span>多镜像 U 盘启动制作工具。</span></a>
+                    <a class="external-tool-link" href="https://rufus.ie/zh/" target="_blank" rel="noopener"><b>Rufus</b><span>轻量 U 盘启动盘制作工具。</span></a>
+                    <a class="external-tool-link" href="https://support.lenovo.com/us/en/downloads/ds031944-auto-scroll-utility-for-windows-10-32-bit-64-bit-laptop" target="_blank" rel="noopener"><b>Lenovo Auto Scroll Utility</b><span>联想自动滚屏工具，部分 ThinkPad/Lenovo 机型可用。</span></a>
+                    <div class="external-links-subtitle">编程与文本</div>
+                    <a class="external-tool-link" href="https://git-scm.com/install/windows" target="_blank" rel="noopener"><b>Git for Windows</b><span>Windows 下使用 Git 和 bash shell。</span></a>
+                    <a class="external-tool-link" href="https://github.com/BurntSushi/ripgrep" target="_blank" rel="noopener"><b>ripgrep</b><span>高速文本内容搜索工具。</span></a>
+                    <a class="external-tool-link" href="https://eternallybored.org/misc/wget/" target="_blank" rel="noopener"><b>wget 新版</b><span>Windows 下的命令行下载工具新版构建。</span></a>
+                    <a class="external-tool-link" href="https://gnuwin32.sourceforge.net/packages/wget.htm" target="_blank" rel="noopener"><b>wget 老版</b><span>GnuWin32 版本 wget。</span></a>
+                    <a class="external-tool-link" href="https://github.com/peteretelej/tree" target="_blank" rel="noopener"><b>tree 新版</b><span>命令行文件树查看工具。</span></a>
+                    <a class="external-tool-link" href="https://gnuwin32.sourceforge.net/packages/tree.htm" target="_blank" rel="noopener"><b>tree 老版</b><span>GnuWin32 版本 tree。</span></a>
+                    <a class="external-tool-link" href="https://github.com/universal-ctags/ctags" target="_blank" rel="noopener"><b>Universal Ctags</b><span>生成函数和符号索引。</span></a>
+                    <a class="external-tool-link" href="https://github.com/universal-ctags/ctags-win32" target="_blank" rel="noopener"><b>Ctags Win32</b><span>Universal Ctags 的 Windows 构建。</span></a>
+                    <a class="external-tool-link" href="https://www.gnu.org/software/global/download.html" target="_blank" rel="noopener"><b>GNU Global / gtags</b><span>源码标签和符号索引工具。</span></a>
+                    <a class="external-tool-link" href="http://adoxa.altervista.org/global/" target="_blank" rel="noopener"><b>gtags Win32</b><span>GNU Global 的 Windows 构建。</span></a>
+                    <a class="external-tool-link" href="https://code.visualstudio.com/download" target="_blank" rel="noopener"><b>VS Code</b><span>文本和代码编辑器。</span></a>
+                    <a class="external-tool-link" href="https://notepad-plus-plus.org/downloads/" target="_blank" rel="noopener"><b>Notepad++</b><span>快速编辑文本和代码。</span></a>
+                    <a class="external-tool-link" href="https://www.emeditor.com/download/" target="_blank" rel="noopener"><b>EmEditor</b><span>适合打开和编辑超大文本文件。</span></a>
+                    <a class="external-tool-link" href="https://www.vim.org/download.php" target="_blank" rel="noopener"><b>gVim</b><span>Vim 的图形界面版本。</span></a>
+                    <a class="external-tool-link" href="https://typora.io/" target="_blank" rel="noopener"><b>Typora</b><span>Markdown 编辑器。</span></a>
+                    <a class="external-tool-link" href="https://www.scootersoftware.com/" target="_blank" rel="noopener"><b>Beyond Compare</b><span>文本、文件夹和二进制比对。</span></a>
+                    <a class="external-tool-link" href="https://mobaxterm.mobatek.net/download.html" target="_blank" rel="noopener"><b>MobaXterm</b><span>终端、SSH、SFTP 等综合远程连接工具。</span></a>
+                    <div class="external-links-subtitle">媒体、护眼、字体与其他</div>
+                    <a class="external-tool-link" href="http://workaudiobook.com/" target="_blank" rel="noopener"><b>WorkAudioBook</b><span>英语听力练习工具，支持波形视图、自动暂停和变速。</span></a>
+                    <a class="external-tool-link" href="https://potplayer.tv/" target="_blank" rel="noopener"><b>PotPlayer</b><span>视频播放器。</span></a>
+                    <a class="external-tool-link" href="http://www.fadetop.com/" target="_blank" rel="noopener"><b>FadeTop</b><span>定时提醒休息的护眼工具。</span></a>
+                    <a class="external-tool-link" href="https://justgetflux.com/" target="_blank" rel="noopener"><b>f.lux</b><span>根据时间自动调节屏幕色温。</span></a>
+                    <a class="external-tool-link" href="https://zhuanlan.zhihu.com/p/637491623" target="_blank" rel="noopener"><b>京华老宋体 3.0</b><span>铅字印刷品风格字体，适合复古阅读场景。</span></a>
+                    <a class="external-tool-link" href="https://fonts.google.com/noto/specimen/Noto+Sans+SC?preview.script=Hans" target="_blank" rel="noopener"><b>Noto Sans SC</b><span>适合中文显示的清晰无衬线字体。</span></a>
+                    <a class="external-tool-link" href="https://github.com/SpaceTimee/Fusion-JetBrainsMapleMono" target="_blank" rel="noopener"><b>JetBrains Maple Mono</b><span>适合中英文混排的等宽编程字体。</span></a>
+                    <a class="external-tool-link" href="https://yakoye.github.io/RegCalcTextTool/RegCalcTextTool.html" target="_blank" rel="noopener"><b>RegCalc TextTool</b><span>寄存器计算、进制转换、比特域和文本处理工具。</span></a>
+                    <a class="external-tool-link" href="https://zhuanlan.zhihu.com/p/2025958096351053583" target="_blank" rel="noopener"><b>原始 Awesome-tools 清单</b><span>工具清单原文，便于后续回看和维护。</span></a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+
+</body>
+</html>
