@@ -3,6 +3,7 @@
 RegCalcTextTool 是一个静态网页工具，主要包含：
 
 - `RegCalcTextTool.html`：64 bit 寄存器计算 + 文本格式化，当前主工具
+- `HashTool.html`：独立 Hash / Checksum / HMAC 工具页，由主工具的 Hash 标签按需加载
 - `reg_tools_cal-big-to-small_63-0_64bit.html`：旧版寄存器计算工具，保留但部署时不作为主入口
 - `TextFormatter.html`：旧版文本处理工具，保留但部署时不作为主入口
 
@@ -136,6 +137,7 @@ npm run build
 - 2026.06.10 v0.32 外部工具增加 Unix 时间戳与万年历，首页改为无提示直接进入
 - 2026.06.10 v0.33 校准 README 入口说明并复核在线链接
 - 2026.06.13 v0.34 优化密码生成器结果列表、复制和编辑交互
+- 2026.06.13 v0.35 新增独立 Hash 工具页，支持文本/文件 Hash、HMAC、CRC、偏好保存和按需加载
 
 ## Refer
 

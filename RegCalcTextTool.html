@@ -630,6 +630,16 @@
         #password-ui .password-toast.show {
             opacity: 1;
         }
+        #hash-ui {
+            max-width: 1000px;
+        }
+        .hash-frame {
+            display: block;
+            width: 100%;
+            min-height: calc(100vh - 58px);
+            border: 0;
+            background: #f8f8f8;
+        }
         .tool-panel h3 {
             margin: 8px 0 12px;
         }
@@ -941,6 +951,7 @@
         <div class="tab" data-tab="textconvert" data-mobile-label="Text">TextFormatter</div>
         <div class="tab" data-tab="timecalc" data-mobile-label="DateTime">DateTime</div>
         <div class="tab" data-tab="password" data-mobile-label="Pwd">Password</div>
+        <div class="tab" data-tab="hash" data-mobile-label="Hash">Hash</div>
         <div class="tab" data-tab="externallinks" data-mobile-label="Links">Links</div>
         <div class="tab" data-tab="about" data-mobile-label="Info">About</div>
     </div>
@@ -1475,6 +1486,12 @@
         </div>
     </div>
 
+    <div class="tab-content" id="hash">
+        <div class="tool-panel" id="hash-ui">
+            <iframe id="hash_frame" class="hash-frame" title="Hash 工具" data-src="HashTool.html" loading="lazy"></iframe>
+        </div>
+    </div>
+
     <div class="tab-content" id="externallinks">
         <div class="tool-panel" id="externallinks-ui">
             <h3>外部工具链接</h3>
@@ -1650,7 +1667,8 @@
 2026.06.09  v0.31  TextFormatter 按钮按分类折叠为下拉组，新增颜色区隔、悬浮示例提示与清空所有
 2026.06.10  v0.32  外部工具增加 Unix 时间戳与万年历，首页改为无提示直接进入
 2026.06.10  v0.33  校准 README 入口说明并复核在线链接
-2026.06.13  v0.34  优化密码生成器结果列表、复制和编辑交互</pre>
+2026.06.13  v0.34  优化密码生成器结果列表、复制和编辑交互
+2026.06.13  v0.35  新增独立 Hash 工具页并按需加载</pre>
 
             </div>
 
@@ -1714,7 +1732,8 @@
 2026.06.09  v0.31  Collapsed TextFormatter buttons into colored dropdown groups with hover examples and clear-all
 2026.06.10  v0.32  Added Unix timestamp and calendar links, made the home entry silent
 2026.06.10  v0.33  Aligned README entry wording and rechecked online links
-2026.06.13  v0.34  Improved password result list, copy, and edit interactions</pre>
+2026.06.13  v0.34  Improved password result list, copy, and edit interactions
+2026.06.13  v0.35  Added standalone Hash tool page with lazy loading</pre>
             </div>
         </div>
     </div>
@@ -1728,9 +1747,17 @@
             textconvert: document.getElementById('textconvert'),
             timecalc: document.getElementById('timecalc'),
             password: document.getElementById('password'),
+            hash: document.getElementById('hash'),
             externallinks: document.getElementById('externallinks'),
             about: document.getElementById('about')
         };
+
+        function loadHashFrameIfNeeded() {
+            const frame = document.getElementById('hash_frame');
+            if (frame && !frame.getAttribute('src')) {
+                frame.setAttribute('src', frame.dataset.src);
+            }
+        }
 
         function switchTab(tabId) {
             const targetTab = document.querySelector(`.tab[data-tab="${tabId}"]`);
@@ -1745,6 +1772,9 @@
             });
             targetContent.classList.add('active');
 
+            if (tabId === 'hash') {
+                loadHashFrameIfNeeded();
+            }
             requestAnimationFrame(regcalc_fitToMobileScreen);
         }
 

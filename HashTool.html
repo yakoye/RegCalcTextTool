@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hash 工具</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            padding: 10px;
+            background: #f8f8f8;
+            color: #111;
+            font-family: Arial, "Microsoft YaHei", sans-serif;
+            font-size: 14px;
+        }
+        .tool-panel {
+            max-width: 980px;
+            margin: 0 auto;
+        }
+        h3 {
+            margin: 4px 0 10px;
+            font-size: 18px;
+        }
+        .tool-section {
+            border: 1px solid #d8d8d8;
+            padding: 10px;
+            margin: 10px 0;
+            background: #fff;
+        }
+        .tool-section-title {
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .tool-note {
+            margin: -4px 0 8px;
+            padding: 7px 8px;
+            border: 1px solid #d8e6d8;
+            background: #f5fbf5;
+            color: #2f5f38;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+        .hash-input {
+            width: 100%;
+            min-height: 130px;
+            padding: 7px;
+            border: 1px solid #999;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            font-size: 14px;
+            resize: vertical;
+        }
+        .hash-input.dragover {
+            border-color: #238625;
+            background: #f5fbf5;
+        }
+        .tool-actions,
+        .hash-inline-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin-top: 8px;
+        }
+        button,
+        select,
+        input {
+            min-height: 26px;
+            border: 1px solid #999;
+            background: #f8f8f8;
+            color: #111;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        button {
+            padding: 3px 9px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #f7fbcc;
+            border-color: #22ca24;
+        }
+        button:disabled {
+            cursor: default;
+            opacity: 0.65;
+        }
+        input[type="text"],
+        input[type="number"],
+        select {
+            padding: 2px 5px;
+        }
+        .file-info {
+            min-height: 20px;
+            margin-top: 7px;
+            color: #555;
+            font-size: 13px;
+            overflow-wrap: anywhere;
+        }
+        .hash-prefs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 8px;
+            align-items: end;
+        }
+        .hash-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 13px;
+        }
+        .hash-key-area {
+            display: none;
+            margin-top: 8px;
+            padding: 8px;
+            border: 1px solid #d8d8d8;
+            background: #fbfbfb;
+        }
+        .hash-key-area.show {
+            display: block;
+        }
+        .hash-groups {
+            display: grid;
+            gap: 8px;
+        }
+        details.hash-group {
+            border: 1px solid #d8d8d8;
+            background: #fff;
+        }
+        details.hash-group summary {
+            padding: 7px 8px;
+            cursor: pointer;
+            font-weight: 700;
+            background: #f5f5f5;
+            user-select: none;
+        }
+        .hash-group-body {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 6px 10px;
+            padding: 8px;
+        }
+        .hash-algo {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            min-width: 0;
+            line-height: 1.25;
+        }
+        .hash-algo input {
+            min-height: auto;
+        }
+        .hash-algo .badge {
+            color: #777;
+            font-size: 12px;
+        }
+        .weak-note {
+            margin: 0 8px 8px;
+            color: #8a5a00;
+            font-size: 13px;
+        }
+        .placeholder-config {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 8px;
+            padding: 8px;
+            border-top: 1px solid #eee;
+            color: #555;
+            font-size: 13px;
+        }
+        .hash-status-line {
+            min-height: 20px;
+            margin-top: 8px;
+            color: #2f5f38;
+            font-size: 13px;
+        }
+        .result-list {
+            display: grid;
+            gap: 6px;
+        }
+        .result-row {
+            display: grid;
+            grid-template-columns: 150px minmax(0, 1fr) 90px 48px;
+            gap: 8px;
+            align-items: start;
+            padding: 7px;
+            border: 1px solid #d8d8d8;
+            background: #fff;
+            cursor: pointer;
+        }
+        .result-row:hover {
+            background: #f5fbf5;
+            border-color: #c8d6c8;
+        }
+        .result-row.no-value {
+            cursor: default;
+        }
+        .result-name {
+            font-weight: 700;
+        }
+        .result-value {
+            min-width: 0;
+            font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", monospace;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            color: #222;
+        }
+        .result-status {
+            color: #555;
+            font-size: 13px;
+        }
+        .result-status.ok {
+            color: #238625;
+        }
+        .result-status.error {
+            color: #a33;
+        }
+        .copy-btn {
+            min-width: 40px;
+            padding: 2px 6px;
+        }
+        .hash-toast {
+            position: fixed;
+            right: 14px;
+            bottom: 14px;
+            z-index: 10;
+            padding: 5px 10px;
+            border: 1px solid #b9d8b9;
+            background: #f5fbf5;
+            color: #2f5f38;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.16s ease;
+        }
+        .hash-toast.show {
+            opacity: 1;
+        }
+        .security-note {
+            color: #555;
+            line-height: 1.55;
+        }
+        .security-note ul {
+            margin: 6px 0 0 20px;
+            padding: 0;
+        }
+        @media (max-width: 640px) {
+            body {
+                padding: 8px;
+                font-size: 14px;
+            }
+            .tool-section {
+                padding: 8px;
+            }
+            .hash-input {
+                min-height: 120px;
+                font-size: 16px;
+            }
+            .tool-actions button {
+                flex: 1 1 calc(50% - 8px);
+                min-height: 30px;
+            }
+            .hash-group-body {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            .result-row {
+                grid-template-columns: 1fr auto;
+                gap: 5px;
+            }
+            .result-value,
+            .result-status {
+                grid-column: 1 / -1;
+            }
+            .copy-btn {
+                grid-row: 1;
+                grid-column: 2;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="tool-panel" id="hash-ui">
+        <h3>Hash 工具</h3>
+        <div class="tool-note">支持文本和文件 Hash。偏好只保存算法选择、输出格式和分组展开状态，不保存原文、文件内容、HMAC key、密码、Token 或私钥。</div>
+
+        <div class="tool-section">
+            <div class="tool-section-title">输入</div>
+            <textarea id="hash_input" class="hash-input" placeholder="请输入文本，或将文件拖入这里计算 Hash"></textarea>
+            <input type="file" id="hash_file" hidden>
+            <div class="tool-actions">
+                <button type="button" id="hash_pick_file">选择文件</button>
+                <button type="button" id="hash_clear">清空</button>
+                <button type="button" id="hash_calc_selected">计算选中算法</button>
+                <button type="button" id="hash_calc_all">计算所有算法</button>
+                <button type="button" id="hash_copy_all">复制全部结果</button>
+                <button type="button" id="hash_export_txt">导出 TXT</button>
+                <button type="button" id="hash_export_json">导出 JSON</button>
+            </div>
+            <div id="hash_file_info" class="file-info">当前来源：文本</div>
+        </div>
+
+        <div class="tool-section">
+            <div class="tool-section-title">偏好与 Key</div>
+            <div class="hash-prefs">
+                <label class="hash-field">输出格式
+                    <select id="hash_output_format">
+                        <option value="hex-lower">lowercase hex</option>
+                        <option value="hex-upper">uppercase hex</option>
+                        <option value="base64">base64</option>
+                    </select>
+                </label>
+                <label class="hash-field">HMAC Key 模式
+                    <select id="hash_hmac_key_mode">
+                        <option value="text">普通文本</option>
+                        <option value="hex">Hex</option>
+                    </select>
+                </label>
+            </div>
+            <div id="hash_key_area" class="hash-key-area">
+                <label class="hash-field">HMAC / CMAC Key（不会保存）
+                    <input type="text" id="hash_hmac_key" placeholder="勾选 HMAC/CMAC 算法时填写 Key">
+                </label>
+            </div>
+            <div class="tool-actions">
+                <button type="button" id="hash_select_all">全选</button>
+                <button type="button" id="hash_select_none">取消全选</button>
+                <button type="button" id="hash_select_common">只选常用算法</button>
+                <button type="button" id="hash_restore_default">恢复默认选择</button>
+                <button type="button" id="hash_clear_prefs">清除本地偏好</button>
+            </div>
+        </div>
+
+        <div class="tool-section">
+            <div class="tool-section-title">算法选择</div>
+            <div id="hash_groups" class="hash-groups"></div>
+        </div>
+
+        <div class="tool-section">
+            <div class="tool-section-title">结果</div>
+            <div id="hash_status" class="hash-status-line"></div>
+            <div id="hash_results" class="result-list"></div>
+        </div>
+
+        <div class="tool-section security-note">
+            <b>安全提示</b>
+            <ul>
+                <li>MD5、SHA-1、MD2、MD4、SHA0 等算法已经不适合安全用途。</li>
+                <li>文件完整性校验建议使用 SHA-256、SHA-512、SHA3-256、BLAKE2、BLAKE3 或 SM3。</li>
+                <li>密码存储不要直接使用 MD5/SHA256，建议使用 Argon2、Bcrypt 或 Scrypt。</li>
+                <li>在线网页不要粘贴真实密码、私钥、Token 等敏感信息。</li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="hash_toast" class="hash-toast">已复制</div>
+
+    <script type="module">
+    import * as HASH_WASM from "./vendor/hash-wasm/index.esm.min.js";
+
+    const HASH_TOOL_SETTINGS_KEY = "toolbox.hash.settings.v1";
+    const HASH_DEFAULT_SELECTED = ["md5", "sha1", "sha256", "sha384", "sha512", "sha3-256", "blake2b-512", "blake3", "sm3", "crc32"];
+    const HASH_DEFAULT_EXPANDED = {
+        common: true,
+        hmac: false,
+        checksum: true,
+        fast: false,
+        password: false,
+        fuzzy: false,
+        legacy: false
+    };
+
+    const HASH_GROUPS = [
+        { id: "common", name: "一、常用 Hash" },
+        { id: "hmac", name: "二、HMAC / MAC" },
+        { id: "checksum", name: "三、Checksum / 校验和" },
+        { id: "fast", name: "四、非加密高速 Hash" },
+        { id: "password", name: "五、密码 Hash" },
+        { id: "fuzzy", name: "六、模糊 Hash / 相似性 Hash" },
+        { id: "legacy", name: "七、历史 / 弱算法", weak: true }
+    ];
+
+    const HASH_ALGORITHMS = [
+        { id: "md5", name: "MD5", group: "common", type: "hash", supported: true, create: "createMD5" },
+        { id: "sha1", name: "SHA-1", group: "common", type: "hash", supported: true, create: "createSHA1", webCrypto: "SHA-1" },
+        { id: "sha224", name: "SHA-224", group: "common", type: "hash", supported: true, create: "createSHA224" },
+        { id: "sha256", name: "SHA-256", group: "common", type: "hash", supported: true, create: "createSHA256", webCrypto: "SHA-256" },
+        { id: "sha384", name: "SHA-384", group: "common", type: "hash", supported: true, create: "createSHA384", webCrypto: "SHA-384" },
+        { id: "sha512", name: "SHA-512", group: "common", type: "hash", supported: true, create: "createSHA512", webCrypto: "SHA-512" },
+        { id: "sha512-224", name: "SHA-512/224", group: "common", type: "hash", supported: false, reason: "需要引入算法库" },
+        { id: "sha512-256", name: "SHA-512/256", group: "common", type: "hash", supported: false, reason: "需要引入算法库" },
+        { id: "sha3-224", name: "SHA3-224", group: "common", type: "hash", supported: true, create: "createSHA3", bits: 224 },
+        { id: "sha3-256", name: "SHA3-256", group: "common", type: "hash", supported: true, create: "createSHA3", bits: 256 },
+        { id: "sha3-384", name: "SHA3-384", group: "common", type: "hash", supported: true, create: "createSHA3", bits: 384 },
+        { id: "sha3-512", name: "SHA3-512", group: "common", type: "hash", supported: true, create: "createSHA3", bits: 512 },
+        { id: "shake128", name: "SHAKE128", group: "common", type: "hash", supported: false, reason: "需要引入算法库" },
+        { id: "shake256", name: "SHAKE256", group: "common", type: "hash", supported: false, reason: "需要引入算法库" },
+        { id: "sm3", name: "SM3", group: "common", type: "hash", supported: true, create: "createSM3" },
+        { id: "ripemd160", name: "RIPEMD-160", group: "common", type: "hash", supported: true, create: "createRIPEMD160" },
+        { id: "whirlpool", name: "Whirlpool", group: "common", type: "hash", supported: true, create: "createWhirlpool" },
+        { id: "keccak", name: "Keccak", group: "common", type: "hash", supported: true, create: "createKeccak", bits: 256 },
+        { id: "blake2b", name: "BLAKE2b", group: "common", type: "hash", supported: true, create: "createBLAKE2b", bits: 512 },
+        { id: "blake2b-512", name: "BLAKE2b-512", group: "common", type: "hash", supported: true, create: "createBLAKE2b", bits: 512 },
+        { id: "blake2s", name: "BLAKE2s", group: "common", type: "hash", supported: true, create: "createBLAKE2s", bits: 256 },
+        { id: "blake2s-256", name: "BLAKE2s-256", group: "common", type: "hash", supported: true, create: "createBLAKE2s", bits: 256 },
+        { id: "blake2sp", name: "BLAKE2sp", group: "common", type: "hash", supported: false, reason: "需要引入算法库" },
+        { id: "blake3", name: "BLAKE3", group: "common", type: "hash", supported: true, create: "createBLAKE3", bits: 256 },
+
+        { id: "hmac-md5", name: "HmacMD5", group: "hmac", type: "hmac", supported: true, requiresKey: true, create: "createMD5" },
+        { id: "hmac-sha1", name: "HmacSHA1", group: "hmac", type: "hmac", supported: true, requiresKey: true, create: "createSHA1" },
+        { id: "hmac-sha224", name: "HmacSHA224", group: "hmac", type: "hmac", supported: true, requiresKey: true, create: "createSHA224" },
+        { id: "hmac-sha256", name: "HmacSHA256", group: "hmac", type: "hmac", supported: true, requiresKey: true, create: "createSHA256" },
+        { id: "hmac-sha384", name: "HmacSHA384", group: "hmac", type: "hmac", supported: true, requiresKey: true, create: "createSHA384" },
+        { id: "hmac-sha512", name: "HmacSHA512", group: "hmac", type: "hmac", supported: true, requiresKey: true, create: "createSHA512" },
+        { id: "hmac", name: "HMAC", group: "hmac", type: "hmac", supported: true, requiresKey: true, create: "createSHA256", note: "SHA-256" },
+        { id: "cmac", name: "CMAC", group: "hmac", type: "mac", supported: false, requiresKey: true, reason: "需要引入算法库" },
+
+        { id: "crc32", name: "CRC-32", group: "checksum", type: "hash", supported: true, create: "createCRC32" },
+        { id: "crc64", name: "CRC-64", group: "checksum", type: "hash", supported: true, create: "createCRC64" },
+        { id: "crc-checksum", name: "CRC Checksum", group: "checksum", type: "hash", supported: true, create: "createCRC32" },
+        { id: "adler32", name: "Adler-32 Checksum", group: "checksum", type: "hash", supported: true, create: "createAdler32" },
+        { id: "fletcher8", name: "Fletcher-8 Checksum", group: "checksum", type: "custom", supported: true, custom: "fletcher8" },
+        { id: "fletcher16", name: "Fletcher-16 Checksum", group: "checksum", type: "custom", supported: true, custom: "fletcher16" },
+        { id: "fletcher32", name: "Fletcher-32 Checksum", group: "checksum", type: "custom", supported: true, custom: "fletcher32" },
+        { id: "fletcher64", name: "Fletcher-64 Checksum", group: "checksum", type: "custom", supported: false, reason: "暂不支持" },
+        { id: "luhn", name: "Luhn Checksum", group: "checksum", type: "custom", supported: true, custom: "luhn" },
+        { id: "tcpip", name: "TCP/IP Checksum", group: "checksum", type: "custom", supported: true, custom: "tcpip" },
+        { id: "xor", name: "XOR Checksum", group: "checksum", type: "custom", supported: true, custom: "xor" },
+        { id: "parity", name: "Parity Bit", group: "checksum", type: "custom", supported: true, custom: "parity" },
+
+        { id: "xxh64", name: "XXH64", group: "fast", type: "hash", supported: true, create: "createXXHash64" },
+        { id: "murmurhash3", name: "MurmurHash3", group: "fast", type: "hash", supported: false, reason: "需要引入算法库" },
+
+        { id: "bcrypt", name: "Bcrypt", group: "password", type: "password", supported: false, reason: "第一版占位，后续接入参数计算" },
+        { id: "bcrypt-compare", name: "Bcrypt compare", group: "password", type: "password", supported: false, reason: "第一版占位，后续接入比较功能" },
+        { id: "bcrypt-parse", name: "Bcrypt parse", group: "password", type: "password", supported: false, reason: "第一版占位，后续接入解析功能" },
+        { id: "argon2", name: "Argon2", group: "password", type: "password", supported: false, reason: "第一版占位，后续接入参数计算" },
+        { id: "argon2-compare", name: "Argon2 compare", group: "password", type: "password", supported: false, reason: "第一版占位，后续接入比较功能" },
+        { id: "scrypt", name: "Scrypt", group: "password", type: "password", supported: false, reason: "第一版占位，后续接入参数计算" },
+        { id: "nt-hash", name: "NT Hash", group: "password", type: "password", supported: false, reason: "第一版占位" },
+        { id: "lm-hash", name: "LM Hash", group: "password", type: "password", supported: false, reason: "第一版占位" },
+
+        { id: "ssdeep", name: "SSDEEP", group: "fuzzy", type: "fuzzy", supported: false, reason: "需要引入算法库" },
+        { id: "ctph", name: "CTPH", group: "fuzzy", type: "fuzzy", supported: false, reason: "需要引入算法库" },
+        { id: "compare-ssdeep", name: "Compare SSDEEP hashes", group: "fuzzy", type: "fuzzy", supported: false, reason: "第一版占位" },
+        { id: "compare-ctph", name: "Compare CTPH hashes", group: "fuzzy", type: "fuzzy", supported: false, reason: "第一版占位" },
+
+        { id: "md2", name: "MD2", group: "legacy", type: "legacy", supported: false, reason: "历史算法，暂不支持" },
+        { id: "md4", name: "MD4", group: "legacy", type: "legacy", supported: false, reason: "历史算法，第一版占位" },
+        { id: "md6", name: "MD6", group: "legacy", type: "legacy", supported: false, reason: "历史算法，暂不支持" },
+        { id: "sha0", name: "SHA0", group: "legacy", type: "legacy", supported: false, reason: "历史算法，暂不支持" },
+        { id: "sha1-legacy", name: "SHA1", group: "legacy", type: "legacy", supported: false, reason: "请使用常用 Hash 中的 SHA-1；不建议用于安全用途" },
+        { id: "sha2", name: "SHA2", group: "legacy", type: "legacy", supported: false, reason: "请勾选具体 SHA-224/256/384/512" },
+        { id: "sha3", name: "SHA3", group: "legacy", type: "legacy", supported: false, reason: "请勾选具体 SHA3-224/256/384/512" },
+        { id: "has160", name: "HAS-160", group: "legacy", type: "legacy", supported: false, reason: "历史算法，暂不支持" },
+        { id: "snefru", name: "Snefru", group: "legacy", type: "legacy", supported: false, reason: "历史算法，暂不支持" },
+        { id: "gost", name: "GOST Hash", group: "legacy", type: "legacy", supported: false, reason: "需要引入算法库" },
+        { id: "streebog", name: "Streebog", group: "legacy", type: "legacy", supported: false, reason: "需要引入算法库" }
+    ];
+
+    const HASH_ALGORITHM_IDS = new Set(HASH_ALGORITHMS.map(algorithm => algorithm.id));
+    const hashState = {
+        sourceMode: "text",
+        file: null,
+        results: [],
+        settings: {
+            selectedAlgorithmIds: HASH_DEFAULT_SELECTED.slice(),
+            outputFormat: "hex-lower",
+            expandedGroups: Object.assign({}, HASH_DEFAULT_EXPANDED),
+            hmacKeyMode: "text",
+            selectionMode: "common"
+        }
+    };
+
+    function hash_hw() {
+        return HASH_WASM;
+    }
+
+    function hash_escapeHtml(text) {
+        return String(text).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
+    }
+
+    function hash_bytesToHex(bytes) {
+        return Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
+    }
+
+    function hash_hexToBytes(hex) {
+        const clean = hex.replace(/\s+/g, "");
+        if (!/^[0-9a-fA-F]*$/.test(clean) || clean.length % 2 !== 0) {
+            throw new Error("Hex key 格式不正确");
+        }
+        const bytes = new Uint8Array(clean.length / 2);
+        for (let i = 0; i < clean.length; i += 2) {
+            bytes[i / 2] = parseInt(clean.slice(i, i + 2), 16);
+        }
+        return bytes;
+    }
+
+    function hash_hexToBase64(hex) {
+        const bytes = hash_hexToBytes(hex);
+        let binary = "";
+        const chunkSize = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+            binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+        }
+        return btoa(binary);
+    }
+
+    function hash_formatHex(hex) {
+        const clean = String(hex || "").toLowerCase();
+        const format = hashState.settings.outputFormat;
+        if (format === "hex-upper") return clean.toUpperCase();
+        if (format === "base64") return hash_hexToBase64(clean);
+        return clean;
+    }
+
+    function hash_encodeText(text) {
+        return new TextEncoder().encode(text);
+    }
+
+    function hash_formatSize(size) {
+        if (size < 1024) return `${size} B`;
+        if (size < 1024 * 1024) return `${(size / 1024).toFixed(2)} KB`;
+        if (size < 1024 * 1024 * 1024) return `${(size / 1024 / 1024).toFixed(2)} MB`;
+        return `${(size / 1024 / 1024 / 1024).toFixed(2)} GB`;
+    }
+
+    function hash_loadSettings() {
+        const defaults = {
+            selectedAlgorithmIds: HASH_DEFAULT_SELECTED.slice(),
+            outputFormat: "hex-lower",
+            expandedGroups: Object.assign({}, HASH_DEFAULT_EXPANDED),
+            hmacKeyMode: "text",
+            selectionMode: "common"
+        };
+        try {
+            const raw = localStorage.getItem(HASH_TOOL_SETTINGS_KEY);
+            if (!raw) return defaults;
+            const saved = JSON.parse(raw);
+            const selectedAlgorithmIds = Array.isArray(saved.selectedAlgorithmIds)
+                ? saved.selectedAlgorithmIds.filter(id => HASH_ALGORITHM_IDS.has(id))
+                : defaults.selectedAlgorithmIds;
+            return {
+                selectedAlgorithmIds,
+                outputFormat: ["hex-lower", "hex-upper", "base64"].includes(saved.outputFormat) ? saved.outputFormat : defaults.outputFormat,
+                expandedGroups: Object.assign({}, HASH_DEFAULT_EXPANDED, saved.expandedGroups || {}),
+                hmacKeyMode: ["text", "hex"].includes(saved.hmacKeyMode) ? saved.hmacKeyMode : defaults.hmacKeyMode,
+                selectionMode: saved.selectionMode || "custom"
+            };
+        } catch {
+            return defaults;
+        }
+    }
+
+    function hash_saveSettings() {
+        const payload = {
+            selectedAlgorithmIds: hashState.settings.selectedAlgorithmIds.filter(id => HASH_ALGORITHM_IDS.has(id)),
+            outputFormat: hashState.settings.outputFormat,
+            expandedGroups: hashState.settings.expandedGroups,
+            hmacKeyMode: hashState.settings.hmacKeyMode,
+            selectionMode: hashState.settings.selectionMode || "custom"
+        };
+        localStorage.setItem(HASH_TOOL_SETTINGS_KEY, JSON.stringify(payload));
+    }
+
+    function hash_setStatus(message) {
+        document.getElementById("hash_status").textContent = message || "";
+    }
+
+    function hash_showToast(message) {
+        const toast = document.getElementById("hash_toast");
+        toast.textContent = message;
+        toast.classList.add("show");
+        clearTimeout(hash_showToast.timer);
+        hash_showToast.timer = setTimeout(() => toast.classList.remove("show"), 1200);
+    }
+
+    function hash_renderGroups() {
+        const selected = new Set(hashState.settings.selectedAlgorithmIds);
+        const container = document.getElementById("hash_groups");
+        container.innerHTML = HASH_GROUPS.map(group => {
+            const algorithms = HASH_ALGORITHMS.filter(algorithm => algorithm.group === group.id);
+            const body = algorithms.map(algorithm => {
+                const checked = selected.has(algorithm.id) ? "checked" : "";
+                const disabledText = algorithm.supported ? "" : '<span class="badge">占位</span>';
+                const note = algorithm.note ? `<span class="badge">${hash_escapeHtml(algorithm.note)}</span>` : "";
+                return `<label class="hash-algo" title="${hash_escapeHtml(algorithm.reason || algorithm.name)}">
+                    <input type="checkbox" class="hash-algo-check" value="${algorithm.id}" ${checked}>
+                    <span>${hash_escapeHtml(algorithm.name)}</span>${note}${disabledText}
+                </label>`;
+            }).join("");
+            const weakNote = group.weak ? '<div class="weak-note">历史或兼容性算法，不建议用于安全用途。</div>' : "";
+            const placeholder = hash_groupPlaceholder(group.id);
+            const open = hashState.settings.expandedGroups[group.id] ? "open" : "";
+            return `<details class="hash-group" data-group="${group.id}" ${open}>
+                <summary>${hash_escapeHtml(group.name)}</summary>
+                ${weakNote}
+                <div class="hash-group-body">${body}</div>
+                ${placeholder}
+            </details>`;
+        }).join("");
+        hash_updateKeyVisibility();
+    }
+
+    function hash_groupPlaceholder(groupId) {
+        if (groupId === "password") {
+            return `<div class="placeholder-config">
+                <label>Bcrypt cost <input type="number" value="12" disabled></label>
+                <label>Argon2 type <select disabled><option>Argon2id</option><option>Argon2i</option><option>Argon2d</option></select></label>
+                <label>Argon2 memory <input type="number" value="65536" disabled></label>
+                <label>Scrypt N <input type="number" value="16384" disabled></label>
+                <label>Compare 明文密码 <input type="text" placeholder="第一版占位，不保存" disabled></label>
+                <label>已有 hash <input type="text" placeholder="第一版占位，不保存" disabled></label>
+            </div>`;
+        }
+        if (groupId === "fuzzy") {
+            return `<div class="placeholder-config">
+                <label>Hash A <input type="text" placeholder="第一版占位，不保存" disabled></label>
+                <label>Hash B <input type="text" placeholder="第一版占位，不保存" disabled></label>
+            </div>`;
+        }
+        return "";
+    }
+
+    function hash_updateSelectedFromUI() {
+        hashState.settings.selectedAlgorithmIds = Array.from(document.querySelectorAll(".hash-algo-check:checked")).map(input => input.value);
+        hashState.settings.selectionMode = "custom";
+        hash_updateKeyVisibility();
+        hash_saveSettings();
+    }
+
+    function hash_applySelection(ids, mode) {
+        const idSet = new Set(ids.filter(id => HASH_ALGORITHM_IDS.has(id)));
+        document.querySelectorAll(".hash-algo-check").forEach(input => {
+            input.checked = idSet.has(input.value);
+        });
+        hashState.settings.selectedAlgorithmIds = Array.from(idSet);
+        hashState.settings.selectionMode = mode || "custom";
+        hash_updateKeyVisibility();
+        hash_saveSettings();
+    }
+
+    function hash_updateKeyVisibility() {
+        const selected = new Set(hashState.settings.selectedAlgorithmIds);
+        const needsKey = HASH_ALGORITHMS.some(algorithm => selected.has(algorithm.id) && algorithm.requiresKey);
+        document.getElementById("hash_key_area").classList.toggle("show", needsKey);
+    }
+
+    function hash_updateFileInfo() {
+        const info = document.getElementById("hash_file_info");
+        if (hashState.sourceMode === "file" && hashState.file) {
+            info.textContent = `当前来源：文件 | ${hashState.file.name} | ${hash_formatSize(hashState.file.size)} | ${hashState.file.type || "未知类型"}`;
+        } else {
+            info.textContent = "当前来源：文本";
+        }
+    }
+
+    function hash_setFile(file) {
+        if (!file) return;
+        hashState.file = file;
+        hashState.sourceMode = "file";
+        hash_updateFileInfo();
+    }
+
+    async function hash_eachChunk(callback) {
+        if (hashState.sourceMode === "file" && hashState.file) {
+            if (hashState.file.stream) {
+                const reader = hashState.file.stream().getReader();
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    if (value && value.length) {
+                        await callback(value);
+                        await hash_yield();
+                    }
+                }
+                return;
+            }
+            const buffer = await hashState.file.arrayBuffer();
+            await callback(new Uint8Array(buffer));
+            return;
+        }
+        await callback(hash_encodeText(document.getElementById("hash_input").value || ""));
+    }
+
+    async function hash_getAllBytes() {
+        if (hashState.sourceMode === "file" && hashState.file) {
+            return new Uint8Array(await hashState.file.arrayBuffer());
+        }
+        return hash_encodeText(document.getElementById("hash_input").value || "");
+    }
+
+    function hash_yield() {
+        return new Promise(resolve => setTimeout(resolve, 0));
+    }
+
+    async function hash_calculateWithHasher(algorithm) {
+        const hw = hash_hw();
+        if (!hw) throw new Error("算法库未加载");
+        const createFn = hw[algorithm.create];
+        if (typeof createFn !== "function") throw new Error("算法库未加载该算法");
+        const hasher = algorithm.bits ? await createFn(algorithm.bits) : await createFn();
+        hasher.init();
+        await hash_eachChunk(chunk => {
+            hasher.update(chunk);
+        });
+        return hasher.digest("hex");
+    }
+
+    async function hash_calculateWebCrypto(algorithm) {
+        if (!crypto.subtle || (hashState.sourceMode === "file" && hashState.file && hashState.file.size > 64 * 1024 * 1024)) {
+            return null;
+        }
+        const bytes = await hash_getAllBytes();
+        const digest = await crypto.subtle.digest(algorithm.webCrypto, bytes);
+        return hash_bytesToHex(new Uint8Array(digest));
+    }
+
+    function hash_getHmacKey() {
+        const keyText = document.getElementById("hash_hmac_key").value;
+        if (!keyText) throw new Error("缺少 key");
+        if (hashState.settings.hmacKeyMode === "hex") return hash_hexToBytes(keyText);
+        return hash_encodeText(keyText);
+    }
+
+    async function hash_calculateHmac(algorithm) {
+        const hw = hash_hw();
+        if (!hw || typeof hw.createHMAC !== "function") throw new Error("算法库未加载");
+        const createFn = hw[algorithm.create];
+        if (typeof createFn !== "function") throw new Error("算法库未加载该算法");
+        const hasher = await hw.createHMAC(algorithm.bits ? createFn(algorithm.bits) : createFn(), hash_getHmacKey());
+        hasher.init();
+        await hash_eachChunk(chunk => {
+            hasher.update(chunk);
+        });
+        return hasher.digest("hex");
+    }
+
+    async function hash_calculateCustom(algorithm) {
+        const bytes = await hash_getAllBytes();
+        if (algorithm.custom === "xor") {
+            let value = 0;
+            for (const byte of bytes) value ^= byte;
+            return value.toString(16).padStart(2, "0");
+        }
+        if (algorithm.custom === "parity") {
+            let parity = 0;
+            for (const byte of bytes) {
+                let current = byte;
+                while (current) {
+                    parity ^= current & 1;
+                    current >>= 1;
+                }
+            }
+            return String(parity);
+        }
+        if (algorithm.custom === "tcpip") {
+            let sum = 0;
+            for (let i = 0; i < bytes.length; i += 2) {
+                const word = (bytes[i] << 8) + (bytes[i + 1] || 0);
+                sum += word;
+                while (sum >> 16) sum = (sum & 0xffff) + (sum >> 16);
+            }
+            return ((~sum) & 0xffff).toString(16).padStart(4, "0");
+        }
+        if (algorithm.custom === "luhn") {
+            const text = hashState.sourceMode === "text" ? document.getElementById("hash_input").value : new TextDecoder().decode(bytes);
+            const digits = text.replace(/\D/g, "");
+            if (!digits) throw new Error("Luhn 需要数字输入");
+            let sum = 0;
+            let doubleDigit = true;
+            for (let i = digits.length - 1; i >= 0; i--) {
+                let digit = Number(digits[i]);
+                if (doubleDigit) {
+                    digit *= 2;
+                    if (digit > 9) digit -= 9;
+                }
+                sum += digit;
+                doubleDigit = !doubleDigit;
+            }
+            return String((10 - (sum % 10)) % 10);
+        }
+        return hash_fletcher(bytes, algorithm.custom);
+    }
+
+    function hash_fletcher(bytes, mode) {
+        const bits = mode === "fletcher8" ? 4 : mode === "fletcher16" ? 8 : 16;
+        const mod = (1 << bits) - 1;
+        let sum1 = 0;
+        let sum2 = 0;
+        if (bits === 16) {
+            for (let i = 0; i < bytes.length; i += 2) {
+                const word = ((bytes[i] || 0) << 8) + (bytes[i + 1] || 0);
+                sum1 = (sum1 + word) % mod;
+                sum2 = (sum2 + sum1) % mod;
+            }
+            return ((sum2 << 16) | sum1).toString(16).padStart(8, "0");
+        }
+        for (const byte of bytes) {
+            const value = bits === 4 ? byte & 0x0f : byte;
+            sum1 = (sum1 + value) % mod;
+            sum2 = (sum2 + sum1) % mod;
+        }
+        const width = bits === 4 ? 2 : 4;
+        return ((sum2 << bits) | sum1).toString(16).padStart(width, "0");
+    }
+
+    async function hash_calculateAlgorithm(algorithm) {
+        if (!algorithm.supported) {
+            return { id: algorithm.id, name: algorithm.name, value: "", status: "unsupported", error: algorithm.reason || "暂不支持" };
+        }
+        try {
+            let hex;
+            if (algorithm.type === "hmac") {
+                hex = await hash_calculateHmac(algorithm);
+            } else if (algorithm.type === "custom") {
+                hex = await hash_calculateCustom(algorithm);
+            } else {
+                hex = algorithm.webCrypto ? await hash_calculateWebCrypto(algorithm) : null;
+                if (!hex) hex = await hash_calculateWithHasher(algorithm);
+            }
+            return { id: algorithm.id, name: algorithm.name, value: hash_formatHex(hex), status: "ok", error: "" };
+        } catch (error) {
+            return { id: algorithm.id, name: algorithm.name, value: "", status: "error", error: error && error.message ? error.message : "计算失败" };
+        }
+    }
+
+    function hash_getAlgorithmsToRun(all) {
+        if (all) return HASH_ALGORITHMS.slice();
+        const selected = new Set(hashState.settings.selectedAlgorithmIds);
+        return HASH_ALGORITHMS.filter(algorithm => selected.has(algorithm.id));
+    }
+
+    async function hash_calculate(all) {
+        const algorithms = hash_getAlgorithmsToRun(all);
+        if (!algorithms.length) {
+            hash_setStatus("请先选择算法");
+            return;
+        }
+        hashState.results = algorithms.map(algorithm => ({ id: algorithm.id, name: algorithm.name, value: "", status: "pending", error: "等待计算" }));
+        hash_renderResults();
+        hash_setStatus(`开始计算 ${algorithms.length} 个算法...`);
+        hash_setBusy(true);
+        for (let i = 0; i < algorithms.length; i++) {
+            const result = await hash_calculateAlgorithm(algorithms[i]);
+            hashState.results[i] = result;
+            hash_renderResults();
+            hash_setStatus(`已完成 ${i + 1} / ${algorithms.length}`);
+            await hash_yield();
+        }
+        hash_setBusy(false);
+        hash_setStatus("计算完成");
+    }
+
+    function hash_setBusy(busy) {
+        ["hash_calc_selected", "hash_calc_all"].forEach(id => {
+            document.getElementById(id).disabled = busy;
+        });
+    }
+
+    function hash_renderResults() {
+        const container = document.getElementById("hash_results");
+        if (!hashState.results.length) {
+            container.innerHTML = '<div class="file-info">还没有结果。</div>';
+            return;
+        }
+        container.innerHTML = hashState.results.map(result => {
+            const ok = result.status === "ok";
+            const statusText = ok ? "ok" : (result.error || result.status);
+            return `<div class="result-row ${ok ? "" : "no-value"}" data-id="${result.id}">
+                <div class="result-name">${hash_escapeHtml(result.name)}</div>
+                <div class="result-value">${hash_escapeHtml(result.value || "-")}</div>
+                <div class="result-status ${ok ? "ok" : "error"}">${hash_escapeHtml(statusText)}</div>
+                <button type="button" class="copy-btn" data-copy="${result.id}" ${ok ? "" : "disabled"}>复制</button>
+            </div>`;
+        }).join("");
+    }
+
+    async function hash_copyText(text) {
+        if (!text) return;
+        try {
+            await navigator.clipboard.writeText(text);
+        } catch {
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+            textarea.setAttribute("readonly", "");
+            textarea.style.position = "fixed";
+            textarea.style.left = "-9999px";
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textarea);
+        }
+        hash_showToast("已复制");
+    }
+
+    function hash_resultText(allJson) {
+        const okResults = hashState.results.filter(result => result.status === "ok");
+        if (allJson) return JSON.stringify(hashState.results, null, 2);
+        return okResults.map(result => `${result.name}: ${result.value}`).join("\n");
+    }
+
+    function hash_download(filename, text, type) {
+        const blob = new Blob([text], { type });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function hash_bindEvents() {
+        const input = document.getElementById("hash_input");
+        input.addEventListener("input", () => {
+            hashState.sourceMode = "text";
+            hashState.file = null;
+            document.getElementById("hash_file").value = "";
+            hash_updateFileInfo();
+        });
+        ["dragenter", "dragover"].forEach(eventName => {
+            input.addEventListener(eventName, event => {
+                event.preventDefault();
+                input.classList.add("dragover");
+            });
+        });
+        ["dragleave", "drop"].forEach(eventName => {
+            input.addEventListener(eventName, event => {
+                event.preventDefault();
+                input.classList.remove("dragover");
+            });
+        });
+        input.addEventListener("drop", event => {
+            const file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
+            hash_setFile(file);
+        });
+        document.getElementById("hash_pick_file").addEventListener("click", () => document.getElementById("hash_file").click());
+        document.getElementById("hash_file").addEventListener("change", event => hash_setFile(event.target.files[0]));
+        document.getElementById("hash_clear").addEventListener("click", () => {
+            input.value = "";
+            document.getElementById("hash_file").value = "";
+            hashState.sourceMode = "text";
+            hashState.file = null;
+            hashState.results = [];
+            hash_updateFileInfo();
+            hash_renderResults();
+            hash_setStatus("");
+        });
+        document.getElementById("hash_calc_selected").addEventListener("click", () => hash_calculate(false));
+        document.getElementById("hash_calc_all").addEventListener("click", () => hash_calculate(true));
+        document.getElementById("hash_copy_all").addEventListener("click", () => hash_copyText(hash_resultText(false)));
+        document.getElementById("hash_export_txt").addEventListener("click", () => hash_download("hash-results.txt", hash_resultText(false), "text/plain;charset=utf-8"));
+        document.getElementById("hash_export_json").addEventListener("click", () => hash_download("hash-results.json", hash_resultText(true), "application/json;charset=utf-8"));
+        document.getElementById("hash_select_all").addEventListener("click", () => hash_applySelection(HASH_ALGORITHMS.map(algorithm => algorithm.id), "all"));
+        document.getElementById("hash_select_none").addEventListener("click", () => hash_applySelection([], "none"));
+        document.getElementById("hash_select_common").addEventListener("click", () => hash_applySelection(HASH_DEFAULT_SELECTED, "common"));
+        document.getElementById("hash_restore_default").addEventListener("click", () => {
+            hashState.settings = {
+                selectedAlgorithmIds: HASH_DEFAULT_SELECTED.slice(),
+                outputFormat: "hex-lower",
+                expandedGroups: Object.assign({}, HASH_DEFAULT_EXPANDED),
+                hmacKeyMode: "text",
+                selectionMode: "common"
+            };
+            hash_applySettingsToControls();
+            hash_renderGroups();
+            hash_saveSettings();
+            hash_showToast("已恢复默认");
+        });
+        document.getElementById("hash_clear_prefs").addEventListener("click", () => {
+            localStorage.removeItem(HASH_TOOL_SETTINGS_KEY);
+            hashState.settings = {
+                selectedAlgorithmIds: HASH_DEFAULT_SELECTED.slice(),
+                outputFormat: "hex-lower",
+                expandedGroups: Object.assign({}, HASH_DEFAULT_EXPANDED),
+                hmacKeyMode: "text",
+                selectionMode: "common"
+            };
+            hash_applySettingsToControls();
+            hash_renderGroups();
+            hash_showToast("已清除本地偏好");
+        });
+        document.getElementById("hash_output_format").addEventListener("change", event => {
+            hashState.settings.outputFormat = event.target.value;
+            hash_saveSettings();
+        });
+        document.getElementById("hash_hmac_key_mode").addEventListener("change", event => {
+            hashState.settings.hmacKeyMode = event.target.value;
+            hash_saveSettings();
+        });
+        document.getElementById("hash_groups").addEventListener("change", event => {
+            if (event.target.classList.contains("hash-algo-check")) hash_updateSelectedFromUI();
+        });
+        document.getElementById("hash_groups").addEventListener("toggle", event => {
+            const group = event.target.closest(".hash-group");
+            if (!group) return;
+            hashState.settings.expandedGroups[group.dataset.group] = group.open;
+            hash_saveSettings();
+        }, true);
+        document.getElementById("hash_results").addEventListener("click", event => {
+            const copyButton = event.target.closest("[data-copy]");
+            const row = event.target.closest(".result-row");
+            if (!row) return;
+            const id = copyButton ? copyButton.dataset.copy : row.dataset.id;
+            const result = hashState.results.find(item => item.id === id);
+            if (result && result.status === "ok") hash_copyText(result.value);
+        });
+    }
+
+    function hash_applySettingsToControls() {
+        document.getElementById("hash_output_format").value = hashState.settings.outputFormat;
+        document.getElementById("hash_hmac_key_mode").value = hashState.settings.hmacKeyMode;
+    }
+
+    function hash_init() {
+        hashState.settings = hash_loadSettings();
+        hash_applySettingsToControls();
+        hash_renderGroups();
+        hash_renderResults();
+        hash_updateFileInfo();
+        hash_bindEvents();
+    }
+
+    window.addEventListener("DOMContentLoaded", hash_init);
+    </script>
+</body>
+</html>

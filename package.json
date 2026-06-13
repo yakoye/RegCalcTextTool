@@ -10,6 +10,7 @@
     "deploy:pages": "npm run build && npx wrangler pages deploy dist"
   },
   "dependencies": {
+    "hash-wasm": "^4.12.0",
     "mathjs": "^15.2.0"
   }
 }
