@@ -630,15 +630,6 @@
         document.getElementById("hash_status").textContent = message || "";
     }
 
-    function hash_requestResize() {
-        window.setTimeout(() => {
-            if (window.parent && window.parent !== window) {
-                const height = Math.ceil(Math.max(document.body.scrollHeight, document.documentElement.scrollHeight));
-                window.parent.postMessage({ type: "tool-resize", height }, "*");
-            }
-        }, 0);
-    }
-
     function hash_showToast(message) {
         if (window.toolboxToast) {
             window.toolboxToast(message);
@@ -654,7 +645,6 @@
     function hash_renderGroups() {
         const selected = new Set(hashState.settings.selectedAlgorithmIds);
         const container = document.getElementById("hash_groups");
-        if (!container) return;
         container.innerHTML = HASH_GROUPS.map(group => {
             const algorithms = HASH_ALGORITHMS.filter(algorithm => algorithm.group === group.id);
             const body = algorithms.map(algorithm => {
@@ -686,15 +676,6 @@
         }).join("");
         hash_updateAlgorithmPanelCount();
         hash_updateKeyVisibility();
-        hash_requestResize();
-    }
-
-    function hash_ensureGroupsRendered() {
-        const container = document.getElementById("hash_groups");
-        if (!container) return;
-        if (!container.querySelector(".hash-group")) hash_renderGroups();
-        hash_updateAlgorithmPanelCount();
-        hash_requestResize();
     }
 
     function hash_updateGroupCounts() {
@@ -1135,18 +1116,15 @@
             if (event.target.classList.contains("hash-algo-check")) hash_updateSelectedFromUI();
         });
         document.getElementById("hash_groups").addEventListener("toggle", event => {
-            const group = event.target.classList && event.target.classList.contains("hash-group") ? event.target : null;
+            const group = event.target.closest(".hash-group");
             if (!group) return;
             hashState.settings.expandedGroups[group.dataset.group] = group.open;
             hash_saveSettings();
-            hash_requestResize();
         }, true);
         document.getElementById("hash_algorithm_panel").addEventListener("toggle", event => {
             if (event.target.id !== "hash_algorithm_panel") return;
             hashState.settings.hashAlgorithmPanelExpanded = event.target.open;
-            if (event.target.open) hash_ensureGroupsRendered();
             hash_saveSettings();
-            hash_requestResize();
         });
         document.getElementById("hash_results").addEventListener("click", event => {
             const copyButton = event.target.closest("[data-copy]");
@@ -1175,14 +1153,9 @@
         hash_renderResults();
         hash_updateFileInfo();
         hash_bindEvents();
-        hash_requestResize();
     }
 
-    if (document.readyState === "loading") {
-        window.addEventListener("DOMContentLoaded", hash_init);
-    } else {
-        hash_init();
-    }
+    window.addEventListener("DOMContentLoaded", hash_init);
     </script>
 </body>
 </html>
