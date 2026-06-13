@@ -11,7 +11,7 @@
         .tab-bar { display: flex; align-items: end; gap: 0; padding: 8px 8px 0; background: #efefef; border-bottom: 1px solid #d0d0d0; overflow-x: auto; white-space: nowrap; }
         .tab { min-width: 92px; padding: 7px 12px; border: 1px solid #d0d0d0; border-bottom: 0; background: #e7e7e7; cursor: pointer; text-align: center; color: #333; }
         .tab.active { background: #fff; font-weight: 700; color: #000; }
-        .tab-content { display: none; padding: 8px; }
+        .tab-content { display: none; padding: 2px; }
         .tab-content.active { display: block; }
         .tool-frame { display: block; width: 100%; min-height: 0; height: 620px; border: 0; background: transparent; }
         @media (max-width: 640px) {
@@ -19,7 +19,7 @@
             .tab { min-width: 54px; padding: 6px 8px; font-size: 13px; }
             .tab[data-mobile-label] { font-size: 0; }
             .tab[data-mobile-label]::after { content: attr(data-mobile-label); font-size: 13px; }
-            .tab-content { padding: 4px; }
+            .tab-content { padding: 2px; }
             .tool-frame { min-height: 0; height: 560px; }
         }
     </style>

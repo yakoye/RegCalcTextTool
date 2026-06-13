@@ -34,6 +34,14 @@ body.embedded-tool {
   background: transparent !important;
 }
 
+body.embedded-tool {
+  padding: 2px !important;
+}
+
+body.embedded-tool .tool-panel {
+  border-color: transparent !important;
+}
+
 body.toolbox-shell {
   min-height: 100vh;
   padding: 6px 12px 14px;
@@ -102,7 +110,7 @@ body.toolbox-shell {
 .toolbox-shell .tab-content.active {
   max-width: 1120px;
   margin: 0 auto !important;
-  padding: 0 !important;
+  padding: 2px !important;
   border: 0 !important;
   border-radius: var(--radius-lg) !important;
   background: transparent !important;
@@ -497,7 +505,6 @@ details[open] > summary.accordion-header .accordion-arrow {
 @media (max-width: 768px) {
   body {
     font-size: 14px !important;
-    padding: 1px !important;
   }
 
   button {
@@ -505,20 +512,20 @@ details[open] > summary.accordion-header .accordion-arrow {
   }
 
   .tool-section {
-    padding: 1px !important;
+    padding: 10px !important;
   }
 
   body.toolbox-shell {
-    padding: 1px !important;
+    padding: 10px 2px 14px;
   }
 
   .toolbox-shell .tab-bar {
-    max-width: calc(100vw - 2px);
+    max-width: calc(100vw - 4px);
     margin-bottom: 4px !important;
   }
 
   .tool-panel {
-    padding: 1px !important;
+    padding: 10px;
     border-radius: 22px;
   }
 
