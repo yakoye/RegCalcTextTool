@@ -34,6 +34,25 @@
             font-weight: 700;
             margin-bottom: 8px;
         }
+        .hash-section-header {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .hash-section-header .tool-section-title {
+            margin-bottom: 0;
+        }
+        .hash-section-header .tool-actions {
+            margin-top: 0;
+        }
+        .hash-section-header .file-info {
+            min-width: 160px;
+            flex: 1 1 220px;
+            margin-top: 0;
+        }
         .tool-note {
             margin: -4px 0 8px;
             padding: 7px 8px;
@@ -296,14 +315,16 @@
         <div class="tool-note">支持文本和文件 Hash。偏好只保存算法选择、输出格式和分组展开状态，不保存原文、文件内容、HMAC key、密码、Token 或私钥。</div>
 
         <div class="tool-section">
-            <div class="tool-section-title">输入</div>
+            <div class="hash-section-header">
+                <div class="tool-section-title">输入</div>
+                <div class="tool-actions">
+                    <button type="button" id="hash_pick_file">选择文件</button>
+                    <button type="button" id="hash_clear">清空</button>
+                </div>
+                <div id="hash_file_info" class="file-info">当前来源：文本</div>
+            </div>
             <textarea id="hash_input" class="hash-input" placeholder="请输入文本，或将文件拖入这里计算 Hash"></textarea>
             <input type="file" id="hash_file" hidden>
-            <div class="tool-actions">
-                <button type="button" id="hash_pick_file">选择文件</button>
-                <button type="button" id="hash_clear">清空</button>
-            </div>
-            <div id="hash_file_info" class="file-info">当前来源：文本</div>
         </div>
 
         <details class="tool-section hash-pref-details" id="hash_pref_details">
