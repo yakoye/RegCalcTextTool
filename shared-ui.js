@@ -1,6 +1,39 @@
 (function () {
   let toastTimer = null;
 
+  function isEmbeddedTool() {
+    try {
+      return window.parent && window.parent !== window;
+    } catch {
+      return false;
+    }
+  }
+
+  function notifyToolHeight() {
+    if (!isEmbeddedTool()) return;
+    const height = Math.ceil(Math.max(
+      document.body ? document.body.scrollHeight : 0,
+      document.documentElement ? document.documentElement.scrollHeight : 0
+    ));
+    window.parent.postMessage({ type: "tool-resize", height }, "*");
+  }
+
+  if (isEmbeddedTool()) {
+    document.documentElement.classList.add("embedded-tool");
+    document.addEventListener("DOMContentLoaded", () => {
+      document.body.classList.add("embedded-tool");
+      notifyToolHeight();
+      if ("ResizeObserver" in window) {
+        const observer = new ResizeObserver(notifyToolHeight);
+        observer.observe(document.body);
+      }
+    });
+    window.addEventListener("load", notifyToolHeight);
+    window.addEventListener("resize", notifyToolHeight);
+    window.setTimeout(notifyToolHeight, 250);
+    window.setTimeout(notifyToolHeight, 1000);
+  }
+
   window.toolboxToast = function toolboxToast(message) {
     let toast = document.querySelector(".toolbox-toast");
     if (!toast) {

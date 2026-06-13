@@ -13,14 +13,14 @@
         .tab.active { background: #fff; font-weight: 700; color: #000; }
         .tab-content { display: none; padding: 8px; }
         .tab-content.active { display: block; }
-        .tool-frame { display: block; width: 100%; min-height: calc(100vh - 54px); border: 0; background: #f8f8f8; }
+        .tool-frame { display: block; width: 100%; min-height: 0; height: 620px; border: 0; background: transparent; }
         @media (max-width: 640px) {
             .tab-bar { padding: 4px 4px 0; }
             .tab { min-width: 54px; padding: 6px 8px; font-size: 13px; }
             .tab[data-mobile-label] { font-size: 0; }
             .tab[data-mobile-label]::after { content: attr(data-mobile-label); font-size: 13px; }
             .tab-content { padding: 4px; }
-            .tool-frame { min-height: calc(100vh - 38px); }
+            .tool-frame { min-height: 0; height: 560px; }
         }
     </style>
     <link rel="stylesheet" href="shared-ui.css">
@@ -66,7 +66,13 @@
         }
         tabs.forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
         window.addEventListener('message', event => {
-            if (event.data && event.data.type === 'switch-tab') switchTab(event.data.tab);
+            if (!event.data) return;
+            if (event.data.type === 'switch-tab') switchTab(event.data.tab);
+            if (event.data.type === 'tool-resize') {
+                const frame = Array.from(document.querySelectorAll('iframe')).find(item => item.contentWindow === event.source);
+                const height = Math.max(240, Math.ceil(Number(event.data.height) || 0));
+                if (frame && height) frame.style.height = height + 'px';
+            }
         });
         window.setTimeout(preloadInactiveFrames, 2000);
     </script>
