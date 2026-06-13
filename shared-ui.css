@@ -466,18 +466,6 @@ details[open] > summary.accordion-header .accordion-arrow {
   color: var(--text-main) !important;
 }
 
-.external-tool-link::after {
-  content: "打开";
-  align-self: flex-start;
-  margin-top: 6px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--primary-soft);
-  color: var(--primary);
-  font-size: 12px;
-  font-weight: 700;
-}
-
 .toolbox-toast {
   position: fixed;
   right: 16px;
