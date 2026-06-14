@@ -198,8 +198,8 @@
             white-space: pre-wrap;
             overflow-x: hidden;
             overflow-y: hidden;
-            overflow-wrap: anywhere;
-            word-break: break-all;
+            overflow-wrap: normal;
+            word-break: normal;
         }
         #regcalc-ui #regcalc_calcInput {
             min-height: calc(1.35em + 10px);
@@ -1122,9 +1122,13 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
         }
 
         #regcalc-ui .regcalc-actions button {
-            min-width: 27px;
+            width: 30px;
+            min-width: 30px;
+            height: 28px;
+            min-height: 28px;
             padding-left: 7px !important;
             padding-right: 7px !important;
+            text-align: center;
         }
 
         #regcalc-ui table input[type="text"]:focus,
@@ -1609,6 +1613,22 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', regc
     let regcalc_isProgrammatic = false;
     const regcalc_units = ['', 'K', 'M', 'G', 'T', 'P', 'E'];
 
+    function regcalc_normalizeBinText(value) {
+        return String(value || '').replace(/[^01]/g, '');
+    }
+
+    function regcalc_formatBinText(value) {
+        const clean = regcalc_normalizeBinText(value);
+        return clean.length > 32 ? clean.match(/.{1,32}/g).join('\n') : clean;
+    }
+
+    function regcalc_setBinDisplay(value) {
+        const input = document.getElementById('regcalc_bin');
+        if (!input) return;
+        input.value = regcalc_formatBinText(value);
+        regcalc_resizeBinInput();
+    }
+
     function regcalc_resizeBinInput() {
         const input = document.getElementById('regcalc_bin');
         if (!input) return;
@@ -1625,7 +1645,7 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', regc
         const maxHeight = Math.ceil(lineHeight * 2 + verticalPadding + 2);
 
         input.style.height = `${oneLineHeight}px`;
-        const needsTwoLines = input.value.replace(/\s+/g, '').length > 32;
+        const needsTwoLines = regcalc_normalizeBinText(input.value).length > 32;
         const nextHeight = needsTwoLines
             ? maxHeight
             : Math.max(oneLineHeight, Math.min(input.scrollHeight, maxHeight));
@@ -1662,14 +1682,13 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', regc
             document.getElementById("regcalc_bin").value = document.getElementById("regcalc_bin").value + bin_arr[i];
         }
 
-        bin_str = document.getElementById("regcalc_bin").value;
+        bin_str = regcalc_normalizeBinText(document.getElementById("regcalc_bin").value);
         document.getElementById("regcalc_dec").value = BigInt('0b' + bin_str).toString(10);
         document.getElementById("regcalc_hex").value = '0x' + BigInt('0b' + bin_str).toString(16).toUpperCase();
-        document.getElementById("regcalc_bin").value = bin_str;
+        regcalc_setBinDisplay(bin_str);
         const num = BigInt('0b' + bin_str);
         document.getElementById("regcalc_human").value = regcalc_convertToHumanReadable(num);
 
-        regcalc_resizeBinInput();
         regcalc_updateAllBitFields();
     }
 
@@ -1693,7 +1712,7 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', regc
 
     function regcalc_calcBinShow(value)
     {
-        let bin_str = document.getElementById("regcalc_bin").value;
+        let bin_str = regcalc_normalizeBinText(document.getElementById("regcalc_bin").value);
         let bits = Array.from({length: 64}, ()=>'0');
         if (bin_str) {
             for (let i = 0; i < bin_str.length; i++) {
@@ -1707,7 +1726,7 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', regc
             btn.value = bitVal;
             regcalc_syncBitButtonStyle(btn, bitVal);
         }
-        regcalc_resizeBinInput();
+        regcalc_setBinDisplay(bin_str);
         regcalc_updateAllBitFields();
     }
 
@@ -2010,13 +2029,17 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', regc
                 value = value.replace(/[^0-9]/g, '');
                 break;
             case 'bin':
-                value = value.replace(/[^01]/g, '');
+                value = regcalc_normalizeBinText(value);
                 break;
             case 'human':
                 value = value.replace(/[^0-9.KMGTPE]/gi, '').toUpperCase();
                 break;
         }
-        document.getElementById('regcalc_' + id).value = value;
+        if (id === 'bin') {
+            regcalc_setBinDisplay(value);
+        } else {
+            document.getElementById('regcalc_' + id).value = value;
+        }
 
         if (id === "bin") {
             bin_str = value;
@@ -2029,7 +2052,7 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', regc
                 if (!regcalc_validateNumber(bin_str, 2)) {
                     return;
                 }
-                document.getElementById("regcalc_bin").value = bin_str;
+                regcalc_setBinDisplay(bin_str);
                 document.getElementById("regcalc_dec").value = BigInt('0b' + bin_str).toString(10);
                 document.getElementById("regcalc_hex").value = '0x' + BigInt('0b' + bin_str).toString(16).toUpperCase();
                 const num = BigInt('0b' + bin_str);
@@ -2062,7 +2085,7 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', regc
                     return
                 }
                 document.getElementById("regcalc_dec").value = dec_str;
-                document.getElementById("regcalc_bin").value = BigInt(hex_str).toString(2);
+                regcalc_setBinDisplay(BigInt(hex_str).toString(2));
                 const num = BigInt(hex_str);
                 document.getElementById("regcalc_human").value = regcalc_convertToHumanReadable(num);
             } catch (e) {
@@ -2082,7 +2105,7 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', regc
                     return;
                 }
                 document.getElementById("regcalc_dec").value = dec_str;
-                document.getElementById("regcalc_bin").value = BigInt(dec_str).toString(2);
+                regcalc_setBinDisplay(BigInt(dec_str).toString(2));
                 document.getElementById("regcalc_hex").value = '0x' + BigInt(dec_str).toString(16).toUpperCase();
                 const num = BigInt(dec_str);
                 document.getElementById("regcalc_human").value = regcalc_convertToHumanReadable(num);
@@ -2105,7 +2128,7 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', regc
 
             document.getElementById("regcalc_hex").value = '0x' + humanValue.toString(16).toUpperCase();
             document.getElementById("regcalc_dec").value = humanValue.toString(10);
-            document.getElementById("regcalc_bin").value = humanValue.toString(2);
+            regcalc_setBinDisplay(humanValue.toString(2));
             regcalc_calcBinShow(humanValue.toString(2));
             return;
         }
