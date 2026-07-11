@@ -1054,7 +1054,7 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
         }
 
         #regcalc-ui .regcalc-bit-grid .regcalc-bit-toggle {
-            width: calc(100% - 3px) !important;
+            width: calc(100% - 5px) !important;
             min-width: 0 !important;
             height: 21px !important;
             min-height: 21px !important;
@@ -1210,7 +1210,7 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
             }
 
             #regcalc-ui .regcalc-bit-grid .regcalc-bit-toggle {
-                width: calc(100% - 2px) !important;
+                width: calc(100% - 4px) !important;
                 height: 22px !important;
                 min-height: 22px !important;
                 border-radius: 7px !important;
@@ -1462,7 +1462,7 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
                                     cell.className = "regcalc-bit-cell";
                                     if (label % 4 === 0) cell.classList.add("regcalc-group-end");
                                     if (label % 16 === 0) cell.classList.add("regcalc-row-end");
-                                    if (label <= 31) cell.classList.add("regcalc-major-gap");
+                                    if (label <= 31 && label >= 16) cell.classList.add("regcalc-major-gap");
 
                                     const bitIndex = document.createElement("div");
                                     bitIndex.className = "regcalc-bit-index";
