@@ -14,19 +14,26 @@
   const splitLines = (text) => normalizeLineBreaks(text).split('\n');
 
   const words = (text) => String(text)
-    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/([A-Za-z])([0-9])/g, '$1 $2')
-    .replace(/([0-9])([A-Za-z])/g, '$1 $2')
-    .replace(/([0-9A-Za-z])([\u3400-\u9FFF])/g, '$1 $2')
-    .replace(/([\u3400-\u9FFF])([0-9A-Za-z])/g, '$1 $2')
-    .split(/[^0-9A-Za-z\u3400-\u9FFF]+/)
+    .replace(/(\p{Lu}+)(\p{Lu}\p{Ll})/gu, '$1 $2')
+    .replace(/([\p{Ll}\p{M}\p{N}])(\p{Lu})/gu, '$1 $2')
+    .replace(/(\p{L}\p{M}*)(\p{N})/gu, '$1 $2')
+    .replace(/(\p{N})(\p{L})/gu, '$1 $2')
+    .replace(/([\p{Script=Latin}\p{N}])(\p{Script=Han})/gu, '$1 $2')
+    .replace(/(\p{Script=Han})([\p{Script=Latin}\p{N}])/gu, '$1 $2')
+    .split(/[^\p{L}\p{M}\p{N}]+/u)
     .filter(Boolean);
 
   const lower = (word) => word.toLowerCase();
   const upper = (word) => word.toUpperCase();
+  const changeFirstCodePoint = (text, change) => {
+    const codePoints = Array.from(text);
+    if (codePoints.length === 0) {
+      return '';
+    }
+    return change(codePoints[0]) + codePoints.slice(1).join('');
+  };
   const capitalize = (word) => (
-    word ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : ''
+    word ? changeFirstCodePoint(word.toLowerCase(), upper) : ''
   );
   const pascalCase = (text) => words(text).map(capitalize).join('');
 
@@ -63,30 +70,61 @@
   };
 
   const decodeBase64 = (text) => {
-    const compact = text.replace(/\s+/g, '');
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
     if (
-      compact.length % 4 === 1
-      || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2,3})?$/.test(compact)
+      text.length % 4 !== 0
+      || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(text)
     ) {
       throw new Error('无效的 Base64 文本');
     }
 
-    if (typeof TextDecoder === 'function' && typeof atob === 'function') {
-      const binary = atob(compact);
-      const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
-      return new TextDecoder().decode(bytes);
+    if (
+      text.endsWith('==')
+      && (alphabet.indexOf(text.charAt(text.length - 3)) & 0x0F) !== 0
+    ) {
+      throw new Error('无效的 Base64 文本');
+    }
+    if (
+      text.endsWith('=')
+      && !text.endsWith('==')
+      && (alphabet.indexOf(text.charAt(text.length - 2)) & 0x03) !== 0
+    ) {
+      throw new Error('无效的 Base64 文本');
+    }
+
+    let bytes;
+    if (typeof atob === 'function') {
+      const binary = atob(text);
+      bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+    } else if (typeof Buffer !== 'undefined') {
+      bytes = Buffer.from(text, 'base64');
+    } else {
+      throw new Error('当前环境不支持 Base64 解码');
+    }
+
+    if (typeof TextDecoder === 'function') {
+      return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
     }
     if (typeof Buffer !== 'undefined') {
-      return Buffer.from(compact, 'base64').toString('utf8');
+      const buffer = Buffer.from(bytes);
+      const decoded = buffer.toString('utf8');
+      if (!Buffer.from(decoded, 'utf8').equals(buffer)) {
+        throw new Error('Base64 内容不是有效的 UTF-8 文本');
+      }
+      return decoded;
     }
-    throw new Error('当前环境不支持 Base64 解码');
+    throw new Error('当前环境不支持 UTF-8 解码');
   };
 
   const replaceEnglishQuotes = (text) => {
     let doubleQuoteOpen = true;
     let singleQuoteOpen = true;
+    const withApostrophes = text.replace(
+      /([\p{L}\p{N}])'(?=[\p{L}\p{N}])/gu,
+      '$1’'
+    );
 
-    return text.replace(/["']/g, (character) => {
+    return withApostrophes.replace(/["']/g, (character) => {
       if (character === '"') {
         const replacement = doubleQuoteOpen ? '“' : '”';
         doubleQuoteOpen = !doubleQuoteOpen;
@@ -98,7 +136,7 @@
     });
   };
 
-  const TRANSFORMS = {
+  const TRANSFORMS = Object.freeze(Object.assign(Object.create(null), {
     removeEmptyLines: (text) => success(
       splitLines(text).filter((line) => line.trim() !== '').join('\n')
     ),
@@ -124,7 +162,7 @@
       splitLines(text).forEach((line) => {
         let comparison = options.trimBeforeCompare ? line.trim() : line;
         if (options.ignoreCase) {
-          comparison = comparison.toLocaleLowerCase();
+          comparison = comparison.toLowerCase();
         }
         if (!seen.has(comparison)) {
           seen.add(comparison);
@@ -153,7 +191,7 @@
 
     camelCase: (text) => {
       const output = pascalCase(text);
-      return success(output.charAt(0).toLowerCase() + output.slice(1));
+      return success(changeFirstCodePoint(output, lower));
     },
 
     snakeCase: (text) => success(words(text).map(lower).join('_')),
@@ -188,7 +226,11 @@
     removeAllWhitespace: (text) => success(text.replace(/\s/g, '')),
 
     removeControlCharacters: (text) => success(
-      text.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, '')
+      text
+        .replace(/\p{Cc}/gu, (character) => (
+          character === '\t' || character === '\n' || character === '\r' ? character : ''
+        ))
+        .replace(/[\u061C\u200B\u200E\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g, '')
     ),
 
     normalizeLineBreaks: (text) => success(normalizeLineBreaks(text)),
@@ -275,10 +317,22 @@
 
     shuffleLines: (text, options) => {
       const output = splitLines(text);
-      const random = options.random || Math.random;
+      const random = options.random === undefined ? Math.random : options.random;
+      if (typeof random !== 'function') {
+        return failure('随机数生成器必须是函数');
+      }
 
       for (let index = output.length - 1; index > 0; index -= 1) {
-        const target = Math.floor(random() * (index + 1));
+        const randomValue = random();
+        if (
+          typeof randomValue !== 'number'
+          || !Number.isFinite(randomValue)
+          || randomValue < 0
+          || randomValue >= 1
+        ) {
+          return failure('随机数生成器必须返回 0（含）到 1（不含）之间的有限数');
+        }
+        const target = Math.floor(randomValue * (index + 1));
         [output[index], output[target]] = [output[target], output[index]];
       }
 
@@ -286,22 +340,17 @@
     },
 
     filterLines: (text, options) => {
-      const query = String(options.query ?? '');
-      let matches;
-
-      if (options.regex) {
-        const flags = options.flags ?? (options.ignoreCase ? 'i' : '');
-        const pattern = new RegExp(query, flags);
-        matches = (line) => {
-          pattern.lastIndex = 0;
-          return pattern.test(line);
-        };
-      } else if (options.ignoreCase) {
-        const normalizedQuery = query.toLocaleLowerCase();
-        matches = (line) => line.toLocaleLowerCase().includes(normalizedQuery);
-      } else {
-        matches = (line) => line.includes(query);
+      if (options.query === undefined || options.query === null || options.query === '') {
+        return failure('筛选文本不能为空');
       }
+      if (typeof options.query !== 'string') {
+        return failure('筛选文本必须是字符串');
+      }
+
+      const query = options.ignoreCase ? options.query.toLowerCase() : options.query;
+      const matches = options.ignoreCase
+        ? (line) => line.toLowerCase().includes(query)
+        : (line) => line.includes(query);
 
       return success(
         splitLines(text)
@@ -328,7 +377,13 @@
     },
 
     splitByDelimiter: (text, options) => {
-      const delimiter = options.delimiter ?? ',';
+      const delimiter = options.delimiter === undefined ? ',' : options.delimiter;
+      if (typeof delimiter !== 'string') {
+        return failure('分隔符必须是字符串');
+      }
+      if (delimiter === '') {
+        return failure('分隔符不能为空');
+      }
       let parts = text.split(delimiter);
       if (options.trim) {
         parts = parts.map((part) => part.trim());
@@ -340,7 +395,13 @@
     },
 
     joinByDelimiter: (text, options) => {
-      const delimiter = String(options.delimiter ?? ',');
+      const delimiter = options.delimiter === undefined ? ',' : options.delimiter;
+      if (typeof delimiter !== 'string') {
+        return failure('分隔符必须是字符串');
+      }
+      if (delimiter === '') {
+        return failure('分隔符不能为空');
+      }
       let lines = splitLines(text);
       if (options.trim) {
         lines = lines.map((line) => line.trim());
@@ -357,11 +418,11 @@
 
     sentenceCase: (text) => {
       const output = words(text).map(lower).join(' ');
-      return success(output.charAt(0).toUpperCase() + output.slice(1));
+      return success(changeFirstCodePoint(output, upper));
     },
 
     capitalizeWords: (text) => success(
-      text.replace(/(^|[^0-9A-Za-z\u3400-\u9FFF])([A-Za-z])/g, (
+      text.replace(/(^|[^\p{L}\p{M}\p{N}])(\p{L})/gu, (
         match,
         boundary,
         character
@@ -369,13 +430,27 @@
     ),
 
     invertCase: (text) => success(
-      text.replace(/[A-Za-z]/g, (character) => (
+      text.replace(/\p{L}/gu, (character) => (
         character === character.toUpperCase()
           ? character.toLowerCase()
           : character.toUpperCase()
       ))
     )
-  };
+  }));
+
+  function caughtFailureMessage(id, error) {
+    if (id === 'urlDecode') {
+      return 'URL 解码失败：输入格式无效';
+    }
+    if (id === 'base64Decode') {
+      return 'Base64 解码失败：输入不是有效的标准 Base64 或 UTF-8 文本';
+    }
+    if (id === 'jsonFormat' || id === 'jsonMinify') {
+      const match = String(error && error.message).match(/\bposition\s+(\d+)\b/i);
+      return match ? `JSON 解析失败，位置 ${match[1]}` : 'JSON 解析失败';
+    }
+    return '文本处理失败';
+  }
 
   function runTransform(id, input, options = {}) {
     if (!Object.prototype.hasOwnProperty.call(TRANSFORMS, id)) {
@@ -386,8 +461,7 @@
       const transform = TRANSFORMS[id];
       return transform(String(input ?? ''), options || {});
     } catch (error) {
-      const reason = error && error.message ? error.message : '未知原因';
-      return failure(`文本处理失败：${reason}`);
+      return failure(caughtFailureMessage(id, error));
     }
   }
 

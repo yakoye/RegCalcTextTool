@@ -78,11 +78,26 @@ function valueOf(id, input, options) {
   return result.value;
 }
 
+function assertFailure(result, message) {
+  assert.deepEqual(result, {
+    ok: false,
+    value: '',
+    message
+  });
+}
+
 test('exports a unified TextFormatter transform API for CommonJS', () => {
   assert.deepEqual(success('done'), { ok: true, value: 'done', message: '' });
   assert.deepEqual(success('done', '完成'), { ok: true, value: 'done', message: '完成' });
   assert.deepEqual(failure('失败'), { ok: false, value: '', message: '失败' });
   assert.equal(typeof runTransform, 'function');
+  assert.equal(Object.getPrototypeOf(TRANSFORMS), null);
+  assert.equal(Object.isFrozen(TRANSFORMS), true);
+  assert.throws(() => {
+    Object.defineProperty(TRANSFORMS, 'constructor', {
+      value: () => success('injected')
+    });
+  }, TypeError);
 
   for (const id of [...EXISTING_TRANSFORM_IDS, ...NEW_TRANSFORM_IDS]) {
     assert.equal(typeof TRANSFORMS[id], 'function', `${id} should be registered`);
@@ -105,6 +120,13 @@ test('exposes the same API as browser global TextFormatterCore', () => {
     context.TextFormatterCore.runTransform('camelCase', 'browser global').value,
     'browserGlobal'
   );
+  const encoded = context.TextFormatterCore.runTransform('base64Encode', '中文😀');
+  assert.equal(encoded.value, '5Lit5paH8J+YgA==');
+  assert.equal(
+    context.TextFormatterCore.runTransform('base64Decode', encoded.value).value,
+    '中文😀'
+  );
+  assert.equal(context.TextFormatterCore.runTransform('base64Decode', '/w==').ok, false);
 });
 
 test('returns a friendly failure for unknown and prototype-chain transform IDs', () => {
@@ -125,25 +147,42 @@ test('converts thrown transform errors to a Chinese failure result', () => {
       throw new Error('boom');
     }
   });
-  assert.equal(result.ok, false);
-  assert.equal(result.value, '');
-  assert.match(result.message, /^文本处理失败：boom$/);
+  assertFailure(result, '文本处理失败');
 });
 
-test('returns failures for malformed URL, Base64, and JSON input', () => {
+test('returns stable Chinese failures for malformed URL and JSON input', () => {
+  assertFailure(runTransform('urlDecode', '%E4'), 'URL 解码失败：输入格式无效');
+
+  for (const id of ['jsonFormat', 'jsonMinify']) {
+    const result = runTransform(id, '{"a":1} trailing');
+    assert.equal(result.ok, false);
+    assert.equal(result.value, '');
+    assert.match(result.message, /^JSON 解析失败(?:，位置 \d+)?$/);
+    assert.doesNotMatch(result.message, /Unexpected|token|position/i);
+  }
+});
+
+test('strictly validates Base64 syntax, canonical bits, and UTF-8', () => {
   const invalidInputs = [
-    ['urlDecode', '%E4'],
-    ['base64Decode', '*invalid*'],
-    ['jsonFormat', '{bad}'],
-    ['jsonMinify', '{bad}']
+    '*invalid*',
+    'Zg=',
+    'Zg===',
+    'Zg==\n',
+    'Zh==',
+    '/w=='
   ];
 
-  for (const [id, input] of invalidInputs) {
-    const result = runTransform(id, input);
-    assert.equal(result.ok, false, `${id} should fail`);
-    assert.equal(result.value, '');
-    assert.match(result.message, /^文本处理失败：/, `${id} should return a Chinese message`);
+  for (const input of invalidInputs) {
+    assertFailure(
+      runTransform('base64Decode', input),
+      'Base64 解码失败：输入不是有效的标准 Base64 或 UTF-8 文本'
+    );
   }
+
+  assert.equal(valueOf('base64Decode', ''), '');
+  assert.equal(valueOf('base64Decode', 'Zg=='), 'f');
+  const text = '中文😀';
+  assert.equal(valueOf('base64Decode', valueOf('base64Encode', text)), text);
 });
 
 test('keeps existing cleaning transforms compatible and handles CRLF', () => {
@@ -167,6 +206,10 @@ test('deduplicates lines with optional case and trim comparison', () => {
     }),
     ' A \nB'
   );
+  assert.equal(
+    valueOf('dedupeLines', 'Å\nå\n𠀀', { ignoreCase: true }),
+    'Å\n𠀀'
+  );
 });
 
 test('keeps existing naming transforms and handles acronyms, numbers, punctuation, and Chinese', () => {
@@ -177,6 +220,9 @@ test('keeps existing naming transforms and handles acronyms, numbers, punctuatio
   assert.equal(valueOf('snakeCase', 'XMLHttpRequest2-中文 Value'), 'xml_http_request_2_中文_value');
   assert.equal(valueOf('kebabCase', 'User_name,ID42'), 'user-name-id-42');
   assert.equal(valueOf('spaceCase', 'UserName_ID42'), 'user name id 42');
+  assert.equal(valueOf('snakeCase', 'Ångström𠀀Value'), 'ångström_𠀀_value');
+  assert.equal(valueOf('pascalCase', 'élève 𠀀 åland'), 'Élève𠀀Åland');
+  assert.equal(valueOf('camelCase', '𠀀 value'), '𠀀Value');
 });
 
 test('keeps legacy URL, Base64, JSON, and Hex success behavior', () => {
@@ -201,7 +247,13 @@ test('vertical layout splits only on whitespace and commas and filters empty ite
 
 test('supports the added cleaning and character normalization transforms', () => {
   assert.equal(valueOf('removeAllWhitespace', 'a b\r\nc\t\u3000d'), 'abcd');
-  assert.equal(valueOf('removeControlCharacters', '\u0000a\tb\nc\u0007\u007f'), 'a\tb\nc');
+  assert.equal(
+    valueOf(
+      'removeControlCharacters',
+      '\u0000A\tB\nC\rD\u200D\u200B\uFEFF\u061C\u200E\u200F\u202A\u202E\u2066\u2069\u007F'
+    ),
+    'A\tB\nC\rD\u200D'
+  );
   assert.equal(valueOf('normalizeLineBreaks', 'a\r\nb\rc\nd'), 'a\nb\nc\nd');
   assert.equal(valueOf('collapseBlankLines', 'a\r\n\r\n \r\nb\n\n\nc'), 'a\n\nb\n\nc');
   assert.equal(valueOf('fullWidthToHalfWidth', 'ＡＢＣ１２３！　中文'), 'ABC123! 中文');
@@ -210,6 +262,10 @@ test('supports the added cleaning and character normalization transforms', () =>
   assert.equal(valueOf('englishPunctuationToChinese', '你好,世界!"是".'), '你好，世界！“是”。');
   assert.equal(valueOf('chinesePunctuationToEnglish', '《方案》……￥10——'), '<方案>...$10--');
   assert.equal(valueOf('englishPunctuationToChinese', '<方案>...$10--'), '《方案》……￥10——');
+  assert.equal(
+    valueOf('englishPunctuationToChinese', `"don't" and 'quote'`),
+    '“don’t” and ‘quote’'
+  );
 });
 
 test('supports line ordering, filtering, affixes, quoting, splitting, and joining', () => {
@@ -232,6 +288,65 @@ test('supports line ordering, filtering, affixes, quoting, splitting, and joinin
   assert.equal(valueOf('joinByDelimiter', 'a\r\nb\r\nc', { delimiter: ' | ' }), 'a | b | c');
 });
 
+test('validates shuffle random values without losing line content', () => {
+  const invalidRandomValues = [-0.1, 1, NaN, Infinity, -Infinity, '0.5'];
+
+  for (const randomValue of invalidRandomValues) {
+    assertFailure(
+      runTransform('shuffleLines', 'a\nb\nc', { random: () => randomValue }),
+      '随机数生成器必须返回 0（含）到 1（不含）之间的有限数'
+    );
+  }
+  assertFailure(
+    runTransform('shuffleLines', 'a\nb', { random: 0.5 }),
+    '随机数生成器必须是函数'
+  );
+
+  const lines = Array.from({ length: 2000 }, (_, index) => `第${index}行😀`);
+  const shuffled = valueOf('shuffleLines', lines.join('\n'), { random: () => 0.75 }).split('\n');
+  assert.equal(shuffled.length, lines.length);
+  assert.deepEqual(new Set(shuffled), new Set(lines));
+  assert.equal(valueOf('shuffleLines', ''), '');
+});
+
+test('validates line filters and treats regex-looking queries as plain text', () => {
+  assertFailure(
+    runTransform('filterLines', 'a\nb', { query: '', invert: true }),
+    '筛选文本不能为空'
+  );
+  assertFailure(
+    runTransform('filterLines', 'a\nb', { query: {} }),
+    '筛选文本必须是字符串'
+  );
+  assert.equal(
+    valueOf('filterLines', 'a+\naaa\nA+', {
+      query: 'a+',
+      ignoreCase: true,
+      regex: true
+    }),
+    'a+\nA+'
+  );
+  assert.equal(valueOf('filterLines', '', { query: 'x' }), '');
+});
+
+test('validates delimiters and preserves emoji and supplementary characters', () => {
+  for (const id of ['splitByDelimiter', 'joinByDelimiter']) {
+    assertFailure(runTransform(id, '😀𠀀', { delimiter: '' }), '分隔符不能为空');
+    assertFailure(runTransform(id, '😀𠀀', { delimiter: null }), '分隔符必须是字符串');
+  }
+
+  assert.equal(
+    valueOf('splitByDelimiter', '甲😀乙😀𠀀', { delimiter: '😀' }),
+    '甲\n乙\n𠀀'
+  );
+  assert.equal(
+    valueOf('joinByDelimiter', '甲\n乙\n𠀀', { delimiter: '😀' }),
+    '甲😀乙😀𠀀'
+  );
+  assert.equal(valueOf('splitByDelimiter', '', { delimiter: ',' }), '');
+  assert.equal(valueOf('joinByDelimiter', '', { delimiter: ',' }), '');
+});
+
 test('supports constant, dot, title, sentence, capitalize, and invert case', () => {
   assert.equal(valueOf('constantCase', 'XMLHttpRequest2 中文'), 'XML_HTTP_REQUEST_2_中文');
   assert.equal(valueOf('dotCase', 'XMLHttpRequest2 中文'), 'xml.http.request.2.中文');
@@ -239,4 +354,8 @@ test('supports constant, dot, title, sentence, capitalize, and invert case', () 
   assert.equal(valueOf('sentenceCase', 'hello_world API中文'), 'Hello world api 中文');
   assert.equal(valueOf('capitalizeWords', 'hello WORLD-test'), 'Hello WORLD-Test');
   assert.equal(valueOf('invertCase', 'AbZ中123'), 'aBz中123');
+  assert.equal(valueOf('titleCase', 'élève ÅLAND 𠀀'), 'Élève Åland 𠀀');
+  assert.equal(valueOf('capitalizeWords', 'élève åland-𠀀字'), 'Élève Åland-𠀀字');
+  assert.equal(valueOf('invertCase', 'Åé𠀀'), 'åÉ𠀀');
+  assert.equal(valueOf('constantCase', ''), '');
 });
