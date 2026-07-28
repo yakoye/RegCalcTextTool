@@ -873,8 +873,6 @@ test('validates XML with strict namespace-aware SAX before invoking the DOM pars
   }
 
   const malformed = [
-    '<root>&unknown;</root>',
-    '<root>&copy;</root>',
     '<first/><second/>',
     '<root>]]></root>',
     '<p:root/>',
@@ -897,6 +895,101 @@ test('validates XML with strict namespace-aware SAX before invoking the DOM pars
   }
   assert.equal(parseCalls, 0);
   assert.equal(typeof sax.parser, 'function');
+});
+
+test('rejects XML 1.0 illegal characters before SAX and DOM parsing', () => {
+  let parseCalls = 0;
+  class Parser {
+    parseFromString(input) {
+      parseCalls += 1;
+      return {
+        input,
+        documentElement: { nodeName: 'root' }
+      };
+    }
+  }
+  class Serializer {
+    serializeToString(document) {
+      return document.input;
+    }
+  }
+  const illegal = [
+    ['<r>\0</r>', 3],
+    ['<r a="\u0001"/>', 6],
+    ['<r><![CDATA[\uFFFE]]></r>', 12],
+    ['<r><!--\uFFFF--></r>', 7],
+    ['<r>\uD800</r>', 3],
+    ['<r>\uDC00</r>', 3]
+  ];
+  for (const operation of [codecs.formatXml, codecs.minifyXml]) {
+    for (const [input, position] of illegal) {
+      assert.deepEqual(operation(input, Parser, Serializer), {
+        ok: false,
+        value: '',
+        message: `XML 包含非法字符，位置 ${position}`
+      });
+    }
+  }
+  assert.equal(parseCalls, 0);
+
+  const valid = '<r a="\t">\n\r\u007F😀</r>';
+  assert.equal(valueOf(codecs.formatXml(valid, Parser, Serializer)), valid);
+  assert.equal(valueOf(codecs.minifyXml(valid, Parser, Serializer)), valid);
+});
+
+test('rejects DTD and custom entities as an explicit unsupported policy', () => {
+  let parseCalls = 0;
+  class Parser {
+    parseFromString(input) {
+      parseCalls += 1;
+      return {
+        input,
+        documentElement: { nodeName: 'root' }
+      };
+    }
+  }
+  class Serializer {
+    serializeToString(document) {
+      return document.input;
+    }
+  }
+  const unsupported = [
+    '<!DOCTYPE root><root/>',
+    '<!DOCTYPE root [<!ENTITY custom "value">]><root>&custom;</root>',
+    '<root>&custom;</root>',
+    '<root value="&custom;"/>'
+  ];
+  for (const operation of [codecs.formatXml, codecs.minifyXml]) {
+    for (const input of unsupported) {
+      assert.deepEqual(operation(input, Parser, Serializer), {
+        ok: false,
+        value: '',
+        message: '暂不支持 DTD 和自定义实体'
+      });
+    }
+  }
+  assert.equal(parseCalls, 0);
+
+  const standardEntities = '<root>&amp;&lt;&gt;&apos;&quot;</root>';
+  assert.equal(
+    valueOf(codecs.formatXml(standardEntities, Parser, Serializer)),
+    standardEntities
+  );
+  const literalDoctype = [
+    '<root>',
+    '<!-- <!DOCTYPE root> -->',
+    '<![CDATA[<!DOCTYPE root>]]>',
+    '</root>'
+  ].join('');
+  assert.equal(valueOf(codecs.minifyXml(literalDoctype, Parser, Serializer)), literalDoctype);
+
+  const lowerCase = codecs.formatXml('<!doctype root><root/>', Parser, Serializer);
+  assert.equal(lowerCase.ok, false);
+  assert.match(
+    lowerCase.message,
+    /^XML 格式错误，行 \d+，列 \d+，位置 \d+$/u
+  );
+  assert.notEqual(lowerCase.message, '暂不支持 DTD 和自定义实体');
 });
 
 test('formats realistic XML trees and allows a business parsererror descendant', () => {
@@ -1200,8 +1293,6 @@ test('builds and loads browser he and strict SAX before TextCodecs', () => {
   assert.equal(typeof context.he.decode, 'function');
   assert.equal(typeof context.sax.parser, 'function');
   const malformed = [
-    '<root>&unknown;</root>',
-    '<root>&copy;</root>',
     '<first/><second/>',
     '<root>]]></root>',
     '<p:root/>',

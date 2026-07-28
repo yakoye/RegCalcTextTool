@@ -1615,6 +1615,125 @@
     );
   }
 
+  function invalidXmlCharacterPosition(text) {
+    for (let index = 0; index < text.length; index += 1) {
+      const first = text.charCodeAt(index);
+      let codePoint = first;
+      if (first >= 0xD800 && first <= 0xDBFF) {
+        const second = text.charCodeAt(index + 1);
+        if (!(second >= 0xDC00 && second <= 0xDFFF)) {
+          return index;
+        }
+        codePoint = 0x10000 + ((first - 0xD800) << 10) + (second - 0xDC00);
+        index += 1;
+      } else if (first >= 0xDC00 && first <= 0xDFFF) {
+        return index;
+      }
+      if (
+        codePoint !== 0x09
+        && codePoint !== 0x0A
+        && codePoint !== 0x0D
+        && !(codePoint >= 0x20 && codePoint <= 0xD7FF)
+        && !(codePoint >= 0xE000 && codePoint <= 0xFFFD)
+        && !(codePoint >= 0x10000 && codePoint <= 0x10FFFF)
+      ) {
+        return index;
+      }
+    }
+    return -1;
+  }
+
+  function isXmlNameStartCharacter(codePoint) {
+    return (
+      codePoint === 0x3A
+      || codePoint === 0x5F
+      || (codePoint >= 0x41 && codePoint <= 0x5A)
+      || (codePoint >= 0x61 && codePoint <= 0x7A)
+      || (codePoint >= 0xC0 && codePoint <= 0xD6)
+      || (codePoint >= 0xD8 && codePoint <= 0xF6)
+      || (codePoint >= 0xF8 && codePoint <= 0x2FF)
+      || (codePoint >= 0x370 && codePoint <= 0x37D)
+      || (codePoint >= 0x37F && codePoint <= 0x1FFF)
+      || (codePoint >= 0x200C && codePoint <= 0x200D)
+      || (codePoint >= 0x2070 && codePoint <= 0x218F)
+      || (codePoint >= 0x2C00 && codePoint <= 0x2FEF)
+      || (codePoint >= 0x3001 && codePoint <= 0xD7FF)
+      || (codePoint >= 0xF900 && codePoint <= 0xFDCF)
+      || (codePoint >= 0xFDF0 && codePoint <= 0xFFFD)
+      || (codePoint >= 0x10000 && codePoint <= 0xEFFFF)
+    );
+  }
+
+  function isXmlName(value) {
+    let first = true;
+    for (const character of value) {
+      const codePoint = character.codePointAt(0);
+      if (
+        !(first ? isXmlNameStartCharacter(codePoint) : (
+          isXmlNameStartCharacter(codePoint)
+          || codePoint === 0x2D
+          || codePoint === 0x2E
+          || (codePoint >= 0x30 && codePoint <= 0x39)
+          || codePoint === 0xB7
+          || (codePoint >= 0x300 && codePoint <= 0x36F)
+          || (codePoint >= 0x203F && codePoint <= 0x2040)
+        ))
+      ) {
+        return false;
+      }
+      first = false;
+    }
+    return !first;
+  }
+
+  function hasXmlDoctypeDeclaration(text) {
+    let index = 0;
+    while (index < text.length) {
+      if (text[index] !== '<') {
+        index += 1;
+        continue;
+      }
+      if (text.startsWith('<!--', index)) {
+        const end = text.indexOf('-->', index + 4);
+        index = end < 0 ? text.length : end + 3;
+        continue;
+      }
+      if (text.startsWith('<![CDATA[', index)) {
+        const end = text.indexOf(']]>', index + 9);
+        index = end < 0 ? text.length : end + 3;
+        continue;
+      }
+      if (text.startsWith('<?', index)) {
+        const end = text.indexOf('?>', index + 2);
+        index = end < 0 ? text.length : end + 2;
+        continue;
+      }
+      if (
+        text.startsWith('<!DOCTYPE', index)
+        && /[\u0009\u000A\u000D\u0020]/u.test(text[index + 9] || '')
+      ) {
+        return true;
+      }
+      let quote = '';
+      index += 1;
+      while (index < text.length) {
+        const character = text[index];
+        if (quote) {
+          if (character === quote) {
+            quote = '';
+          }
+        } else if (character === '"' || character === "'") {
+          quote = character;
+        } else if (character === '>') {
+          index += 1;
+          break;
+        }
+        index += 1;
+      }
+    }
+    return false;
+  }
+
   function validateXmlWithSax(text, SaxImpl) {
     if (!SaxImpl || typeof SaxImpl.parser !== 'function') {
       return { ok: false, missing: true };
@@ -1623,6 +1742,8 @@
     let firstError = null;
     let depth = 0;
     let rootCount = 0;
+    const hasDoctype = hasXmlDoctypeDeclaration(text);
+    let unsupportedDeclarations = hasDoctype;
     let rawAttributeNames = null;
     let expandedAttributeNames = null;
     const recordError = () => {
@@ -1638,7 +1759,24 @@
         trim: false,
         normalize: false
       });
-      parser.onerror = recordError;
+      parser.onerror = () => {
+        const entityName = asText(parser.entity);
+        const entityToken = `&${entityName};`;
+        const entityEnd = Number(parser.position);
+        if (
+          isXmlName(entityName)
+          && Number.isInteger(entityEnd)
+          && text.slice(entityEnd - entityToken.length, entityEnd) === entityToken
+        ) {
+          unsupportedDeclarations = true;
+        }
+        recordError();
+      };
+      parser.ondoctype = () => {
+        if (!hasDoctype) {
+          recordError();
+        }
+      };
       parser.onopentagstart = () => {
         rawAttributeNames = new Set();
         expandedAttributeNames = new Set();
@@ -1681,6 +1819,9 @@
     } catch (error) {
       recordError();
     }
+    if (unsupportedDeclarations) {
+      return { ok: false, unsupported: true };
+    }
     return firstError ? { ok: false, location: firstError } : { ok: true };
   }
 
@@ -1692,6 +1833,10 @@
     pretty
   ) {
     const text = asText(input);
+    const invalidCharacter = invalidXmlCharacterPosition(text);
+    if (invalidCharacter >= 0) {
+      return failure(`XML 包含非法字符，位置 ${invalidCharacter}`);
+    }
     if (utf8ByteLength(text) > MAX_STRUCTURED_OUTPUT_BYTES) {
       return failure('XML 数据规模过大');
     }
@@ -1700,6 +1845,9 @@
     }
     const validation = validateXmlWithSax(text, SaxImpl);
     if (!validation.ok) {
+      if (validation.unsupported) {
+        return failure('暂不支持 DTD 和自定义实体');
+      }
       return validation.missing
         ? failure('XML 验证库未加载')
         : xmlValidationFailure(validation.location);
