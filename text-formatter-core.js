@@ -12,6 +12,10 @@
   const failure = (message) => ({ ok: false, value: '', message });
   const normalizeLineBreaks = (text) => text.replace(/\r\n?|\n/g, '\n');
   const splitLines = (text) => normalizeLineBreaks(text).split('\n');
+  const isLetterOrNumber = (character) => /[\p{L}\p{N}]/u.test(character || '');
+  const isWordCodePoint = (character) => /[\p{L}\p{M}\p{N}]/u.test(character || '');
+  const isHan = (character) => /\p{Script=Han}/u.test(character || '');
+  const isLatin = (character) => /\p{Script=Latin}/u.test(character || '');
 
   const separateHanBoundaries = (text) => text
     .replace(/([\p{Script=Latin}\p{N}])(\p{Script=Han})/gu, '$1 $2')
@@ -73,7 +77,7 @@
 
   const decodeBase64 = (text) => {
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-    let normalized = text.replace(/[ \t\n\r\f\v]/g, '');
+    let normalized = text.replace(/\s/g, '');
     const remainder = normalized.length % 4;
     if (remainder === 1 || (remainder !== 0 && normalized.includes('='))) {
       throw new Error('无效的 Base64 文本');
@@ -129,32 +133,73 @@
   };
 
   const replaceEnglishQuotes = (text) => {
+    const codePoints = Array.from(text);
+    const output = [];
     let doubleQuoteOpen = true;
     let singleQuoteOpen = true;
-    const withApostrophes = text
-      .replace(/([\p{L}\p{N}])'(?=[\p{L}\p{N}])/gu, '$1’')
-      .replace(
-        /(^|[^\p{L}\p{N}])'(?=(?:tis|twas|twere|em|cause|bout|round)\b)/giu,
-        '$1’'
-      );
+    const omissionWords = ['tis', 'twas', 'twere', 'em', 'cause', 'bout', 'round'];
+    const matchesOmissionWord = (index, word) => {
+      for (let offset = 0; offset < word.length; offset += 1) {
+        if ((codePoints[index + 1 + offset] || '').toLowerCase() !== word[offset]) {
+          return false;
+        }
+      }
+      return !isLetterOrNumber(codePoints[index + 1 + word.length]);
+    };
 
-    return withApostrophes.replace(/["']/g, (character, offset, source) => {
+    codePoints.forEach((character, index) => {
       if (character === '"') {
-        const replacement = doubleQuoteOpen ? '“' : '”';
+        output.push(doubleQuoteOpen ? '“' : '”');
         doubleQuoteOpen = !doubleQuoteOpen;
-        return replacement;
+        return;
       }
-      const previous = Array.from(source.slice(0, offset)).pop() || '';
-      const next = Array.from(source.slice(offset + 1))[0] || '';
-      const previousIsWord = /[\p{L}\p{N}]/u.test(previous);
-      const nextIsWord = /[\p{L}\p{N}]/u.test(next);
+      if (character !== "'") {
+        output.push(character);
+        return;
+      }
+
+      const previousIsWord = isLetterOrNumber(codePoints[index - 1]);
+      const nextIsWord = isLetterOrNumber(codePoints[index + 1]);
+      const isInternal = previousIsWord && nextIsWord;
+      const isSingleLetterOmission = (
+        !previousIsWord
+        && (codePoints[index + 1] || '').toLowerCase() === 'n'
+        && codePoints[index + 2] === "'"
+        && !isLetterOrNumber(codePoints[index + 3])
+      );
+      const isDecadeOmission = (
+        !previousIsWord
+        && /\d/.test(codePoints[index + 1] || '')
+        && /\d/.test(codePoints[index + 2] || '')
+        && (codePoints[index + 3] || '').toLowerCase() === 's'
+        && !isLetterOrNumber(codePoints[index + 4])
+      );
+      const isWordOmission = (
+        !previousIsWord
+        && omissionWords.some((word) => matchesOmissionWord(index, word))
+      );
+      if (isInternal || isSingleLetterOmission || isDecadeOmission || isWordOmission) {
+        output.push('’');
+        return;
+      }
       if (previousIsWord && !nextIsWord && singleQuoteOpen) {
-        return '’';
+        output.push('’');
+        return;
       }
-      const replacement = singleQuoteOpen ? '‘' : '’';
+      output.push(singleQuoteOpen ? '‘' : '’');
       singleQuoteOpen = !singleQuoteOpen;
-      return replacement;
     });
+
+    return output.join('');
+  };
+
+  const capitalizeWordsPreservingStructure = (text) => {
+    const codePoints = Array.from(text);
+    return codePoints.map((character, index) => {
+      const startsWord = index === 0 || !isWordCodePoint(codePoints[index - 1]);
+      const startsLatinAfterHan = isLatin(character) && isHan(codePoints[index - 1]);
+      return startsWord || startsLatinAfterHan ? character.toUpperCase() : character;
+    }).join('');
   };
 
   const TRANSFORMS = Object.freeze(Object.assign(Object.create(null), {
@@ -442,12 +487,7 @@
       return success(changeFirstCodePoint(output, upper));
     },
 
-    capitalizeWords: (text) => success(
-      separateHanBoundaries(text).replace(
-        /(^|[^\p{L}\p{M}\p{N}])(\p{L})/gu,
-        (match, boundary, character) => boundary + character.toUpperCase()
-      )
-    ),
+    capitalizeWords: (text) => success(capitalizeWordsPreservingStructure(text)),
 
     invertCase: (text) => success(
       text.replace(/\p{L}/gu, (character) => (

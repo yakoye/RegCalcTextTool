@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { performance } = require('node:perf_hooks');
 const vm = require('node:vm');
 
 const corePath = path.join(__dirname, '..', 'text-formatter-core.js');
@@ -202,6 +203,7 @@ test('strictly validates Base64 syntax, canonical bits, and UTF-8', () => {
   assert.equal(valueOf('base64Decode', 'Zg'), 'f');
   assert.equal(valueOf('base64Decode', 'Zg=='), 'f');
   assert.equal(valueOf('base64Decode', '5Lit \r\n\t5paH'), '中文');
+  assert.equal(valueOf('base64Decode', '5Lit\u00A0\u30005paH'), '中文');
   const text = '中文😀';
   assert.equal(valueOf('base64Decode', valueOf('base64Encode', text)), text);
   const bomText = '\uFEFFA';
@@ -293,6 +295,22 @@ test('supports the added cleaning and character normalization transforms', () =>
     valueOf('englishPunctuationToChinese', `James' said 'tis 'quoted'`),
     'James’ said ’tis ‘quoted’'
   );
+  assert.equal(
+    valueOf('englishPunctuationToChinese', `rock 'n' roll began in the '90s with 'quotes'`),
+    'rock ’n’ roll began in the ’90s with ‘quotes’'
+  );
+});
+
+test('converts large quote-heavy text in linear time', () => {
+  const segment = "'word' ";
+  const input = segment.repeat(6000);
+  const expected = '‘word’ '.repeat(6000);
+  const startedAt = performance.now();
+  const output = valueOf('englishPunctuationToChinese', input);
+  const elapsed = performance.now() - startedAt;
+
+  assert.equal(output, expected);
+  assert.ok(elapsed < 2000, `quote conversion took ${elapsed.toFixed(0)}ms`);
 });
 
 test('supports line ordering, filtering, affixes, quoting, splitting, and joining', () => {
@@ -380,7 +398,10 @@ test('supports constant, dot, title, sentence, capitalize, and invert case', () 
   assert.equal(valueOf('titleCase', 'hello_world API中文'), 'Hello World Api 中文');
   assert.equal(valueOf('sentenceCase', 'hello_world API中文'), 'Hello world api 中文');
   assert.equal(valueOf('capitalizeWords', 'hello WORLD-test'), 'Hello WORLD-Test');
-  assert.equal(valueOf('capitalizeWords', '中文hello world'), '中文 Hello World');
+  assert.equal(valueOf('capitalizeWords', '第2章'), '第2章');
+  assert.equal(valueOf('capitalizeWords', '版本v2'), '版本V2');
+  assert.equal(valueOf('capitalizeWords', 'ABC中文123'), 'ABC中文123');
+  assert.equal(valueOf('capitalizeWords', '中文hello world'), '中文Hello World');
   assert.equal(valueOf('invertCase', 'AbZ中123'), 'aBz中123');
   assert.equal(valueOf('titleCase', 'élève ÅLAND 𠀀'), 'Élève Åland 𠀀');
   assert.equal(valueOf('capitalizeWords', 'élève åland-𠀀字'), 'Élève Åland-𠀀字');
