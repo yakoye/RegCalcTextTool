@@ -1,11 +1,16 @@
 (function (root, factory) {
-  const api = factory();
   if (typeof module === 'object' && module.exports) {
-    module.exports = api;
+    let heImpl = null;
+    try {
+      heImpl = require('he');
+    } catch (error) {
+      heImpl = null;
+    }
+    module.exports = factory(heImpl);
   } else {
-    root.TextCodecs = api;
+    root.TextCodecs = factory(root && root.he);
   }
-})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (defaultHe) {
   'use strict';
 
   const success = (value, message = '') => ({ ok: true, value, message });
@@ -488,81 +493,15 @@
     })[character]));
   }
 
-  function decodeHtmlEntities(input) {
-    const text = asText(input);
-    if (typeof document !== 'undefined' && document && typeof document.createElement === 'function') {
-      try {
-        const textarea = document.createElement('textarea');
-        textarea.innerHTML = text;
-        return success(textarea.value);
-      } catch (error) {
-        // Fall through to the deterministic non-DOM decoder.
-      }
+  function decodeHtmlEntities(input, heImpl = defaultHe) {
+    if (!heImpl || typeof heImpl.decode !== 'function') {
+      return failure('HTML 实体解析库未加载');
     }
-
-    const named = {
-      amp: '&',
-      lt: '<',
-      gt: '>',
-      quot: '"',
-      apos: "'",
-      nbsp: '\u00A0',
-      copy: '\u00A9'
-    };
-    const numericReplacements = {
-      0x80: 0x20AC,
-      0x82: 0x201A,
-      0x83: 0x0192,
-      0x84: 0x201E,
-      0x85: 0x2026,
-      0x86: 0x2020,
-      0x87: 0x2021,
-      0x88: 0x02C6,
-      0x89: 0x2030,
-      0x8A: 0x0160,
-      0x8B: 0x2039,
-      0x8C: 0x0152,
-      0x8E: 0x017D,
-      0x91: 0x2018,
-      0x92: 0x2019,
-      0x93: 0x201C,
-      0x94: 0x201D,
-      0x95: 0x2022,
-      0x96: 0x2013,
-      0x97: 0x2014,
-      0x98: 0x02DC,
-      0x99: 0x2122,
-      0x9A: 0x0161,
-      0x9B: 0x203A,
-      0x9C: 0x0153,
-      0x9E: 0x017E,
-      0x9F: 0x0178
-    };
-    const output = text.replace(
-      /&(#(?:x[0-9A-Fa-f]+|[0-9]+)|[A-Za-z][A-Za-z0-9]+);/g,
-      (entity, body) => {
-        if (body.charAt(0) !== '#') {
-          const replacement = named[body.toLowerCase()];
-          return replacement === undefined ? entity : replacement;
-        }
-        const hexadecimal = body.charAt(1).toLowerCase() === 'x';
-        let value = Number.parseInt(
-          body.slice(hexadecimal ? 2 : 1),
-          hexadecimal ? 16 : 10
-        );
-        if (
-          !Number.isInteger(value)
-          || value === 0
-          || value > 0x10FFFF
-          || (value >= 0xD800 && value <= 0xDFFF)
-        ) {
-          return '\uFFFD';
-        }
-        value = numericReplacements[value] || value;
-        return String.fromCodePoint(value);
-      }
-    );
-    return success(output);
+    try {
+      return success(asText(heImpl.decode(asText(input))));
+    } catch (error) {
+      return failure('HTML 实体解码失败');
+    }
   }
 
   function escapeUnicode(input) {
@@ -633,10 +572,60 @@
     return success(output);
   }
 
+  function canonicalJsonNumber(input) {
+    const match = /^(-?)([0-9]+)(?:\.([0-9]+))?(?:[eE]([+-]?[0-9]+))?$/u.exec(input);
+    if (!match) {
+      return null;
+    }
+    const fraction = match[3] || '';
+    let digits = `${match[2]}${fraction}`.replace(/^0+/u, '');
+    if (digits === '') {
+      return '0';
+    }
+    const exponentText = match[4] || '0';
+    if (exponentText.replace(/^[+-]?0*/u, '').length > 6) {
+      return null;
+    }
+    let exponent = Number(exponentText) - fraction.length;
+    while (digits.endsWith('0')) {
+      digits = digits.slice(0, -1);
+      exponent += 1;
+    }
+    return `${match[1]}${digits}e${exponent}`;
+  }
+
+  function isSafeJsonNumberToken(raw) {
+    const value = Number(raw);
+    if (
+      !Number.isFinite(value)
+      || (Number.isInteger(value) && !Number.isSafeInteger(value))
+    ) {
+      return false;
+    }
+    const sourceCanonical = canonicalJsonNumber(raw);
+    const valueCanonical = canonicalJsonNumber(String(value));
+    return sourceCanonical !== null && sourceCanonical === valueCanonical;
+  }
+
   function findJsonError(text) {
     let index = 0;
     let depthExceeded = false;
     let unsafeNumberPosition = -1;
+    let lastNode = null;
+    let lastStringValue = '';
+    let astNodeCount = 0;
+    let sizeExceeded = false;
+
+    function setLastNode(node) {
+      astNodeCount += 1;
+      if (astNodeCount > MAX_STRUCTURED_NODES) {
+        sizeExceeded = true;
+        lastNode = null;
+        return false;
+      }
+      lastNode = node;
+      return true;
+    }
 
     function skipWhitespace() {
       while (
@@ -653,12 +642,14 @@
     }
 
     function parseString() {
+      const start = index;
       index += 1;
       while (index < text.length) {
         const character = text.charAt(index);
         const code = text.charCodeAt(index);
         if (character === '"') {
           index += 1;
+          lastStringValue = JSON.parse(text.slice(start, index));
           return -1;
         }
         if (code <= 0x1F) {
@@ -752,17 +743,11 @@
           index += 1;
         }
       }
-      const numericValue = Number(text.slice(start, index));
-      if (
-        unsafeNumberPosition < 0
-        && (
-          !Number.isFinite(numericValue)
-          || (Number.isInteger(numericValue) && !Number.isSafeInteger(numericValue))
-        )
-      ) {
+      const raw = text.slice(start, index);
+      if (unsafeNumberPosition < 0 && !isSafeJsonNumberToken(raw)) {
         unsafeNumberPosition = start;
       }
-      return -1;
+      return setLastNode({ type: 'number', raw }) ? -1 : index;
     }
 
     function parseArray(depth) {
@@ -774,18 +759,20 @@
       skipWhitespace();
       if (text.charAt(index) === ']') {
         index += 1;
-        return -1;
+        return setLastNode({ type: 'array', items: [] }) ? -1 : index;
       }
 
+      const items = [];
       while (index <= text.length) {
         const valueError = parseValue(depth);
         if (valueError >= 0) {
           return valueError;
         }
+        items.push(lastNode);
         skipWhitespace();
         if (text.charAt(index) === ']') {
           index += 1;
-          return -1;
+          return setLastNode({ type: 'array', items }) ? -1 : index;
         }
         if (text.charAt(index) !== ',') {
           return index;
@@ -805,9 +792,10 @@
       skipWhitespace();
       if (text.charAt(index) === '}') {
         index += 1;
-        return -1;
+        return setLastNode({ type: 'object', entries: [] }) ? -1 : index;
       }
 
+      const entries = [];
       while (index <= text.length) {
         if (text.charAt(index) !== '"') {
           return index;
@@ -816,6 +804,7 @@
         if (keyError >= 0) {
           return keyError;
         }
+        const key = lastStringValue;
         skipWhitespace();
         if (text.charAt(index) !== ':') {
           return index;
@@ -825,10 +814,11 @@
         if (valueError >= 0) {
           return valueError;
         }
+        entries.push({ key, value: lastNode });
         skipWhitespace();
         if (text.charAt(index) === '}') {
           index += 1;
-          return -1;
+          return setLastNode({ type: 'object', entries }) ? -1 : index;
         }
         if (text.charAt(index) !== ',') {
           return index;
@@ -843,7 +833,11 @@
       skipWhitespace();
       const character = text.charAt(index);
       if (character === '"') {
-        return parseString();
+        const stringError = parseString();
+        if (stringError < 0) {
+          return setLastNode({ type: 'string', value: lastStringValue }) ? -1 : index;
+        }
+        return stringError;
       }
       if (character === '{') {
         return parseObject(depth + 1);
@@ -852,13 +846,25 @@
         return parseArray(depth + 1);
       }
       if (character === 't') {
-        return parseLiteral('true');
+        const literalError = parseLiteral('true');
+        if (literalError < 0) {
+          return setLastNode({ type: 'literal', raw: 'true' }) ? -1 : index;
+        }
+        return literalError;
       }
       if (character === 'f') {
-        return parseLiteral('false');
+        const literalError = parseLiteral('false');
+        if (literalError < 0) {
+          return setLastNode({ type: 'literal', raw: 'false' }) ? -1 : index;
+        }
+        return literalError;
       }
       if (character === 'n') {
-        return parseLiteral('null');
+        const literalError = parseLiteral('null');
+        if (literalError < 0) {
+          return setLastNode({ type: 'literal', raw: 'null' }) ? -1 : index;
+        }
+        return literalError;
       }
       if (character === '-' || /[0-9]/.test(character)) {
         return parseNumber();
@@ -871,14 +877,18 @@
       return {
         position: valueError,
         depthExceeded,
-        unsafeNumberPosition
+        unsafeNumberPosition,
+        sizeExceeded,
+        ast: null
       };
     }
     skipWhitespace();
     return {
       position: index === text.length ? text.length : index,
       depthExceeded,
-      unsafeNumberPosition
+      unsafeNumberPosition,
+      sizeExceeded,
+      ast: index === text.length ? lastNode : null
     };
   }
 
@@ -946,7 +956,7 @@
     return bytes;
   }
 
-  function inspectStructuredValue(root) {
+  function inspectStructuredValue(root, options = {}) {
     const active = new WeakSet();
     const stack = [{ value: root, depth: 0, exit: false }];
     let pendingNodes = 1;
@@ -974,7 +984,10 @@
       } else if (typeof value === 'string') {
         estimatedBytes += estimateJsonStringBytes(value);
       } else if (typeof value === 'number') {
-        if (!Number.isFinite(value) || (Number.isInteger(value) && !Number.isSafeInteger(value))) {
+        if (
+          !options.allowUnsafeNumbers
+          && (!Number.isFinite(value) || (Number.isInteger(value) && !Number.isSafeInteger(value)))
+        ) {
           return { ok: false, reason: 'number' };
         }
         estimatedBytes += 32;
@@ -1040,10 +1053,22 @@
       : success(text);
   }
 
-  function parseJsonDocument(input) {
+  function parseJsonDocument(input, options = {}) {
     const text = asText(input);
+    if (utf8ByteLength(text) > MAX_STRUCTURED_OUTPUT_BYTES) {
+      return {
+        ok: false,
+        result: structuredBudgetFailure('JSON', 'size')
+      };
+    }
     const scan = findJsonError(text);
-    if (scan.unsafeNumberPosition >= 0) {
+    if (scan.sizeExceeded) {
+      return {
+        ok: false,
+        result: structuredBudgetFailure('JSON', 'size')
+      };
+    }
+    if (options.requireSafeNumbers && scan.unsafeNumberPosition >= 0) {
       return {
         ok: false,
         result: failure(`JSON 数值超出安全范围，位置 ${scan.unsafeNumberPosition}`)
@@ -1051,7 +1076,9 @@
     }
     try {
       const value = JSON.parse(text);
-      const budget = inspectStructuredValue(value);
+      const budget = inspectStructuredValue(value, {
+        allowUnsafeNumbers: !options.requireSafeNumbers
+      });
       if (!budget.ok) {
         return {
           ok: false,
@@ -1061,7 +1088,8 @@
       return {
         ok: true,
         text,
-        value
+        value,
+        ast: scan.ast
       };
     } catch (error) {
       return {
@@ -1081,13 +1109,70 @@
     return 2;
   }
 
+  function jsonAstObjectKey(key, javascriptObjectKeys) {
+    if (
+      javascriptObjectKeys
+      && /^[A-Za-z_$][A-Za-z0-9_$]*$/u.test(key)
+    ) {
+      return key === '__proto__' ? '["__proto__"]' : key;
+    }
+    return JSON.stringify(key);
+  }
+
+  function serializeJsonAst(root, options = {}) {
+    const space = options.space || 0;
+    const indentation = (depth) => ' '.repeat(space * depth);
+
+    function serialize(node, depth) {
+      if (node.type === 'number' || node.type === 'literal') {
+        return node.raw;
+      }
+      if (node.type === 'string') {
+        return JSON.stringify(node.value);
+      }
+
+      const isArray = node.type === 'array';
+      let children = isArray
+        ? node.items
+        : node.entries.map((entry, index) => ({ ...entry, index }));
+      if (!isArray && options.sortKeys) {
+        children = children.sort((left, right) => (
+          left.key < right.key ? -1 : left.key > right.key ? 1 : left.index - right.index
+        ));
+      }
+      if (children.length === 0) {
+        return isArray ? '[]' : '{}';
+      }
+
+      const serialized = children.map((child) => {
+        const value = serialize(isArray ? child : child.value, depth + 1);
+        if (isArray) {
+          return value;
+        }
+        const key = jsonAstObjectKey(child.key, options.javascriptObjectKeys);
+        return `${key}:${space > 0 ? ' ' : ''}${value}`;
+      });
+      if (space === 0) {
+        return `${isArray ? '[' : '{'}${serialized.join(',')}${isArray ? ']' : '}'}`;
+      }
+      const childIndentation = indentation(depth + 1);
+      return [
+        isArray ? '[' : '{',
+        serialized.map((item) => `${childIndentation}${item}`).join(',\n'),
+        `${indentation(depth)}${isArray ? ']' : '}'}`
+      ].join('\n');
+    }
+
+    return serialize(root, 0);
+  }
+
   function formatJson(input, options = {}) {
     const parsed = parseJsonDocument(input);
     if (!parsed.ok) {
       return parsed.result;
     }
     return structuredTextResult(
-      JSON.stringify(parsed.value, null, jsonSpace(options)),
+      serializeJsonAst(parsed.ast, { space: jsonSpace(options) }),
       'JSON'
     );
   }
@@ -1097,7 +1182,7 @@
     if (!parsed.ok) {
       return parsed.result;
     }
-    return structuredTextResult(JSON.stringify(parsed.value), 'JSON');
+    return structuredTextResult(serializeJsonAst(parsed.ast), 'JSON');
   }
 
   function validateJson(input) {
@@ -1108,38 +1193,16 @@
     return success(parsed.text);
   }
 
-  function sortJsonValue(value) {
-    if (!value || typeof value !== 'object') {
-      return value;
-    }
-    const output = Array.isArray(value) ? [] : Object.create(null);
-    const stack = [{ source: value, target: output }];
-    while (stack.length > 0) {
-      const { source, target } = stack.pop();
-      const keys = Array.isArray(source)
-        ? Array.from({ length: source.length }, (_, index) => index)
-        : Object.keys(source).sort();
-      for (const key of keys) {
-        const child = source[key];
-        if (child && typeof child === 'object') {
-          const childOutput = Array.isArray(child) ? [] : Object.create(null);
-          target[key] = childOutput;
-          stack.push({ source: child, target: childOutput });
-        } else {
-          target[key] = child;
-        }
-      }
-    }
-    return output;
-  }
-
   function sortJsonKeys(input, options = {}) {
     const parsed = parseJsonDocument(input);
     if (!parsed.ok) {
       return parsed.result;
     }
     return structuredTextResult(
-      JSON.stringify(sortJsonValue(parsed.value), null, jsonSpace(options)),
+      serializeJsonAst(parsed.ast, {
+        space: jsonSpace(options),
+        sortKeys: true
+      }),
       'JSON'
     );
   }
@@ -1158,16 +1221,17 @@
   }
 
   function jsonToJavaScriptObjectText(input, options = {}) {
-    const formatted = formatJson(input, options);
-    if (!formatted.ok) {
-      return formatted;
+    const parsed = parseJsonDocument(input);
+    if (!parsed.ok) {
+      return parsed.result;
     }
-    return success(formatted.value.replace(
-      /^(\s*)"([A-Za-z_$][A-Za-z0-9_$]*)":/gm,
-      (match, indentation, key) => (
-        key === '__proto__' ? `${indentation}["__proto__"]:` : `${indentation}${key}:`
-      )
-    ));
+    return structuredTextResult(
+      serializeJsonAst(parsed.ast, {
+        space: jsonSpace(options),
+        javascriptObjectKeys: true
+      }),
+      'JSON'
+    );
   }
 
   function yamlToJson(input, yamlImpl, options = {}) {
@@ -1201,7 +1265,7 @@
     if (!yamlImpl || typeof yamlImpl.dump !== 'function') {
       return failure('YAML 解析库未加载');
     }
-    const parsed = parseJsonDocument(input);
+    const parsed = parseJsonDocument(input, { requireSafeNumbers: true });
     if (!parsed.ok) {
       return parsed.result;
     }
@@ -1277,7 +1341,7 @@
   }
 
   function jsonToQuery(input, options = {}) {
-    const parsed = parseJsonDocument(input);
+    const parsed = parseJsonDocument(input, { requireSafeNumbers: true });
     if (!parsed.ok) {
       return parsed.result;
     }
@@ -1319,6 +1383,7 @@
         && (typeof output === 'object' || typeof output === 'function')
         && typeof output.then === 'function'
       ) {
+        Promise.resolve(output).catch(() => {});
         return failure('不支持异步 Markdown 解析器');
       }
       return success(asText(output));
@@ -1342,17 +1407,81 @@
     }
   }
 
-  function hasXmlParserError(document) {
+  function xmlDocumentNodes(document) {
+    if (!document || !document.documentElement) {
+      return [];
+    }
+    if (document.nodeType === 9 && document.childNodes && document.childNodes.length > 0) {
+      return Array.from(document.childNodes);
+    }
+    return [document.documentElement];
+  }
+
+  function xmlNodeSignature(node) {
+    return `${asText(node.localName || node.nodeName)}\u0000${asText(node.namespaceURI)}`;
+  }
+
+  function xmlParserErrorSignatures(document) {
+    const signatures = new Set();
+    const stack = xmlDocumentNodes(document);
+    let visited = 0;
+    while (stack.length > 0 && visited <= MAX_STRUCTURED_NODES) {
+      const node = stack.pop();
+      visited += 1;
+      if (node && (node.nodeType === 1 || node.nodeType === undefined)) {
+        const localName = asText(node.localName || node.nodeName).toLowerCase();
+        const namespace = asText(node.namespaceURI);
+        if (localName === 'parsererror' && namespace !== '') {
+          signatures.add(xmlNodeSignature(node));
+        }
+      }
+      if (
+        node
+        && node.childNodes
+        && Number(node.childNodes.length) > MAX_STRUCTURED_NODES
+      ) {
+        return signatures;
+      }
+      const children = nodeChildren(node);
+      for (let index = 0; index < children.length; index += 1) {
+        stack.push(children[index]);
+      }
+    }
+    return signatures;
+  }
+
+  function hasXmlParserError(document, signatures) {
     if (!document || !document.documentElement) {
       return true;
     }
-    const root = document.documentElement;
-    const rootName = asText(root.localName || root.nodeName)
-      .toLowerCase()
-      .split(':')
-      .pop();
-    const namespace = asText(root.namespaceURI).toLowerCase();
-    return rootName === 'parsererror' || namespace.includes('parsererror');
+    if (!signatures || signatures.size === 0) {
+      return false;
+    }
+    const stack = xmlDocumentNodes(document);
+    let visited = 0;
+    while (stack.length > 0 && visited <= MAX_STRUCTURED_NODES) {
+      const node = stack.pop();
+      visited += 1;
+      if (
+        node
+        && (node.nodeType === 1 || node.nodeType === undefined)
+        && signatures.has(xmlNodeSignature(node))
+      ) {
+        return true;
+      }
+      if (
+        node
+        && node.childNodes
+        && Number(node.childNodes.length) > MAX_STRUCTURED_NODES
+      ) {
+        return false;
+      }
+      const children = nodeChildren(node);
+      for (let index = 0; index < children.length; index += 1) {
+        stack.push(children[index]);
+      }
+    }
+    return false;
   }
 
   function nodeChildren(node) {
@@ -1516,8 +1645,13 @@
         return failure('XML 数据规模过大');
       }
       const parser = new DOMParserCtor();
+      const sentinel = parser.parseFromString(
+        '<text-codecs-parser-sentinel>',
+        'application/xml'
+      );
+      const parserErrorSignatures = xmlParserErrorSignatures(sentinel);
       const parsed = parser.parseFromString(text, 'application/xml');
-      if (hasXmlParserError(parsed)) {
+      if (hasXmlParserError(parsed, parserErrorSignatures)) {
         return failure('XML 格式错误');
       }
       const budget = inspectXmlDocument(parsed, pretty);

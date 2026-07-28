@@ -6,6 +6,7 @@ const vm = require('node:vm');
 
 const codecsPath = path.join(__dirname, '..', 'text-codecs.js');
 const codecs = require(codecsPath);
+const he = require('he');
 const jsyaml = require('js-yaml');
 const Papa = require('papaparse');
 const marked = require('marked');
@@ -233,35 +234,32 @@ test('encodes and decodes named, decimal, and hexadecimal HTML entities', () => 
   );
   assert.equal(
     valueOf(codecs.decodeHtmlEntities(
-      '&nbsp; &copy; &#0; &#128; &#x80; &#xD800; &#x110000; &unknown;'
+      '&eacute; &trade; &frac12; &nbsp; &Nbsp; &copy; '
+      + '&#0; &#128; &#x80; &#xD800; &#x110000; &unknown;'
     )),
-    '\u00A0 © \uFFFD € € \uFFFD \uFFFD &unknown;'
+    'é ™ ½ \u00A0 &Nbsp; © \uFFFD € € \uFFFD \uFFFD &unknown;'
   );
 });
 
-test('uses a browser textarea to decode standard named HTML entities', () => {
+test('uses the same injected he decoder in browser and CommonJS environments', () => {
   const source = fs.readFileSync(codecsPath, 'utf8');
-  const textarea = {
-    value: '',
-    set innerHTML(input) {
-      this.value = input
-        .replace(/&eacute;/g, 'é')
-        .replace(/&trade;/g, '™');
-    }
-  };
+  const input = '&eacute; &trade; &frac12; &nbsp; &Nbsp; &#128; &#0;';
+  let textareaUsed = false;
   const context = {
+    he,
     document: {
-      createElement(name) {
-        assert.equal(name, 'textarea');
-        return textarea;
+      createElement() {
+        textareaUsed = true;
+        throw new Error('textarea path must not be used');
       }
     }
   };
   vm.runInNewContext(source, context);
   assert.equal(
-    context.TextCodecs.decodeHtmlEntities('&eacute; &trade; &unknown;').value,
-    'é ™ &unknown;'
+    context.TextCodecs.decodeHtmlEntities(input).value,
+    valueOf(codecs.decodeHtmlEntities(input))
   );
+  assert.equal(textareaUsed, false);
 });
 
 test('escapes BMP and supplementary Unicode and rejects invalid escape sequences', () => {
@@ -363,26 +361,63 @@ test('bounds JSON error scanning depth without regressing ordinary nesting', () 
   });
 });
 
-test('rejects JSON numbers that cannot round-trip safely through JavaScript Number', () => {
-  const operations = [
-    codecs.formatJson,
-    codecs.minifyJson,
-    codecs.validateJson,
-    codecs.sortJsonKeys,
-    codecs.jsonToJavaScriptObjectText,
-    (input) => codecs.jsonToYaml(input, jsyaml),
-    codecs.jsonToQuery
+test('preserves raw JSON number tokens in lossless text conversions', () => {
+  const input = [
+    '{"z":1.0000000000000001,',
+    '"a":[0.1234567890123456789012345,1e-400,9007199254740993]}'
+  ].join('');
+  assert.equal(valueOf(codecs.minifyJson(input)), input);
+  assert.equal(valueOf(codecs.formatJson(input)), [
+    '{',
+    '  "z": 1.0000000000000001,',
+    '  "a": [',
+    '    0.1234567890123456789012345,',
+    '    1e-400,',
+    '    9007199254740993',
+    '  ]',
+    '}'
+  ].join('\n'));
+  assert.equal(valueOf(codecs.sortJsonKeys(input)), [
+    '{',
+    '  "a": [',
+    '    0.1234567890123456789012345,',
+    '    1e-400,',
+    '    9007199254740993',
+    '  ],',
+    '  "z": 1.0000000000000001',
+    '}'
+  ].join('\n'));
+  const javascript = valueOf(codecs.jsonToJavaScriptObjectText(input));
+  assert.match(javascript, /z: 1\.0000000000000001/u);
+  assert.match(javascript, /0\.1234567890123456789012345/u);
+  assert.match(javascript, /1e-400/u);
+  assert.match(javascript, /9007199254740993/u);
+  assert.equal(valueOf(codecs.validateJson(input)), input);
+});
+
+test('rejects lossy JSON numbers only when converting to JavaScript values', () => {
+  const tokens = [
+    '9007199254740993',
+    '-9007199254740993',
+    '1e400',
+    '1.0000000000000001',
+    '0.1234567890123456789012345',
+    '1e-400'
   ];
-  for (const input of ['9007199254740993', '-9007199254740993', '1e400']) {
-    for (const operation of operations) {
+  for (const token of tokens) {
+    const input = `{"n":${token}}`;
+    for (const operation of [
+      (text) => codecs.jsonToYaml(text, jsyaml),
+      codecs.jsonToQuery
+    ]) {
       assert.deepEqual(operation(input), {
         ok: false,
         value: '',
-        message: 'JSON 数值超出安全范围，位置 0'
+        message: 'JSON 数值超出安全范围，位置 5'
       });
     }
+    assert.match(valueOf(codecs.minifyJson(input)), new RegExp(token.replace('.', '\\.')));
   }
-
   assert.equal(
     valueOf(codecs.minifyJson('9007199254740991')),
     '9007199254740991'
@@ -399,6 +434,15 @@ test('rejects deeply nested valid JSON before recursive key sorting', () => {
     ok: false,
     value: '',
     message: 'JSON 嵌套层级过深'
+  });
+});
+
+test('counts duplicate JSON object entries against the AST node budget', () => {
+  const duplicateHeavyJson = `{${Array(100001).fill('"a":0').join(',')}}`;
+  assert.deepEqual(codecs.minifyJson(duplicateHeavyJson), {
+    ok: false,
+    value: '',
+    message: 'JSON 数据规模过大'
   });
 });
 
@@ -551,6 +595,30 @@ test('adapts Markdown converters and reports missing injected libraries', () => 
     value: '',
     message: '不支持异步 Markdown 解析器'
   });
+});
+
+test('consumes rejected asynchronous Markdown parser results', async () => {
+  let unhandledReason;
+  const listener = (reason) => {
+    unhandledReason = reason;
+  };
+  process.once('unhandledRejection', listener);
+  try {
+    const result = codecs.markdownToHtml('# x', {
+      parse() {
+        return Promise.reject(new Error('async failure'));
+      }
+    });
+    assert.deepEqual(result, {
+      ok: false,
+      value: '',
+      message: '不支持异步 Markdown 解析器'
+    });
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(unhandledReason, undefined);
+  } finally {
+    process.removeListener('unhandledRejection', listener);
+  }
 });
 
 function createXmlDocument(depth = 2, includeBusinessParserError = false) {
@@ -729,7 +797,11 @@ test('uses injected XML parser and serializer constructors and detects parsererr
   class BadParser {
     parseFromString() {
       return {
-        documentElement: { nodeName: 'parsererror' },
+        documentElement: {
+          nodeName: 'parsererror',
+          localName: 'parsererror',
+          namespaceURI: 'http://www.mozilla.org/newlayout/xml/parsererror.xml'
+        },
         getElementsByTagName: () => [{}]
       };
     }
@@ -756,6 +828,101 @@ test('formats realistic XML trees and allows a business parsererror descendant',
     valueOf(codecs.minifyXml('<ignored/>', TreeParser, XmlTreeSerializer)),
     '<root id="x"><item>1</item><parsererror>business value</parsererror></root>'
   );
+});
+
+function createParserDocument(input, style, businessRoot = false, businessDescendant = false) {
+  function element(name, namespaceURI = null, children = []) {
+    return {
+      nodeType: 1,
+      nodeName: name,
+      localName: name,
+      namespaceURI,
+      attributes: [],
+      childNodes: children,
+      getAttribute() {
+        return '';
+      }
+    };
+  }
+
+  let root;
+  if (style === 'chromium') {
+    const namespace = 'http://www.w3.org/1999/xhtml';
+    root = element('html', namespace, [
+      element('body', namespace, [element('parsererror', namespace)])
+    ]);
+  } else if (style === 'firefox') {
+    root = element(
+      'parsererror',
+      'http://www.mozilla.org/newlayout/xml/parsererror.xml'
+    );
+  } else if (businessRoot) {
+    root = element('parsererror');
+  } else {
+    root = element('root', null, businessDescendant ? [element('parsererror')] : []);
+  }
+
+  return {
+    input,
+    nodeType: 9,
+    nodeName: '#document',
+    childNodes: [root],
+    documentElement: root,
+    createTextNode(value) {
+      return {
+        nodeType: 3,
+        nodeName: '#text',
+        nodeValue: value,
+        childNodes: []
+      };
+    }
+  };
+}
+
+test('matches XML parser errors using the current parser environment signature', () => {
+  for (const style of ['chromium', 'firefox']) {
+    class SignatureParser {
+      parseFromString(input) {
+        if (input === '<root>') {
+          return createParserDocument(input, style);
+        }
+        if (input === '<parsererror>business</parsererror>') {
+          return createParserDocument(input, 'business', true);
+        }
+        if (input === '<root><parsererror>business</parsererror></root>') {
+          return createParserDocument(input, 'business', false, true);
+        }
+        return createParserDocument(input, style);
+      }
+    }
+    class SignatureSerializer {
+      serializeToString(document) {
+        return document.input;
+      }
+    }
+
+    assert.deepEqual(codecs.formatXml('<root>', SignatureParser, SignatureSerializer), {
+      ok: false,
+      value: '',
+      message: 'XML 格式错误'
+    });
+    assert.equal(
+      valueOf(codecs.formatXml(
+        '<parsererror>business</parsererror>',
+        SignatureParser,
+        SignatureSerializer
+      )),
+      '<parsererror>business</parsererror>'
+    );
+    assert.equal(
+      valueOf(codecs.minifyXml(
+        '<root><parsererror>business</parsererror></root>',
+        SignatureParser,
+        SignatureSerializer
+      )),
+      '<root><parsererror>business</parsererror></root>'
+    );
+  }
 });
 
 test('rejects deeply nested XML before recursive formatting', () => {
