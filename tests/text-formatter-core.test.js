@@ -107,13 +107,19 @@ test('exposes the same API as browser global TextFormatterCore', () => {
   );
 });
 
-test('returns a friendly failure for unknown transforms and caught exceptions', () => {
-  assert.deepEqual(runTransform('missing', 'abc'), {
+test('returns a friendly failure for unknown and prototype-chain transform IDs', () => {
+  const expected = {
     ok: false,
     value: '',
     message: '不支持的文本处理操作'
-  });
+  };
 
+  assert.deepEqual(runTransform('missing', 'abc'), expected);
+  assert.deepEqual(runTransform('constructor', 'abc'), expected);
+  assert.deepEqual(runTransform('__proto__', 'abc'), expected);
+});
+
+test('converts thrown transform errors to a Chinese failure result', () => {
   const result = runTransform('shuffleLines', 'a\nb', {
     random() {
       throw new Error('boom');
@@ -122,6 +128,22 @@ test('returns a friendly failure for unknown transforms and caught exceptions', 
   assert.equal(result.ok, false);
   assert.equal(result.value, '');
   assert.match(result.message, /^文本处理失败：boom$/);
+});
+
+test('returns failures for malformed URL, Base64, and JSON input', () => {
+  const invalidInputs = [
+    ['urlDecode', '%E4'],
+    ['base64Decode', '*invalid*'],
+    ['jsonFormat', '{bad}'],
+    ['jsonMinify', '{bad}']
+  ];
+
+  for (const [id, input] of invalidInputs) {
+    const result = runTransform(id, input);
+    assert.equal(result.ok, false, `${id} should fail`);
+    assert.equal(result.value, '');
+    assert.match(result.message, /^文本处理失败：/, `${id} should return a Chinese message`);
+  }
 });
 
 test('keeps existing cleaning transforms compatible and handles CRLF', () => {
@@ -160,13 +182,10 @@ test('keeps existing naming transforms and handles acronyms, numbers, punctuatio
 test('keeps legacy URL, Base64, JSON, and Hex success behavior', () => {
   assert.equal(valueOf('urlEncode', '中文 a'), '%E4%B8%AD%E6%96%87%20a');
   assert.equal(valueOf('urlDecode', '%E4%B8%AD%E6%96%87%20a'), '中文 a');
-  assert.equal(valueOf('urlDecode', '%E4'), '%E4');
   assert.equal(valueOf('base64Encode', '中文'), '5Lit5paH');
   assert.equal(valueOf('base64Decode', '5Lit5paH'), '中文');
-  assert.equal(valueOf('base64Decode', '*invalid*'), '*invalid*');
   assert.equal(valueOf('jsonFormat', '{"a":1}'), '{\n  "a": 1\n}');
   assert.equal(valueOf('jsonMinify', '{\n  "a": 1\n}'), '{"a":1}');
-  assert.equal(valueOf('jsonFormat', '{bad}'), '{bad}');
   assert.equal(valueOf('hexFormat1Byte', '80 01 02 00'), '0x80, 0x01, 0x02, 0x00');
   assert.equal(valueOf('hexFormat4Byte', '12345678 90ABCDEF'), '0x12345678, 0x90ABCDEF');
   assert.equal(valueOf('hexFormat4ByteLe', '12345678'), '0x78563412');

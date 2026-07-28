@@ -162,39 +162,15 @@
 
     urlEncode: (text) => success(encodeURIComponent(text)),
 
-    urlDecode: (text) => {
-      try {
-        return success(decodeURIComponent(text));
-      } catch {
-        return success(text);
-      }
-    },
+    urlDecode: (text) => success(decodeURIComponent(text)),
 
     base64Encode: (text) => success(encodeBase64(text)),
 
-    base64Decode: (text) => {
-      try {
-        return success(decodeBase64(text));
-      } catch {
-        return success(text);
-      }
-    },
+    base64Decode: (text) => success(decodeBase64(text)),
 
-    jsonFormat: (text) => {
-      try {
-        return success(JSON.stringify(JSON.parse(text), null, 2));
-      } catch {
-        return success(text);
-      }
-    },
+    jsonFormat: (text) => success(JSON.stringify(JSON.parse(text), null, 2)),
 
-    jsonMinify: (text) => {
-      try {
-        return success(JSON.stringify(JSON.parse(text)));
-      } catch {
-        return success(text);
-      }
-    },
+    jsonMinify: (text) => success(JSON.stringify(JSON.parse(text))),
 
     verticalLayout: (text) => success(text.split(/[\s,，]+/).filter(Boolean).join('\n')),
 
@@ -402,12 +378,12 @@
   };
 
   function runTransform(id, input, options = {}) {
-    const transform = TRANSFORMS[id];
-    if (!transform) {
+    if (!Object.prototype.hasOwnProperty.call(TRANSFORMS, id)) {
       return failure('不支持的文本处理操作');
     }
 
     try {
+      const transform = TRANSFORMS[id];
       return transform(String(input ?? ''), options || {});
     } catch (error) {
       const reason = error && error.message ? error.message : '未知原因';
