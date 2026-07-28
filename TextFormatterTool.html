@@ -956,6 +956,8 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
     <script defer src="vendor/he/he.js"></script>
     <script defer src="vendor/sax/sax.js"></script>
     <script defer src="text-codecs.js"></script>
+    <script defer src="markdown-table.js"></script>
+    <script defer src="markdown-table-ui.js"></script>
 </head>
 <body>
 <div class="tab-content active" id="textconvert">
@@ -1056,6 +1058,44 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
                             <button type="button" onclick="textconvert_useSequenceAsInput()">生成到原文</button>
                             <button type="button" onclick="textconvert_generateSequence()">生成到结果</button>
                         </div>
+                    </div>
+                </details>
+
+                <details class="tool-section markdown-table-section" id="markdown_table_section">
+                    <summary class="tool-section-title">表格与 Markdown</summary>
+                    <div class="markdown-table-workspace">
+                        <div class="markdown-table-import">
+                            <textarea id="markdown_table_source" rows="4" placeholder="粘贴 Markdown 表格、HTML 表格或 TSV 数据"></textarea>
+                            <div class="markdown-table-actions">
+                                <button type="button" data-table-action="import-gfm">导入 Markdown</button>
+                                <button type="button" data-table-action="import-html">导入 HTML</button>
+                                <button type="button" data-table-action="import-tsv">导入 TSV</button>
+                                <button type="button" data-table-action="clear-source">清空</button>
+                            </div>
+                        </div>
+                        <div class="markdown-table-toolbar" aria-label="表格编辑操作">
+                            <button type="button" data-table-action="add-row">+ 行</button>
+                            <button type="button" data-table-action="remove-row">- 行</button>
+                            <button type="button" data-table-action="add-column">+ 列</button>
+                            <button type="button" data-table-action="remove-column">- 列</button>
+                            <button type="button" data-table-action="merge">合并所选</button>
+                            <button type="button" data-table-action="split">拆分所选</button>
+                            <label class="markdown-table-header-toggle">
+                                <input type="checkbox" id="markdown_table_header" checked>
+                                首行为表头
+                            </label>
+                        </div>
+                        <p class="markdown-table-hint">勾选连续的矩形单元格后可合并；Markdown 导出会重复合并内容；可视化编辑最多 2500 个单元格。</p>
+                        <div class="markdown-table-grid-wrap">
+                            <div id="markdown_table_grid" class="markdown-table-grid" aria-label="可编辑表格"></div>
+                        </div>
+                        <div class="markdown-table-actions markdown-table-export-actions">
+                            <button type="button" class="primary-action" data-table-action="export-gfm">生成 Markdown</button>
+                            <button type="button" data-table-action="export-html">生成 HTML</button>
+                            <button type="button" data-table-action="export-tsv">生成 TSV</button>
+                            <button type="button" data-table-action="copy">复制结果</button>
+                        </div>
+                        <div id="markdown_table_status" class="markdown-table-status" role="status" aria-live="polite"></div>
                     </div>
                 </details>
             </div>

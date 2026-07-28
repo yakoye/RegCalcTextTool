@@ -542,6 +542,147 @@ details[open] > summary.accordion-header .accordion-arrow {
   to { opacity: 1; transform: translateY(0); }
 }
 
+#textconvert-ui .markdown-table-workspace {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding-top: 10px;
+}
+
+#textconvert-ui .markdown-table-import {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+}
+
+#textconvert-ui .markdown-table-import textarea {
+  width: 100%;
+  min-height: 84px;
+  resize: vertical;
+}
+
+#textconvert-ui .markdown-table-actions,
+#textconvert-ui .markdown-table-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+#textconvert-ui .markdown-table-import .markdown-table-actions {
+  max-width: 220px;
+}
+
+#textconvert-ui .markdown-table-header-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 4px;
+  white-space: nowrap;
+}
+
+#textconvert-ui .markdown-table-hint,
+#textconvert-ui .markdown-table-status {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+#textconvert-ui .markdown-table-status {
+  min-height: 18px;
+}
+
+#textconvert-ui .markdown-table-status.is-error {
+  color: #b42318;
+}
+
+#textconvert-ui .markdown-table-grid-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+#textconvert-ui .markdown-table-grid {
+  --table-columns: 3;
+  display: grid;
+  grid-template-columns: 34px repeat(var(--table-columns), minmax(132px, 1fr));
+  grid-auto-rows: minmax(52px, auto);
+  gap: 5px;
+  min-width: max-content;
+  align-items: stretch;
+}
+
+#textconvert-ui .markdown-table-corner,
+#textconvert-ui .markdown-table-row-header,
+#textconvert-ui .markdown-table-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+#textconvert-ui .markdown-table-column-header {
+  flex-direction: column;
+  gap: 3px;
+}
+
+#textconvert-ui .markdown-table-column-header select {
+  width: 100%;
+  min-width: 108px;
+  height: 30px;
+  padding: 2px 24px 2px 7px;
+  font-size: 12px;
+}
+
+#textconvert-ui .markdown-table-cell {
+  position: relative;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.58);
+  overflow: hidden;
+}
+
+#textconvert-ui .markdown-table-cell.is-selected {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--focus-ring);
+}
+
+#textconvert-ui .markdown-table-cell-select {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 1;
+  width: 22px !important;
+  height: 22px;
+  margin: 0;
+  cursor: pointer;
+}
+
+#textconvert-ui .markdown-table-cell textarea {
+  width: 100%;
+  height: 100%;
+  min-height: 52px;
+  padding: 7px 26px 7px 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  resize: vertical;
+  font: 13px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+#textconvert-ui .markdown-table-cell textarea:focus {
+  box-shadow: none;
+}
+
+#textconvert-ui .markdown-table-export-actions .primary-action {
+  font-weight: 700;
+}
+
 @media (max-width: 768px) {
   body {
     font-size: 14px !important;
@@ -635,5 +776,22 @@ details[open] > summary.accordion-header .accordion-arrow {
   .accordion-count,
   .hash-group-count {
     flex: 0 0 auto;
+  }
+
+  #textconvert-ui .markdown-table-import {
+    grid-template-columns: 1fr;
+  }
+
+  #textconvert-ui .markdown-table-import .markdown-table-actions {
+    max-width: none;
+  }
+
+  #textconvert-ui .markdown-table-grid {
+    grid-template-columns: 30px repeat(var(--table-columns), minmax(112px, 1fr));
+  }
+
+  #textconvert-ui .markdown-table-cell-select {
+    width: 24px !important;
+    height: 24px;
   }
 }
