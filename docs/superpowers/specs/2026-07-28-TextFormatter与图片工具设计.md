@@ -255,6 +255,58 @@ HTML 转 Markdown 和 Markdown 转 HTML 使用成熟、轻量、可在纯浏览�
 
 XML、YAML、CSV 和 Markdown 使用成熟解析库。所有解析器单独捕获异常，一个功能失败不得影响其他功能。
 
+#### 可视化表格与 Markdown 双向转换
+
+“数据格式化”分类增加独立表格编辑面板，支持：
+
+- 在网页中直接编辑单元格
+- 从 Excel、WPS 或其他表格复制制表符数据后粘贴
+- 添加、删除行
+- 添加、删除列
+- 设置首行为表头
+- 设置列左对齐、居中或右对齐
+- 合并和拆分相邻单元格
+- 单元格内输入多行内容
+- GFM Markdown 表格转可编辑网格
+- HTML 表格转可编辑网格
+- 可编辑网格导出为 GFM Markdown
+- 可编辑网格导出为 HTML 表格
+- 一键复制输出
+
+GFM Markdown 表格本身没有标准的 `rowspan` 和 `colspan`。因此使用以下确定规则：
+
+- 默认输出模式为 GFM Markdown
+- 合并单元格导出为 GFM 时，把主单元格内容重复写入所有被覆盖单元格
+- 不使用“同上”等非标准占位文本
+- 单元格内换行导出为 `<br>`
+- 单元格中的 `|` 转义为 `\|`
+- GFM 导入后无法恢复原来的合并关系，按普通单元格处理
+- HTML 表格模式使用 `rowspan`、`colspan` 和 `<br>`，完整保留合并与换行
+- HTML 表格导入时恢复 `rowspan` 和 `colspan`
+
+表格数据模型：
+
+```js
+{
+  rows: 3,
+  columns: 3,
+  headerRows: 1,
+  alignments: ["left", "center", "right"],
+  cells: [
+    {
+      row: 0,
+      column: 0,
+      value: "标题",
+      rowSpan: 1,
+      colSpan: 2,
+      coveredBy: null
+    }
+  ]
+}
+```
+
+只有主单元格保存内容和跨度；被覆盖单元格通过 `coveredBy` 指向主单元格。合并前必须验证所选区域为连续矩形，且没有跨出选择范围的既有合并。
+
 ### 3.7 Hex 与字节
 
 保留：
@@ -490,6 +542,7 @@ TextFormatterTool.html
 text-formatter.js
 text-codecs.js
 text-generators.js
+markdown-table.js
 
 ImageTool.html
 image-tool.js
@@ -506,6 +559,7 @@ vendor/
 - `text-formatter.js`：状态、UI、通用转换调度
 - `text-codecs.js`：Base64、URL、Markdown、JSON、XML、YAML、CSV、Hex
 - `text-generators.js`：序列生成
+- `markdown-table.js`：表格数据模型、合并、GFM/HTML 导入与导出
 - `image-tool.js`：图片状态、预览、变换和输出流程
 - `image-codecs.js`：BMP、ICO 及格式能力检查
 - `shared-ui.js`：Toast、复制等跨工具通用能力
@@ -542,6 +596,11 @@ vendor/
 - 中文、emoji、CRLF 和大文本需要专项用例
 - Base64 文本、二进制文件、PNG 图片均做正反向测试
 - URL 参数模式与完整 URL 模式分别测试
+- GFM 表格与网页编辑网格双向转换
+- 合并单元格导出 GFM 时重复内容
+- 合并单元格导出 HTML 时保留 `rowspan` 和 `colspan`
+- 单元格换行导出为 `<br>`
+- HTML 表格导入后恢复合并状态
 - Hex 严格模式和自动清洗模式分别测试
 - 10000 条序列成功，超过上限明确失败
 - 桌面和手机下拉菜单不出现边框嵌套和说明遮挡
@@ -575,9 +634,10 @@ vendor/
 2. 修复现有功能边界问题。
 3. 重组七类 UI 并修复菜单视觉问题。
 4. 增加 Base64、URL、Markdown、数据格式和 Hex 能力。
-5. 完成 TextFormatter 回归和移动端检查。
-6. 新增 Image 标签和独立页面骨架。
-7. 完成图片输入、预览、转换、压缩、尺寸和变换。
-8. 完成 BMP、ICO 输出。
-9. 更新 About、README 和中文修改记录。
-10. 构建、浏览器验证、提交代码。
+5. 增加可视化表格编辑及 Markdown/HTML 表格双向转换。
+6. 完成 TextFormatter 回归和移动端检查。
+7. 新增 Image 标签和独立页面骨架。
+8. 完成图片输入、预览、转换、压缩、尺寸和变换。
+9. 完成 BMP、ICO 输出。
+10. 更新 About、README 和中文修改记录。
+11. 构建、浏览器验证、提交代码。
