@@ -262,6 +262,32 @@ test('uses the same injected he decoder in browser and CommonJS environments', (
   assert.equal(textareaUsed, false);
 });
 
+test('falls back to native browser entity decoding when he is not loaded', () => {
+  const source = fs.readFileSync(codecsPath, 'utf8');
+  const input = '&eacute; &trade; &frac12; &Nbsp; &#128; &#0;';
+  let createElementCalls = 0;
+  const context = {
+    document: {
+      createElement(name) {
+        createElementCalls += 1;
+        assert.equal(name, 'textarea');
+        return {
+          value: '',
+          set innerHTML(value) {
+            this.value = he.decode(value);
+          }
+        };
+      }
+    }
+  };
+  vm.runInNewContext(source, context);
+  assert.equal(
+    context.TextCodecs.decodeHtmlEntities(input).value,
+    he.decode(input)
+  );
+  assert.equal(createElementCalls, 1);
+});
+
 test('escapes BMP and supplementary Unicode and rejects invalid escape sequences', () => {
   const escaped = '\\u0041\\u4E2D\\uD83D\\uDE00\\u000A';
   assert.equal(valueOf(codecs.escapeUnicode('A中😀\n')), escaped);
@@ -830,14 +856,19 @@ test('formats realistic XML trees and allows a business parsererror descendant',
   );
 });
 
-function createParserDocument(input, style, businessRoot = false, businessDescendant = false) {
-  function element(name, namespaceURI = null, children = []) {
+function createParserDocument(input, style, variant = 'error') {
+  function element(name, namespaceURI = null, children = [], attributeNames = []) {
     return {
       nodeType: 1,
       nodeName: name,
       localName: name,
       namespaceURI,
-      attributes: [],
+      attributes: attributeNames.map((attributeName) => ({
+        name: attributeName,
+        localName: attributeName,
+        namespaceURI: null,
+        value: `localized value for ${input}`
+      })),
       childNodes: children,
       getAttribute() {
         return '';
@@ -845,21 +876,40 @@ function createParserDocument(input, style, businessRoot = false, businessDescen
     };
   }
 
+  const parserErrorNamespace = style === 'chromium'
+    ? 'http://www.w3.org/1999/xhtml'
+    : 'http://www.mozilla.org/newlayout/xml/parsererror.xml';
   let root;
-  if (style === 'chromium') {
+  if (variant === 'error' && style === 'chromium') {
     const namespace = 'http://www.w3.org/1999/xhtml';
     root = element('html', namespace, [
-      element('body', namespace, [element('parsererror', namespace)])
+      element('body', namespace, [
+        element('parsererror', namespace, [
+          element('h3', namespace),
+          element('div', namespace, [element('span', namespace)]),
+          element('h3', namespace)
+        ], ['style'])
+      ])
     ]);
-  } else if (style === 'firefox') {
+  } else if (variant === 'error' && style === 'firefox') {
     root = element(
       'parsererror',
-      'http://www.mozilla.org/newlayout/xml/parsererror.xml'
+      parserErrorNamespace,
+      [element('sourcetext', parserErrorNamespace)],
+      ['data-error']
     );
-  } else if (businessRoot) {
-    root = element('parsererror');
+  } else if (variant === 'noNamespaceRoot') {
+    root = element('parsererror', null);
+  } else if (variant === 'noNamespaceDescendant') {
+    root = element('root', null, [element('parsererror', null)]);
+  } else if (variant === 'sameNamespaceRoot') {
+    root = element('parsererror', parserErrorNamespace);
   } else {
-    root = element('root', null, businessDescendant ? [element('parsererror')] : []);
+    root = element('root', null, [
+      element('parsererror', parserErrorNamespace, [
+        element('note', parserErrorNamespace)
+      ])
+    ]);
   }
 
   return {
@@ -881,16 +931,31 @@ function createParserDocument(input, style, businessRoot = false, businessDescen
 
 test('matches XML parser errors using the current parser environment signature', () => {
   for (const style of ['chromium', 'firefox']) {
+    const namespace = style === 'chromium'
+      ? 'http://www.w3.org/1999/xhtml'
+      : 'http://www.mozilla.org/newlayout/xml/parsererror.xml';
+    const sameNamespaceRoot = `<parsererror xmlns="${namespace}">business</parsererror>`;
+    const sameNamespaceDescendant = [
+      '<root>',
+      `<parsererror xmlns="${namespace}"><note/></parsererror>`,
+      '</root>'
+    ].join('');
     class SignatureParser {
       parseFromString(input) {
         if (input === '<root>') {
           return createParserDocument(input, style);
         }
         if (input === '<parsererror>business</parsererror>') {
-          return createParserDocument(input, 'business', true);
+          return createParserDocument(input, style, 'noNamespaceRoot');
         }
         if (input === '<root><parsererror>business</parsererror></root>') {
-          return createParserDocument(input, 'business', false, true);
+          return createParserDocument(input, style, 'noNamespaceDescendant');
+        }
+        if (input === sameNamespaceRoot) {
+          return createParserDocument(input, style, 'sameNamespaceRoot');
+        }
+        if (input === sameNamespaceDescendant) {
+          return createParserDocument(input, style, 'sameNamespaceDescendant');
         }
         return createParserDocument(input, style);
       }
@@ -921,6 +986,22 @@ test('matches XML parser errors using the current parser environment signature',
         SignatureSerializer
       )),
       '<root><parsererror>business</parsererror></root>'
+    );
+    assert.equal(
+      valueOf(codecs.formatXml(
+        sameNamespaceRoot,
+        SignatureParser,
+        SignatureSerializer
+      )),
+      sameNamespaceRoot
+    );
+    assert.equal(
+      valueOf(codecs.minifyXml(
+        sameNamespaceDescendant,
+        SignatureParser,
+        SignatureSerializer
+      )),
+      sameNamespaceDescendant
     );
   }
 });

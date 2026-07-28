@@ -24,6 +24,8 @@
   const MAX_STRUCTURED_NODES = 100000;
   const MAX_STRUCTURED_OUTPUT_BYTES = 5 * 1024 * 1024;
   const MAX_YAML_ALIASES = 100;
+  const MAX_XML_ERROR_FINGERPRINT_DEPTH = 8;
+  const MAX_XML_ERROR_FINGERPRINT_NODES = 256;
 
   function asText(input) {
     return String(input == null ? '' : input);
@@ -494,14 +496,28 @@
   }
 
   function decodeHtmlEntities(input, heImpl = defaultHe) {
-    if (!heImpl || typeof heImpl.decode !== 'function') {
-      return failure('HTML 实体解析库未加载');
+    const text = asText(input);
+    if (heImpl && typeof heImpl.decode === 'function') {
+      try {
+        return success(asText(heImpl.decode(text)));
+      } catch (error) {
+        return failure('HTML 实体解码失败');
+      }
     }
-    try {
-      return success(asText(heImpl.decode(asText(input))));
-    } catch (error) {
-      return failure('HTML 实体解码失败');
+    if (
+      typeof document !== 'undefined'
+      && document
+      && typeof document.createElement === 'function'
+    ) {
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.innerHTML = text;
+        return success(asText(textarea.value));
+      } catch (error) {
+        return failure('HTML 实体解码失败');
+      }
     }
+    return failure('HTML 实体解析库未加载');
   }
 
   function escapeUnicode(input) {
@@ -1421,8 +1437,72 @@
     return `${asText(node.localName || node.nodeName)}\u0000${asText(node.namespaceURI)}`;
   }
 
-  function xmlParserErrorSignatures(document) {
-    const signatures = new Set();
+  function xmlAttributeSignature(attribute) {
+    return `${asText(attribute.localName || attribute.name)}\u0000${
+      asText(attribute.namespaceURI)
+    }`;
+  }
+
+  function xmlElementFingerprint(root) {
+    const state = { nodes: 0, truncated: false };
+
+    function build(node, depth) {
+      state.nodes += 1;
+      if (state.nodes > MAX_XML_ERROR_FINGERPRINT_NODES) {
+        state.truncated = true;
+        return [xmlNodeSignature(node), [], ['#node-limit']];
+      }
+
+      const rawAttributes = node.attributes;
+      let attributes = [];
+      if (
+        rawAttributes
+        && Number(rawAttributes.length) > MAX_XML_ERROR_FINGERPRINT_NODES
+      ) {
+        state.truncated = true;
+        attributes = ['#attribute-limit'];
+      } else if (rawAttributes) {
+        attributes = Array.from(rawAttributes)
+          .map(xmlAttributeSignature)
+          .sort();
+      }
+      if (
+        node.childNodes
+        && Number(node.childNodes.length) > MAX_XML_ERROR_FINGERPRINT_NODES
+      ) {
+        state.truncated = true;
+        return [xmlNodeSignature(node), attributes, ['#child-limit']];
+      }
+      let elementChildren = nodeChildren(node).filter((child) => (
+        child && (child.nodeType === 1 || child.nodeType === undefined)
+      ));
+      if (elementChildren.length > MAX_XML_ERROR_FINGERPRINT_NODES) {
+        state.truncated = true;
+        elementChildren = elementChildren.slice(0, MAX_XML_ERROR_FINGERPRINT_NODES);
+      }
+      if (depth >= MAX_XML_ERROR_FINGERPRINT_DEPTH) {
+        if (elementChildren.length > 0) {
+          state.truncated = true;
+        }
+        return [
+          xmlNodeSignature(node),
+          attributes,
+          elementChildren.map(xmlNodeSignature)
+        ];
+      }
+      return [
+        xmlNodeSignature(node),
+        attributes,
+        elementChildren.map((child) => build(child, depth + 1))
+      ];
+    }
+
+    const fingerprint = JSON.stringify(build(root, 0));
+    return state.truncated ? null : fingerprint;
+  }
+
+  function xmlParserErrorFingerprints(document) {
+    const fingerprints = new Set();
     const stack = xmlDocumentNodes(document);
     let visited = 0;
     while (stack.length > 0 && visited <= MAX_STRUCTURED_NODES) {
@@ -1432,7 +1512,10 @@
         const localName = asText(node.localName || node.nodeName).toLowerCase();
         const namespace = asText(node.namespaceURI);
         if (localName === 'parsererror' && namespace !== '') {
-          signatures.add(xmlNodeSignature(node));
+          const fingerprint = xmlElementFingerprint(node);
+          if (fingerprint !== null) {
+            fingerprints.add(fingerprint);
+          }
         }
       }
       if (
@@ -1440,21 +1523,21 @@
         && node.childNodes
         && Number(node.childNodes.length) > MAX_STRUCTURED_NODES
       ) {
-        return signatures;
+        return fingerprints;
       }
       const children = nodeChildren(node);
       for (let index = 0; index < children.length; index += 1) {
         stack.push(children[index]);
       }
     }
-    return signatures;
+    return fingerprints;
   }
 
-  function hasXmlParserError(document, signatures) {
+  function hasXmlParserError(document, fingerprints) {
     if (!document || !document.documentElement) {
       return true;
     }
-    if (!signatures || signatures.size === 0) {
+    if (!fingerprints || fingerprints.size === 0) {
       return false;
     }
     const stack = xmlDocumentNodes(document);
@@ -1462,10 +1545,15 @@
     while (stack.length > 0 && visited <= MAX_STRUCTURED_NODES) {
       const node = stack.pop();
       visited += 1;
-      if (
-        node
+      const fingerprint = node
         && (node.nodeType === 1 || node.nodeType === undefined)
-        && signatures.has(xmlNodeSignature(node))
+        && asText(node.localName || node.nodeName).toLowerCase() === 'parsererror'
+        && asText(node.namespaceURI) !== ''
+        ? xmlElementFingerprint(node)
+        : null;
+      if (
+        fingerprint !== null
+        && fingerprints.has(fingerprint)
       ) {
         return true;
       }
@@ -1649,9 +1737,9 @@
         '<text-codecs-parser-sentinel>',
         'application/xml'
       );
-      const parserErrorSignatures = xmlParserErrorSignatures(sentinel);
+      const parserErrorFingerprints = xmlParserErrorFingerprints(sentinel);
       const parsed = parser.parseFromString(text, 'application/xml');
-      if (hasXmlParserError(parsed, parserErrorSignatures)) {
+      if (hasXmlParserError(parsed, parserErrorFingerprints)) {
         return failure('XML 格式错误');
       }
       const budget = inspectXmlDocument(parsed, pretty);
