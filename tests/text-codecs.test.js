@@ -166,6 +166,18 @@ test('parses full URLs, question-prefixed input, and pure queries without losing
     { key: 'a', value: '2' }
   ]);
   assert.deepEqual(valueOf(codecs.parseQuery('a=1')), [{ key: 'a', value: '1' }]);
+  assert.deepEqual(
+    valueOf(codecs.parseQuery('https://x.test/path#frag?x=1')),
+    []
+  );
+  assert.deepEqual(
+    valueOf(codecs.parseQuery('https://x.test/path?a=1#frag?x=2')),
+    [{ key: 'a', value: '1' }]
+  );
+  assert.deepEqual(
+    valueOf(codecs.parseQuery('a=1#frag?x=2')),
+    [{ key: 'a', value: '1' }]
+  );
 });
 
 test('builds sorted or unsorted query strings while preserving duplicate keys', () => {
@@ -217,11 +229,63 @@ test('formats, minifies, and validates JSON with stable Chinese errors', () => {
   assert.equal(valueOf(codecs.minifyJson(' { "a": 1 } ')), '{"a":1}');
   assert.equal(valueOf(codecs.validateJson('{"ok":true}')), '{"ok":true}');
 
-  for (const operation of [codecs.formatJson, codecs.minifyJson, codecs.validateJson]) {
-    const result = operation('{"a":1} trailing');
-    assertChineseFailure(result);
-    assert.match(result.message, /^JSON 格式错误(?:，位置 \d+)?$/);
+  const malformedInputs = [
+    { input: '{"a":}', position: 5 },
+    { input: '[1,', position: 3 },
+    { input: '{"a":"\\x"}', position: 7 },
+    { input: '{"a":1} trailing', position: 8 }
+  ];
+  const operations = [
+    codecs.formatJson,
+    codecs.minifyJson,
+    codecs.validateJson,
+    codecs.sortJsonKeys,
+    codecs.jsonToJavaScriptObjectText,
+    (input) => codecs.jsonToYaml(input, jsyaml),
+    codecs.jsonToQuery
+  ];
+  for (const operation of operations) {
+    for (const { input, position } of malformedInputs) {
+      const result = operation(input);
+      assertChineseFailure(result);
+      assert.equal(result.message, `JSON 格式错误，位置 ${position}`);
+    }
   }
+});
+
+test('reports JSON positions without depending on platform exception text', () => {
+  const source = fs.readFileSync(codecsPath, 'utf8');
+  const nativeJson = JSON;
+  const context = {
+    JSON: {
+      parse(input) {
+        try {
+          return nativeJson.parse(input);
+        } catch (error) {
+          throw new SyntaxError('opaque');
+        }
+      },
+      stringify: (...args) => nativeJson.stringify(...args)
+    }
+  };
+  vm.runInNewContext(source, context);
+
+  assert.equal(
+    context.TextCodecs.validateJson('{"a":}').message,
+    'JSON 格式错误，位置 5'
+  );
+  assert.equal(
+    context.TextCodecs.validateJson('[1,').message,
+    'JSON 格式错误，位置 3'
+  );
+  assert.equal(
+    context.TextCodecs.validateJson('{"a":"\\x"}').message,
+    'JSON 格式错误，位置 7'
+  );
+  assert.equal(
+    context.TextCodecs.validateJson('{"a":1} trailing').message,
+    'JSON 格式错误，位置 8'
+  );
 });
 
 test('sorts JSON object keys recursively without reordering arrays', () => {
