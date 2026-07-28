@@ -8,7 +8,7 @@ const { execFileSync } = require('node:child_process');
 const rootPath = path.join(__dirname, '..');
 const codecsPath = path.join(__dirname, '..', 'text-codecs.js');
 const codecs = require(codecsPath);
-const fastXmlParser = require('fast-xml-parser');
+const sax = require('sax');
 const he = require('he');
 const jsyaml = require('js-yaml');
 const Papa = require('papaparse');
@@ -855,7 +855,7 @@ test('uses injected XML parser and serializer constructors after validation', ()
   });
 });
 
-test('validates XML explicitly before invoking the DOM parser', () => {
+test('validates XML with strict namespace-aware SAX before invoking the DOM parser', () => {
   let parseCalls = 0;
   class Parser {
     parseFromString(input) {
@@ -872,25 +872,31 @@ test('validates XML explicitly before invoking the DOM parser', () => {
     }
   }
 
-  assert.deepEqual(codecs.formatXml('<root>', Parser, Serializer), {
-    ok: false,
-    value: '',
-    message: 'XML 格式错误，行 1，列 1'
-  });
+  const malformed = [
+    '<root>&unknown;</root>',
+    '<root>&copy;</root>',
+    '<first/><second/>',
+    '<root>]]></root>',
+    '<p:root/>',
+    '<root p:value="1"/>',
+    '<root xmlns:xml="urn:wrong"/>',
+    '<root>',
+    '<root><child></root>',
+    '<root value="1" value="2"/>',
+    '<root xmlns:p="urn:x" xmlns:q="urn:x" p:value="1" q:value="2"/>'
+  ];
+  for (const input of malformed) {
+    const result = codecs.formatXml(input, Parser, Serializer);
+    assert.equal(result.ok, false, input);
+    assert.equal(result.value, '', input);
+    assert.match(
+      result.message,
+      /^XML 格式错误，行 \d+，列 \d+，位置 \d+$/u,
+      input
+    );
+  }
   assert.equal(parseCalls, 0);
-
-  const validator = {
-    validate() {
-      return { err: { line: 4, col: 9, msg: 'platform text' } };
-    }
-  };
-  assert.deepEqual(codecs.minifyXml('<root/>', Parser, Serializer, validator), {
-    ok: false,
-    value: '',
-    message: 'XML 格式错误，行 4，列 9'
-  });
-  assert.equal(parseCalls, 0);
-  assert.equal(fastXmlParser.XMLValidator.validate('<root/>'), true);
+  assert.equal(typeof sax.parser, 'function');
 });
 
 test('formats realistic XML trees and allows a business parsererror descendant', () => {
@@ -1031,11 +1037,16 @@ test('accepts valid parsererror structures in arbitrary namespaces', () => {
       }
     }
 
-    assert.deepEqual(codecs.formatXml('<root>', SignatureParser, SignatureSerializer), {
-      ok: false,
-      value: '',
-      message: 'XML 格式错误，行 1，列 1'
-    });
+    const malformedResult = codecs.formatXml(
+      '<root>',
+      SignatureParser,
+      SignatureSerializer
+    );
+    assert.equal(malformedResult.ok, false);
+    assert.match(
+      malformedResult.message,
+      /^XML 格式错误，行 \d+，列 \d+，位置 \d+$/u
+    );
     assert.equal(
       valueOf(codecs.formatXml(
         '<parsererror>business</parsererror>',
@@ -1112,29 +1123,35 @@ test('accepts XML constructors through a libraries object', () => {
   assert.equal(valueOf(codecs.minifyXml('<root/>', libraries)), '<root/>');
 });
 
-test('builds and loads the browser XML validator before TextCodecs', () => {
+test('builds and loads browser he and strict SAX before TextCodecs', () => {
   execFileSync(process.execPath, [path.join(rootPath, 'scripts', 'build-static.js')], {
     cwd: rootPath,
     stdio: 'pipe'
   });
   const distPath = path.join(rootPath, 'dist');
-  const vendorPath = path.join(
-    distPath,
-    'vendor',
-    'fast-xml-parser',
-    'fxvalidator.min.js'
-  );
+  const saxVendorPath = path.join(distPath, 'vendor', 'sax', 'sax.js');
+  const saxLicensePath = path.join(distPath, 'vendor', 'sax', 'LICENSE.txt');
+  const heVendorPath = path.join(distPath, 'vendor', 'he', 'he.js');
+  const heLicensePath = path.join(distPath, 'vendor', 'he', 'LICENSE-MIT.txt');
   const distCodecsPath = path.join(distPath, 'text-codecs.js');
-  assert.equal(fs.existsSync(vendorPath), true);
+  assert.equal(fs.existsSync(saxVendorPath), true);
+  assert.equal(fs.existsSync(saxLicensePath), true);
+  assert.equal(fs.existsSync(heVendorPath), true);
+  assert.equal(fs.existsSync(heLicensePath), true);
   assert.equal(fs.existsSync(distCodecsPath), true);
 
   const html = fs.readFileSync(path.join(distPath, 'TextFormatterTool.html'), 'utf8');
-  const vendorScript = 'vendor/fast-xml-parser/fxvalidator.min.js';
-  assert.ok(html.indexOf(vendorScript) >= 0);
-  assert.ok(html.indexOf(vendorScript) < html.indexOf('text-codecs.js'));
+  const saxVendorScript = 'vendor/sax/sax.js';
+  const heVendorScript = 'vendor/he/he.js';
+  assert.ok(html.indexOf(heVendorScript) >= 0);
+  assert.ok(html.indexOf(saxVendorScript) >= 0);
+  assert.ok(html.indexOf(heVendorScript) < html.indexOf('text-codecs.js'));
+  assert.ok(html.indexOf(saxVendorScript) < html.indexOf('text-codecs.js'));
 
+  let domParseCalls = 0;
   class BrowserDOMParser {
     parseFromString(input) {
+      domParseCalls += 1;
       const root = {
         nodeType: 1,
         nodeName: 'parsererror',
@@ -1176,20 +1193,44 @@ test('builds and loads the browser XML validator before TextCodecs', () => {
     XMLSerializer: BrowserXMLSerializer
   };
   vm.createContext(context);
-  vm.runInContext(fs.readFileSync(vendorPath, 'utf8'), context);
+  vm.runInContext(fs.readFileSync(heVendorPath, 'utf8'), context);
+  vm.runInContext(fs.readFileSync(saxVendorPath, 'utf8'), context);
   vm.runInContext(fs.readFileSync(distCodecsPath, 'utf8'), context);
 
-  assert.equal(typeof context.XMLValidator.validate, 'function');
-  assert.deepEqual(
-    JSON.parse(JSON.stringify(context.TextCodecs.formatXml('<root>'))),
-    {
-      ok: false,
-      value: '',
-      message: 'XML 格式错误，行 1，列 1'
-    }
-  );
+  assert.equal(typeof context.he.decode, 'function');
+  assert.equal(typeof context.sax.parser, 'function');
+  const malformed = [
+    '<root>&unknown;</root>',
+    '<root>&copy;</root>',
+    '<first/><second/>',
+    '<root>]]></root>',
+    '<p:root/>',
+    '<root p:value="1"/>',
+    '<root xmlns:xml="urn:wrong"/>',
+    '<root>',
+    '<root><child></root>',
+    '<root value="1" value="2"/>'
+  ];
+  for (const input of malformed) {
+    const result = JSON.parse(JSON.stringify(context.TextCodecs.formatXml(input)));
+    assert.equal(result.ok, false, input);
+    assert.match(
+      result.message,
+      /^XML 格式错误，行 \d+，列 \d+，位置 \d+$/u,
+      input
+    );
+  }
+  assert.equal(domParseCalls, 0);
+
   const businessXml = '<parsererror xmlns="urn:business"><child/></parsererror>';
   assert.equal(context.TextCodecs.minifyXml(businessXml).value, businessXml);
+  assert.equal(domParseCalls, 1);
+
+  const entities = 'head\r\nmid\rtail\0<tag>&copy &amp &#128 &eacute;</tag>';
+  assert.equal(
+    context.TextCodecs.decodeHtmlEntities(entities).value,
+    valueOf(codecs.decodeHtmlEntities(entities))
+  );
 });
 
 test('dispatches structured conversions and rejects unknown or prototype-chain IDs', () => {

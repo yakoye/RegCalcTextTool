@@ -1,34 +1,34 @@
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
     let heImpl = null;
-    let xmlValidatorImpl = null;
+    let saxImpl = null;
     try {
       heImpl = require('he');
     } catch (error) {
       heImpl = null;
     }
     try {
-      ({ XMLValidator: xmlValidatorImpl } = require('fast-xml-parser'));
+      saxImpl = require('sax');
     } catch (error) {
-      xmlValidatorImpl = null;
+      saxImpl = null;
     }
     module.exports = factory(
       heImpl,
-      xmlValidatorImpl,
+      saxImpl,
       root && root.DOMParser,
       root && root.XMLSerializer
     );
   } else {
     root.TextCodecs = factory(
       root && root.he,
-      root && root.XMLValidator,
+      root && root.sax,
       root && root.DOMParser,
       root && root.XMLSerializer
     );
   }
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (
   defaultHe,
-  defaultXmlValidator,
+  defaultSax,
   defaultDOMParser,
   defaultXMLSerializer
 ) {
@@ -1596,41 +1596,113 @@
     node.appendChild(document.createTextNode(`\n${'  '.repeat(depth)}`));
   }
 
-  function xmlValidationFailure(validation) {
-    const error = validation && validation.err;
-    const line = error && Number(error.line);
-    const column = error && Number(error.col);
-    if (Number.isInteger(line) && line > 0 && Number.isInteger(column) && column > 0) {
-      return failure(`XML 格式错误，行 ${line}，列 ${column}`);
+  function saxLocation(parser) {
+    const rawLine = Number(parser && parser.line);
+    const rawColumn = Number(parser && parser.column);
+    const rawPosition = Number(parser && parser.position);
+    return {
+      line: Number.isInteger(rawLine) && rawLine >= 0 ? rawLine + 1 : 1,
+      column: Number.isInteger(rawColumn) && rawColumn >= 0 ? rawColumn + 1 : 1,
+      position: Number.isInteger(rawPosition) && rawPosition >= 0 ? rawPosition : 0
+    };
+  }
+
+  function xmlValidationFailure(location) {
+    const safeLocation = location || { line: 1, column: 1, position: 0 };
+    return failure(
+      `XML 格式错误，行 ${safeLocation.line}，列 ${safeLocation.column}`
+      + `，位置 ${safeLocation.position}`
+    );
+  }
+
+  function validateXmlWithSax(text, SaxImpl) {
+    if (!SaxImpl || typeof SaxImpl.parser !== 'function') {
+      return { ok: false, missing: true };
     }
-    if (Number.isInteger(line) && line > 0) {
-      return failure(`XML 格式错误，行 ${line}`);
+    let parser;
+    let firstError = null;
+    let depth = 0;
+    let rootCount = 0;
+    let rawAttributeNames = null;
+    let expandedAttributeNames = null;
+    const recordError = () => {
+      if (!firstError) {
+        firstError = saxLocation(parser);
+      }
+    };
+    try {
+      parser = SaxImpl.parser(true, {
+        xmlns: true,
+        strictEntities: true,
+        position: true,
+        trim: false,
+        normalize: false
+      });
+      parser.onerror = recordError;
+      parser.onopentagstart = () => {
+        rawAttributeNames = new Set();
+        expandedAttributeNames = new Set();
+      };
+      parser.onattribute = (attribute) => {
+        const rawName = asText(attribute && attribute.name);
+        const expandedName = `${
+          asText(attribute && attribute.uri)
+        }\u0000${asText(attribute && (attribute.local || attribute.name))}`;
+        if (
+          rawAttributeNames.has(rawName)
+          || expandedAttributeNames.has(expandedName)
+        ) {
+          recordError();
+        }
+        rawAttributeNames.add(rawName);
+        expandedAttributeNames.add(expandedName);
+      };
+      parser.onopentag = () => {
+        if (depth === 0) {
+          rootCount += 1;
+          if (rootCount > 1) {
+            recordError();
+          }
+        }
+        depth += 1;
+      };
+      parser.onclosetag = () => {
+        depth = Math.max(0, depth - 1);
+      };
+      parser.ontext = (value) => {
+        if (asText(value).includes(']]>') || (depth === 0 && /\S/u.test(value))) {
+          recordError();
+        }
+      };
+      parser.write(text).close();
+      if (rootCount !== 1) {
+        recordError();
+      }
+    } catch (error) {
+      recordError();
     }
-    return failure('XML 格式错误');
+    return firstError ? { ok: false, location: firstError } : { ok: true };
   }
 
   function convertXml(
     input,
     DOMParserCtor,
     XMLSerializerCtor,
-    XMLValidatorImpl,
+    SaxImpl,
     pretty
   ) {
     const text = asText(input);
     if (utf8ByteLength(text) > MAX_STRUCTURED_OUTPUT_BYTES) {
       return failure('XML 数据规模过大');
     }
-    if (!XMLValidatorImpl || typeof XMLValidatorImpl.validate !== 'function') {
+    if (!SaxImpl || typeof SaxImpl.parser !== 'function') {
       return failure('XML 验证库未加载');
     }
-    let validation;
-    try {
-      validation = XMLValidatorImpl.validate(text);
-    } catch (error) {
-      return failure('XML 验证失败');
-    }
-    if (validation !== true) {
-      return xmlValidationFailure(validation);
+    const validation = validateXmlWithSax(text, SaxImpl);
+    if (!validation.ok) {
+      return validation.missing
+        ? failure('XML 验证库未加载')
+        : xmlValidationFailure(validation.location);
     }
     if (typeof DOMParserCtor !== 'function' || typeof XMLSerializerCtor !== 'function') {
       return failure('XML 解析器未加载');
@@ -1654,9 +1726,9 @@
     }
   }
 
-  function xmlConversionLibraries(DOMParserCtor, XMLSerializerCtor, XMLValidatorImpl) {
+  function xmlConversionLibraries(DOMParserCtor, XMLSerializerCtor, SaxImpl) {
     if (DOMParserCtor && typeof DOMParserCtor === 'object' && XMLSerializerCtor === undefined) {
-      XMLValidatorImpl = DOMParserCtor.XMLValidator;
+      SaxImpl = DOMParserCtor.sax;
       XMLSerializerCtor = DOMParserCtor.XMLSerializer;
       DOMParserCtor = DOMParserCtor.DOMParser;
     }
@@ -1665,36 +1737,36 @@
       XMLSerializerCtor: XMLSerializerCtor === undefined
         ? defaultXMLSerializer
         : XMLSerializerCtor,
-      XMLValidatorImpl: XMLValidatorImpl || defaultXmlValidator
+      SaxImpl: SaxImpl || defaultSax
     };
   }
 
-  function formatXml(input, DOMParserCtor, XMLSerializerCtor, XMLValidatorImpl) {
+  function formatXml(input, DOMParserCtor, XMLSerializerCtor, SaxImpl) {
     const libraries = xmlConversionLibraries(
       DOMParserCtor,
       XMLSerializerCtor,
-      XMLValidatorImpl
+      SaxImpl
     );
     return convertXml(
       input,
       libraries.DOMParserCtor,
       libraries.XMLSerializerCtor,
-      libraries.XMLValidatorImpl,
+      libraries.SaxImpl,
       true
     );
   }
 
-  function minifyXml(input, DOMParserCtor, XMLSerializerCtor, XMLValidatorImpl) {
+  function minifyXml(input, DOMParserCtor, XMLSerializerCtor, SaxImpl) {
     const libraries = xmlConversionLibraries(
       DOMParserCtor,
       XMLSerializerCtor,
-      XMLValidatorImpl
+      SaxImpl
     );
     return convertXml(
       input,
       libraries.DOMParserCtor,
       libraries.XMLSerializerCtor,
-      libraries.XMLValidatorImpl,
+      libraries.SaxImpl,
       false
     );
   }
@@ -1726,7 +1798,7 @@
         input,
         libraries.DOMParser,
         libraries.XMLSerializer,
-        libraries.XMLValidator
+        libraries.sax
       )
     ),
     xmlMinify: (input, libraries) => (
@@ -1734,7 +1806,7 @@
         input,
         libraries.DOMParser,
         libraries.XMLSerializer,
-        libraries.XMLValidator
+        libraries.sax
       )
     )
   }));
