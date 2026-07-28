@@ -1,11 +1,16 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 
 const root = path.join(__dirname, '..');
 const htmlPath = path.join(root, 'TextFormatterTool.html');
 const controllerPath = path.join(root, 'text-formatter.js');
+
+function readSourceText(filePath) {
+  return fs.readFileSync(filePath, 'utf8').replace(/\r\n/g, '\n');
+}
 
 const CORE_ACTIONS = [
   'removeEmptyLines', 'removeSpaces', 'trimLines', 'collapseSpaces',
@@ -74,8 +79,24 @@ function createDeferred() {
   return { promise, resolve, reject };
 }
 
+test('normalizes temporary CRLF source copies before regex assertions', (t) => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'text-formatter-crlf-'));
+  t.after(() => fs.rmSync(tempDir, { recursive: true, force: true }));
+  const sourceCopies = [
+    ['fixture.html', '<main>\r\n  <script src="tool.js"></script>\r\n</main>\r\n'],
+    ['fixture.js', 'function first() {\r\n  return true;\r\n}\r\n\r\nfunction second() {}\r\n'],
+    ['fixture.css', '.fixture {\r\n  border: 0;\r\n}\r\n']
+  ];
+
+  for (const [fileName, content] of sourceCopies) {
+    const filePath = path.join(tempDir, fileName);
+    fs.writeFileSync(filePath, content);
+    assert.equal(readSourceText(filePath), content.replace(/\r\n/g, '\n'));
+  }
+});
+
 test('loads local libraries and controllers in dependency order without inline handlers', () => {
-  const html = fs.readFileSync(htmlPath, 'utf8');
+  const html = readSourceText(htmlPath);
   const scripts = [
     'shared-ui.js',
     'vendor/marked/marked.umd.js',
@@ -158,9 +179,9 @@ test('maps every core transform and codec capability to a reachable action', () 
 });
 
 test('renders a one-border menu with persistent descriptions and accessible controls', () => {
-  const html = fs.readFileSync(htmlPath, 'utf8');
-  const css = fs.readFileSync(path.join(root, 'shared-ui.css'), 'utf8');
-  const controller = fs.readFileSync(controllerPath, 'utf8');
+  const html = readSourceText(htmlPath);
+  const css = readSourceText(path.join(root, 'shared-ui.css'));
+  const controller = readSourceText(controllerPath);
 
   assert.match(html, /id="text_tool_groups"/);
   assert.match(controller, /createElement\(["']details["']\)/);
@@ -237,7 +258,7 @@ test('persists only whitelisted settings and conditionally persisted text', () =
 
 test('uses DEFAULT_SETTINGS as the single sanitization fallback source', () => {
   const { DEFAULT_SETTINGS, sanitizeSettings } = require(controllerPath);
-  const controller = fs.readFileSync(controllerPath, 'utf8');
+  const controller = readSourceText(controllerPath);
   const sanitizeBody = controller.match(
     /function sanitizeSettings\(candidate\) \{([\s\S]*?)\n  \}\n\n  function/
   );
@@ -290,7 +311,7 @@ test('handles unavailable Storage getters and failed writes without enabling per
   assert.equal(enabled.settings.saveText, false);
   assert.equal(enabled.cleanupOk, false);
 
-  const controller = fs.readFileSync(controllerPath, 'utf8');
+  const controller = readSourceText(controllerPath);
   assert.match(controller, /const storage = getStorage\(host\)/);
 });
 
@@ -573,7 +594,7 @@ test('forces transferred input sensitive in the active Base64 panel', () => {
   assert.equal(swapStorage.has(TEXT_INPUT_KEY), false);
   assert.equal(swapStorage.has(TEXT_OUTPUT_KEY), false);
 
-  const controller = fs.readFileSync(controllerPath, 'utf8');
+  const controller = readSourceText(controllerPath);
   assert.match(
     controller,
     /applyTransferOriginTransition\(\s*textOrigins,\s*"use-output",\s*base64PanelActive/
@@ -892,7 +913,7 @@ test('persists the untouched side when clearing only input or output', () => {
 });
 
 test('routes single-side clear buttons through scoped persistence transitions', () => {
-  const controller = fs.readFileSync(controllerPath, 'utf8');
+  const controller = readSourceText(controllerPath);
   const inputHandler = controller.match(
     /getElementById\("text_clear_input"\)[\s\S]*?=> \{([\s\S]*?)\n    \}\);\n    doc\.getElementById\("text_clear_output"\)/
   );
@@ -978,7 +999,7 @@ test('keeps Base64 file bytes in memory and clears every text storage key', () =
     createFileState,
     clearPersistedText
   } = require(controllerPath);
-  const controller = fs.readFileSync(controllerPath, 'utf8');
+  const controller = readSourceText(controllerPath);
   const storage = createStorage({
     [TEXT_INPUT_KEY]: 'input',
     [TEXT_OUTPUT_KEY]: 'output',
@@ -1054,7 +1075,7 @@ test('cancels an in-flight file read before manual Base64 decode can assign byte
     createFileRequestController,
     readFileRequest
   } = require(controllerPath);
-  const controller = fs.readFileSync(controllerPath, 'utf8');
+  const controller = readSourceText(controllerPath);
   const requests = createFileRequestController();
   const pending = createDeferred();
   const fileRead = readFileRequest({
@@ -1139,7 +1160,7 @@ test('rejects files and Base64 sources above the decoded byte limit', async () =
   assert.equal(MAX_FILE_BYTES, 16 * 1024 * 1024);
   assert.equal(MAX_BASE64_ENCODED_CHARS, Math.ceil(MAX_FILE_BYTES / 3) * 4);
 
-  const html = fs.readFileSync(htmlPath, 'utf8');
+  const html = readSourceText(htmlPath);
   assert.match(html, /16\s*MiB/);
 });
 
@@ -1357,7 +1378,7 @@ test('catches persistence exceptions and does not throw during unload flushing',
 });
 
 test('updates only the edited statistics and flushes pending text on commands and unload', () => {
-  const controller = fs.readFileSync(controllerPath, 'utf8');
+  const controller = readSourceText(controllerPath);
   const inputHandler = controller.match(
     /input\.addEventListener\("input", \(\) => \{([\s\S]*?)\n    \}\);/
   );
@@ -1376,7 +1397,7 @@ test('updates only the edited statistics and flushes pending text on commands an
 });
 
 test('forces the input sensitive while the Base64 panel is active', () => {
-  const controller = fs.readFileSync(controllerPath, 'utf8');
+  const controller = readSourceText(controllerPath);
   const showPanel = controller.match(
     /function showPanel\(actionItem\) \{([\s\S]*?)\n    \}\n\n    function libraries/
   );
@@ -1405,7 +1426,7 @@ test('validates Data URL download names and handles copy failures', async () => 
     throw new Error('denied');
   }, 'text', 'copied'), false);
 
-  const controller = fs.readFileSync(controllerPath, 'utf8');
+  const controller = readSourceText(controllerPath);
   assert.match(controller, /buildDataUrl\([\s\S]*parameters:\s*\{\s*name:/);
   assert.match(controller, /parameters\.name/);
   assert.match(controller, /setStatus\("复制失败"/);
@@ -1432,7 +1453,7 @@ test('passes raw sequence numbers to TextGenerators before saving preferences', 
     message: '补零位数必须在 0 到 10 之间'
   });
 
-  const controller = fs.readFileSync(controllerPath, 'utf8');
+  const controller = readSourceText(controllerPath);
   const generateSequence = controller.match(
     /function generateSequence\(target\) \{([\s\S]*?)\n    \}\n\n    const sequenceFields/
   );
@@ -1460,7 +1481,7 @@ test('forces standard Base64 and disables variants for Data URL output', () => {
 });
 
 test('provides text workflow, statistics, status, and Base64 file controls', () => {
-  const html = fs.readFileSync(htmlPath, 'utf8');
+  const html = readSourceText(htmlPath);
   assert.match(html, /<h3>文本处理工具 \(TextFormatter\)<\/h3>/);
   for (const id of [
     'textconvert_input', 'textconvert_output', 'text_input_stats',
@@ -1480,7 +1501,7 @@ test('provides text workflow, statistics, status, and Base64 file controls', () 
 });
 
 test('offers only supported numeric JSON indentation choices', () => {
-  const html = fs.readFileSync(htmlPath, 'utf8');
+  const html = readSourceText(htmlPath);
   const select = html.match(/<select id="structured_indent">([\s\S]*?)<\/select>/);
   assert.ok(select);
   assert.match(select[1], /value="2"/);
