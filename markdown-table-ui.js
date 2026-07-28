@@ -1,6 +1,31 @@
+async function copyTextWithFallback(options) {
+  const config = options || {};
+  if (typeof config.copyText === "function") {
+    try {
+      return await config.copyText() !== false;
+    } catch (_error) {
+      // Continue to the local selection fallback.
+    }
+  } else if (typeof config.clipboardWrite === "function") {
+    try {
+      await config.clipboardWrite();
+      return true;
+    } catch (_error) {
+      // Continue to the local selection fallback.
+    }
+  }
+  try {
+    return typeof config.fallbackCopy === "function"
+      && config.fallbackCopy() === true;
+  } catch (_error) {
+    return false;
+  }
+}
+
 (function () {
   "use strict";
 
+  if (typeof window === "undefined") return;
   const api = window.MarkdownTable;
   if (!api) return;
   const MAX_VISUAL_CELLS = 2500;
@@ -209,9 +234,24 @@
       setStatus((result && result.message) || "表格导出失败", true);
       return;
     }
-    const output = document.getElementById("textconvert_output");
-    output.value = result.value;
     const label = kind === "html" ? "HTML" : (kind === "tsv" ? "TSV" : "Markdown");
+    if (
+      window.TextFormatterUI
+      && typeof window.TextFormatterUI.setOutput === "function"
+    ) {
+      if (
+        window.TextFormatterUI.setOutput(
+          result.value,
+          `${label} 已生成到结果`
+        ) === false
+      ) {
+        setStatus("本地保存失败，已关闭", true);
+        return;
+      }
+    } else {
+      const output = document.getElementById("textconvert_output");
+      output.value = result.value;
+    }
     setStatus(`${label} 已生成到结果`, false);
     toast("表格已生成");
   }
@@ -222,19 +262,26 @@
       setStatus("暂无可复制结果", true);
       return;
     }
-    try {
-      if (typeof window.toolboxCopyText === "function") {
-        await window.toolboxCopyText(output.value, "已复制");
-      } else {
-        await navigator.clipboard.writeText(output.value);
-        toast("已复制");
+    const hasSharedCopy = typeof window.toolboxCopyText === "function";
+    const copied = await copyTextWithFallback({
+      copyText: hasSharedCopy
+        ? () => window.toolboxCopyText(output.value, "已复制")
+        : null,
+      clipboardWrite: !hasSharedCopy
+        ? () => navigator.clipboard.writeText(output.value)
+        : null,
+      fallbackCopy() {
+        output.focus();
+        output.select();
+        return document.execCommand("copy") === true;
       }
-    } catch (_error) {
-      output.focus();
-      output.select();
-      document.execCommand("copy");
-      toast("已复制");
+    });
+    if (!copied) {
+      setStatus("复制失败", true);
+      return;
     }
+    if (!hasSharedCopy) toast("已复制");
+    setStatus("结果已复制", false);
   }
 
   function handleAction(action) {
@@ -287,3 +334,7 @@
     render();
   });
 })();
+
+if (typeof module === "object" && module.exports) {
+  module.exports = Object.freeze({ copyTextWithFallback });
+}

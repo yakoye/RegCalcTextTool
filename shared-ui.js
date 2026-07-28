@@ -49,8 +49,10 @@
 
   window.toolboxCopyText = async function toolboxCopyText(text, okMessage) {
     if (!text) return false;
+    let copied = false;
     try {
       await navigator.clipboard.writeText(text);
+      copied = true;
     } catch {
       const textarea = document.createElement("textarea");
       textarea.value = text;
@@ -59,8 +61,17 @@
       textarea.style.left = "-9999px";
       document.body.appendChild(textarea);
       textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
+      try {
+        copied = document.execCommand("copy") === true;
+      } catch {
+        copied = false;
+      } finally {
+        document.body.removeChild(textarea);
+      }
+    }
+    if (!copied) {
+      window.toolboxToast("复制失败");
+      return false;
     }
     window.toolboxToast(okMessage || "已复制");
     return true;
