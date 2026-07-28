@@ -14,6 +14,7 @@
   const MIME_TOKEN = "[A-Za-z0-9!#$&^_.+'*+-]+";
   const MIME_PATTERN = new RegExp(`^${MIME_TOKEN}/${MIME_TOKEN}$`);
   const PARAMETER_NAME_PATTERN = new RegExp(`^${MIME_TOKEN}$`);
+  const MAX_JSON_SCAN_DEPTH = 512;
 
   function asText(input) {
     return String(input == null ? '' : input);
@@ -566,8 +567,9 @@
     return success(output);
   }
 
-  function findJsonErrorPosition(text) {
+  function findJsonError(text) {
     let index = 0;
+    let depthExceeded = false;
 
     function skipWhitespace() {
       while (
@@ -685,7 +687,11 @@
       return -1;
     }
 
-    function parseArray() {
+    function parseArray(depth) {
+      if (depth > MAX_JSON_SCAN_DEPTH) {
+        depthExceeded = true;
+        return index;
+      }
       index += 1;
       skipWhitespace();
       if (text.charAt(index) === ']') {
@@ -694,7 +700,7 @@
       }
 
       while (index <= text.length) {
-        const valueError = parseValue();
+        const valueError = parseValue(depth);
         if (valueError >= 0) {
           return valueError;
         }
@@ -712,7 +718,11 @@
       return text.length;
     }
 
-    function parseObject() {
+    function parseObject(depth) {
+      if (depth > MAX_JSON_SCAN_DEPTH) {
+        depthExceeded = true;
+        return index;
+      }
       index += 1;
       skipWhitespace();
       if (text.charAt(index) === '}') {
@@ -733,7 +743,7 @@
           return index;
         }
         index += 1;
-        const valueError = parseValue();
+        const valueError = parseValue(depth);
         if (valueError >= 0) {
           return valueError;
         }
@@ -751,17 +761,17 @@
       return text.length;
     }
 
-    function parseValue() {
+    function parseValue(depth) {
       skipWhitespace();
       const character = text.charAt(index);
       if (character === '"') {
         return parseString();
       }
       if (character === '{') {
-        return parseObject();
+        return parseObject(depth + 1);
       }
       if (character === '[') {
-        return parseArray();
+        return parseArray(depth + 1);
       }
       if (character === 't') {
         return parseLiteral('true');
@@ -778,16 +788,24 @@
       return index;
     }
 
-    const valueError = parseValue();
+    const valueError = parseValue(0);
     if (valueError >= 0) {
-      return valueError;
+      return {
+        position: valueError,
+        depthExceeded
+      };
     }
     skipWhitespace();
-    return index === text.length ? text.length : index;
+    return {
+      position: index === text.length ? text.length : index,
+      depthExceeded
+    };
   }
 
   function jsonFailure(input) {
-    return failure(`JSON 格式错误，位置 ${findJsonErrorPosition(asText(input))}`);
+    const scan = findJsonError(asText(input));
+    const detail = scan.depthExceeded ? '：嵌套层级过深' : '';
+    return failure(`JSON 格式错误，位置 ${scan.position}${detail}`);
   }
 
   function parseJsonDocument(input) {

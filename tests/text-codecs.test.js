@@ -288,6 +288,24 @@ test('reports JSON positions without depending on platform exception text', () =
   );
 });
 
+test('bounds JSON error scanning depth without regressing ordinary nesting', () => {
+  const tooDeep = codecs.validateJson('['.repeat(10000));
+  assert.equal(tooDeep.ok, false);
+  assert.equal(tooDeep.value, '');
+  assert.match(
+    tooDeep.message,
+    /^JSON 格式错误，位置 \d+：嵌套层级过深$/
+  );
+
+  const ordinary = `${'['.repeat(32)}0${']'.repeat(32)}`;
+  assert.equal(valueOf(codecs.validateJson(ordinary)), ordinary);
+  assert.deepEqual(codecs.validateJson('['.repeat(32)), {
+    ok: false,
+    value: '',
+    message: 'JSON 格式错误，位置 32'
+  });
+});
+
 test('sorts JSON object keys recursively without reordering arrays', () => {
   const input = '{"z":{"b":1,"a":2},"a":[{"d":4,"c":3},2]}';
   const sorted = JSON.parse(valueOf(codecs.sortJsonKeys(input)));
