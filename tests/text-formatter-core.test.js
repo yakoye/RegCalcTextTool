@@ -126,7 +126,19 @@ test('exposes the same API as browser global TextFormatterCore', () => {
     context.TextFormatterCore.runTransform('base64Decode', encoded.value).value,
     '中文😀'
   );
+  const bomText = '\uFEFFA';
+  const bomEncoded = context.TextFormatterCore.runTransform('base64Encode', bomText).value;
+  assert.equal(context.TextFormatterCore.runTransform('base64Decode', bomEncoded).value, bomText);
   assert.equal(context.TextFormatterCore.runTransform('base64Decode', '/w==').ok, false);
+
+  const bufferContext = { Buffer };
+  vm.runInNewContext(source, bufferContext);
+  const bufferEncoded = bufferContext.TextFormatterCore.runTransform('base64Encode', bomText).value;
+  assert.equal(bufferEncoded, bomEncoded);
+  assert.equal(
+    bufferContext.TextFormatterCore.runTransform('base64Decode', bufferEncoded).value,
+    bomText
+  );
 });
 
 test('returns a friendly failure for unknown and prototype-chain transform IDs', () => {
@@ -139,6 +151,13 @@ test('returns a friendly failure for unknown and prototype-chain transform IDs',
   assert.deepEqual(runTransform('missing', 'abc'), expected);
   assert.deepEqual(runTransform('constructor', 'abc'), expected);
   assert.deepEqual(runTransform('__proto__', 'abc'), expected);
+  assert.deepEqual(runTransform(1, 'abc'), expected);
+  assert.deepEqual(runTransform(Symbol('removeEmptyLines'), 'abc'), expected);
+  assert.deepEqual(runTransform({
+    [Symbol.toPrimitive]() {
+      throw new Error('must not coerce transform ID');
+    }
+  }, 'abc'), expected);
 });
 
 test('converts thrown transform errors to a Chinese failure result', () => {
@@ -167,7 +186,7 @@ test('strictly validates Base64 syntax, canonical bits, and UTF-8', () => {
     '*invalid*',
     'Zg=',
     'Zg===',
-    'Zg==\n',
+    'Z=g=',
     'Zh==',
     '/w=='
   ];
@@ -180,9 +199,13 @@ test('strictly validates Base64 syntax, canonical bits, and UTF-8', () => {
   }
 
   assert.equal(valueOf('base64Decode', ''), '');
+  assert.equal(valueOf('base64Decode', 'Zg'), 'f');
   assert.equal(valueOf('base64Decode', 'Zg=='), 'f');
+  assert.equal(valueOf('base64Decode', '5Lit \r\n\t5paH'), '中文');
   const text = '中文😀';
   assert.equal(valueOf('base64Decode', valueOf('base64Encode', text)), text);
+  const bomText = '\uFEFFA';
+  assert.equal(valueOf('base64Decode', valueOf('base64Encode', bomText)), bomText);
 });
 
 test('keeps existing cleaning transforms compatible and handles CRLF', () => {
@@ -265,6 +288,10 @@ test('supports the added cleaning and character normalization transforms', () =>
   assert.equal(
     valueOf('englishPunctuationToChinese', `"don't" and 'quote'`),
     '“don’t” and ‘quote’'
+  );
+  assert.equal(
+    valueOf('englishPunctuationToChinese', `James' said 'tis 'quoted'`),
+    'James’ said ’tis ‘quoted’'
   );
 });
 
@@ -353,6 +380,7 @@ test('supports constant, dot, title, sentence, capitalize, and invert case', () 
   assert.equal(valueOf('titleCase', 'hello_world API中文'), 'Hello World Api 中文');
   assert.equal(valueOf('sentenceCase', 'hello_world API中文'), 'Hello world api 中文');
   assert.equal(valueOf('capitalizeWords', 'hello WORLD-test'), 'Hello WORLD-Test');
+  assert.equal(valueOf('capitalizeWords', '中文hello world'), '中文 Hello World');
   assert.equal(valueOf('invertCase', 'AbZ中123'), 'aBz中123');
   assert.equal(valueOf('titleCase', 'élève ÅLAND 𠀀'), 'Élève Åland 𠀀');
   assert.equal(valueOf('capitalizeWords', 'élève åland-𠀀字'), 'Élève Åland-𠀀字');

@@ -13,13 +13,15 @@
   const normalizeLineBreaks = (text) => text.replace(/\r\n?|\n/g, '\n');
   const splitLines = (text) => normalizeLineBreaks(text).split('\n');
 
-  const words = (text) => String(text)
+  const separateHanBoundaries = (text) => text
+    .replace(/([\p{Script=Latin}\p{N}])(\p{Script=Han})/gu, '$1 $2')
+    .replace(/(\p{Script=Han})([\p{Script=Latin}\p{N}])/gu, '$1 $2');
+
+  const words = (text) => separateHanBoundaries(String(text))
     .replace(/(\p{Lu}+)(\p{Lu}\p{Ll})/gu, '$1 $2')
     .replace(/([\p{Ll}\p{M}\p{N}])(\p{Lu})/gu, '$1 $2')
     .replace(/(\p{L}\p{M}*)(\p{N})/gu, '$1 $2')
     .replace(/(\p{N})(\p{L})/gu, '$1 $2')
-    .replace(/([\p{Script=Latin}\p{N}])(\p{Script=Han})/gu, '$1 $2')
-    .replace(/(\p{Script=Han})([\p{Script=Latin}\p{N}])/gu, '$1 $2')
     .split(/[^\p{L}\p{M}\p{N}]+/u)
     .filter(Boolean);
 
@@ -71,39 +73,49 @@
 
   const decodeBase64 = (text) => {
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    let normalized = text.replace(/[ \t\n\r\f\v]/g, '');
+    const remainder = normalized.length % 4;
+    if (remainder === 1 || (remainder !== 0 && normalized.includes('='))) {
+      throw new Error('无效的 Base64 文本');
+    }
+    if (remainder === 2) {
+      normalized += '==';
+    } else if (remainder === 3) {
+      normalized += '=';
+    }
+
     if (
-      text.length % 4 !== 0
-      || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(text)
+      !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(normalized)
     ) {
       throw new Error('无效的 Base64 文本');
     }
 
     if (
-      text.endsWith('==')
-      && (alphabet.indexOf(text.charAt(text.length - 3)) & 0x0F) !== 0
+      normalized.endsWith('==')
+      && (alphabet.indexOf(normalized.charAt(normalized.length - 3)) & 0x0F) !== 0
     ) {
       throw new Error('无效的 Base64 文本');
     }
     if (
-      text.endsWith('=')
-      && !text.endsWith('==')
-      && (alphabet.indexOf(text.charAt(text.length - 2)) & 0x03) !== 0
+      normalized.endsWith('=')
+      && !normalized.endsWith('==')
+      && (alphabet.indexOf(normalized.charAt(normalized.length - 2)) & 0x03) !== 0
     ) {
       throw new Error('无效的 Base64 文本');
     }
 
     let bytes;
     if (typeof atob === 'function') {
-      const binary = atob(text);
+      const binary = atob(normalized);
       bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
     } else if (typeof Buffer !== 'undefined') {
-      bytes = Buffer.from(text, 'base64');
+      bytes = Buffer.from(normalized, 'base64');
     } else {
       throw new Error('当前环境不支持 Base64 解码');
     }
 
     if (typeof TextDecoder === 'function') {
-      return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+      return new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
     }
     if (typeof Buffer !== 'undefined') {
       const buffer = Buffer.from(bytes);
@@ -119,16 +131,25 @@
   const replaceEnglishQuotes = (text) => {
     let doubleQuoteOpen = true;
     let singleQuoteOpen = true;
-    const withApostrophes = text.replace(
-      /([\p{L}\p{N}])'(?=[\p{L}\p{N}])/gu,
-      '$1’'
-    );
+    const withApostrophes = text
+      .replace(/([\p{L}\p{N}])'(?=[\p{L}\p{N}])/gu, '$1’')
+      .replace(
+        /(^|[^\p{L}\p{N}])'(?=(?:tis|twas|twere|em|cause|bout|round)\b)/giu,
+        '$1’'
+      );
 
-    return withApostrophes.replace(/["']/g, (character) => {
+    return withApostrophes.replace(/["']/g, (character, offset, source) => {
       if (character === '"') {
         const replacement = doubleQuoteOpen ? '“' : '”';
         doubleQuoteOpen = !doubleQuoteOpen;
         return replacement;
+      }
+      const previous = Array.from(source.slice(0, offset)).pop() || '';
+      const next = Array.from(source.slice(offset + 1))[0] || '';
+      const previousIsWord = /[\p{L}\p{N}]/u.test(previous);
+      const nextIsWord = /[\p{L}\p{N}]/u.test(next);
+      if (previousIsWord && !nextIsWord && singleQuoteOpen) {
+        return '’';
       }
       const replacement = singleQuoteOpen ? '‘' : '’';
       singleQuoteOpen = !singleQuoteOpen;
@@ -422,11 +443,10 @@
     },
 
     capitalizeWords: (text) => success(
-      text.replace(/(^|[^\p{L}\p{M}\p{N}])(\p{L})/gu, (
-        match,
-        boundary,
-        character
-      ) => boundary + character.toUpperCase())
+      separateHanBoundaries(text).replace(
+        /(^|[^\p{L}\p{M}\p{N}])(\p{L})/gu,
+        (match, boundary, character) => boundary + character.toUpperCase()
+      )
     ),
 
     invertCase: (text) => success(
@@ -453,7 +473,10 @@
   }
 
   function runTransform(id, input, options = {}) {
-    if (!Object.prototype.hasOwnProperty.call(TRANSFORMS, id)) {
+    if (
+      typeof id !== 'string'
+      || !Object.prototype.hasOwnProperty.call(TRANSFORMS, id)
+    ) {
       return failure('不支持的文本处理操作');
     }
 
