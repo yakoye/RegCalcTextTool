@@ -1328,7 +1328,7 @@
       if (runButton) runAction(selectedAction);
     });
 
-    doc.addEventListener("pointerdown", (event) => {
+    doc.addEventListener("click", (event) => {
       if (!groupsHost.contains(event.target)) closeGroups(null);
     });
     doc.addEventListener("keydown", (event) => {

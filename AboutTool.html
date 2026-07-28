@@ -957,12 +957,12 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
 
             <div class="tool-section">
                 <h4>RegCalcTextTool 工具箱</h4>
-                <p>一个轻量、静态、偏本地运行的开发与文本处理工具箱。当前版本：v0.52。</p>
+                <p>一个轻量、静态、偏本地运行的开发与文本处理工具箱。当前版本：v0.57。</p>
                 <div class="tool-note">包含 RegCalc、TextFormatter、DateTime、Password、Hash、Links 等工具；主入口按需加载各工具页，并在后台预加载以提升切换速度。</div>
                 <h5>功能列表</h5>
                 <ul>
                     <li>64 位寄存器计算、位操作和表达式计算。</li>
-                    <li>文本格式化、编码转换、序列生成。</li>
+                    <li>TextFormatter 七类文本处理、编码与转义、数据和表格转换、Hex/字节处理与序列生成。</li>
                     <li>日期时间差值、未来/过去时间计算。</li>
                     <li>本地密码生成、单行复制和编辑。</li>
                     <li>文本/文件 Hash、Checksum、HMAC 与结果导出。</li>
@@ -971,6 +971,8 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
                 <h5>安全说明</h5>
                 <ul>
                     <li>工具尽量在浏览器本地运行，不依赖后端服务保存数据。</li>
+                    <li>TextFormatter 的第三方依赖从仓库内 vendor 加载，运行时不使用 CDN；文件字节只保存在当前页面内存中。</li>
+                    <li>TextFormatter 默认只保存界面和非敏感参数偏好，不保存原文和结果；主动开启“保存原文与结果”后才保存普通文本，文件字节和识别为敏感的 Base64 内容不会写入本地存储。</li>
                     <li>不建议输入真实密码、私钥、Token、证书私钥等敏感信息。</li>
                     <li>Hash 页面不会保存原文、文件内容、HMAC key、密码或私钥，只保存算法选择等偏好。</li>
                 </ul>
@@ -990,10 +992,17 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
 
                 <h5>TextFormatter</h5>
                 <ul>
-                    <li>用于文本格式化、编码转换、大小写转换、序列生成和常见文本处理。</li>
-                    <li>在原文框输入内容，选择对应操作后，结果会显示在结果框。</li>
-                    <li>支持 JSON、URL、Base64、十六进制分组、大小端、0x 添加/去除等处理。</li>
-                    <li>序列号码生成可设置位数、数量、顺序和分隔方式。</li>
+                    <li>功能按文本清理、行与列表、大小写与命名、编码与转义、数据格式化、Hex与字节、生成器七类组织。</li>
+                    <li>在原文框输入内容后执行操作，结果写入结果框；可复制、清空、交换两侧内容，或把结果作为原文继续处理。</li>
+                    <li>原文和结果分别统计字符数、行数和 UTF-8 字节数，并通过状态区提示完成或错误信息。</li>
+                    <li>Base64 支持 UTF-8 文本、标准与 URL-safe 形式；文件或图片可点击选择或拖放，输出纯 Base64 或 Data URL，并可解码、预览图片和下载文件。</li>
+                    <li>单个 Base64 文件及解码结果最多 16 MiB；文件字节仅留在当前页面内存中，敏感 Base64 不写入本地存储。</li>
+                    <li>URL 工具区分 component 和完整 URL，支持 Query 解析/构建、HTML 实体编码/解码及 Unicode 转义/反转义。</li>
+                    <li>数据格式化支持 JSON、YAML、CSV、TSV、Markdown、HTML 和 XML 的相应格式化、校验或双向转换。</li>
+                    <li>表格可视化编辑支持 GFM Markdown、HTML、TSV 双向导入导出及单元格合并/拆分；HTML 保留跨度，GFM/TSV 以重复主单元格内容表达合并，重新导入后不恢复合并关系。</li>
+                    <li>表格换行在 GFM 和 HTML 中输出为 &lt;br&gt;，TSV 使用带引号的多行字段保留。</li>
+                    <li>序列包含开始和结束边界，支持升序、降序、随机、0–10 位补零和自定义分隔符；边界须为安全整数，实际范围最多 10000 项，数量只截取而不扩展范围。</li>
+                    <li>第三方依赖从本地 vendor 加载，不使用 CDN；默认保存偏好但不保存原文和结果，可由用户主动开启普通文本保存。</li>
                 </ul>
 
                 <h5>DateTime</h5>
@@ -1092,7 +1101,8 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
 2026.06.13  v0.53  修复 Bin(2) 两行显示、移动端复选框错位、Hash 输入按钮对齐和说明字号
 2026.06.13  v0.54  Hash 算法选择恢复为 v0.52 折叠实现，修复展开空白问题
 2026.06.14  v0.55  RegCalc Bin(2) 按 32 位固定分成两行，并统一右侧小按钮尺寸
-2026.07.11  v0.56  调整 RegCalc bit 网格底部行距，并略微收窄 0/1 按钮</pre>
+2026.07.11  v0.56  调整 RegCalc bit 网格底部行距，并略微收窄 0/1 按钮
+2026.07.28  v0.57  重构 TextFormatter 七类工具与原文/结果工作流，新增 Base64 文件、URL/转义、结构化数据、表格、Hex/字节和序列边界处理，并完善本地依赖、偏好保存与敏感内容保护</pre>
             </div>
         </div>
     </div>

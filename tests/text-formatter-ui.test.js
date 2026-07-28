@@ -116,6 +116,11 @@ test('loads local libraries and controllers in dependency order without inline h
   for (const script of scripts) {
     const index = html.indexOf(`src="${script}"`);
     assert.ok(index > previous, `${script} should load in dependency order`);
+    assert.equal(
+      fs.existsSync(path.join(root, script)),
+      true,
+      `${script} should be committed for GitHub Pages root publishing`
+    );
     previous = index;
   }
 
@@ -200,6 +205,23 @@ test('renders a one-border menu with persistent descriptions and accessible cont
   );
   assert.ok(selectAction);
   assert.doesNotMatch(selectAction[1], /closeGroups/);
+});
+
+test('collapses outside groups only after the active click handler can finish', () => {
+  const controller = readSourceText(controllerPath);
+  const clickHandler = controller.match(
+    /doc\.addEventListener\("click", \(event\) => \{([\s\S]*?)\n    \}\);/
+  );
+
+  assert.ok(clickHandler);
+  assert.match(
+    clickHandler[1],
+    /if \(!groupsHost\.contains\(event\.target\)\) closeGroups\(null\)/
+  );
+  assert.doesNotMatch(
+    controller,
+    /doc\.addEventListener\("pointerdown"[\s\S]*?closeGroups\(null\)/
+  );
 });
 
 test('persists only whitelisted settings and conditionally persisted text', () => {
