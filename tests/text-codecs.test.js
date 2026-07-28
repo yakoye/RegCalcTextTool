@@ -3,9 +3,12 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const { execFileSync } = require('node:child_process');
 
+const rootPath = path.join(__dirname, '..');
 const codecsPath = path.join(__dirname, '..', 'text-codecs.js');
 const codecs = require(codecsPath);
+const fastXmlParser = require('fast-xml-parser');
 const he = require('he');
 const jsyaml = require('js-yaml');
 const Papa = require('papaparse');
@@ -264,8 +267,18 @@ test('uses the same injected he decoder in browser and CommonJS environments', (
 
 test('falls back to native browser entity decoding when he is not loaded', () => {
   const source = fs.readFileSync(codecsPath, 'utf8');
-  const input = '&eacute; &trade; &frac12; &Nbsp; &#128; &#0;';
+  const input = [
+    'head\r\nmid\rtail\0<tag>',
+    '&amp; &eacute; &NotEqualTilde; &#128; &#0;',
+    '</tag>'
+  ].join('');
+  const expected = [
+    'head\r\nmid\rtail\0<tag>',
+    '& é ≂̸ € \uFFFD',
+    '</tag>'
+  ].join('');
   let createElementCalls = 0;
+  const assignedValues = [];
   const context = {
     document: {
       createElement(name) {
@@ -274,6 +287,14 @@ test('falls back to native browser entity decoding when he is not loaded', () =>
         return {
           value: '',
           set innerHTML(value) {
+            assignedValues.push(value);
+            if (!/^&(?:#[xX][0-9A-Fa-f]+|#[0-9]+|[A-Za-z][A-Za-z0-9]+);$/u.test(value)) {
+              this.value = value
+                .replace(/\r\n?/gu, '\n')
+                .replace(/\0/gu, '\uFFFD')
+                .replace(/<[^>]+>/gu, '');
+              return;
+            }
             this.value = he.decode(value);
           }
         };
@@ -283,9 +304,16 @@ test('falls back to native browser entity decoding when he is not loaded', () =>
   vm.runInNewContext(source, context);
   assert.equal(
     context.TextCodecs.decodeHtmlEntities(input).value,
-    he.decode(input)
+    expected
   );
   assert.equal(createElementCalls, 1);
+  assert.deepEqual(assignedValues, [
+    '&amp;',
+    '&eacute;',
+    '&NotEqualTilde;',
+    '&#128;',
+    '&#0;'
+  ]);
 });
 
 test('escapes BMP and supplementary Unicode and rejects invalid escape sequences', () => {
@@ -790,7 +818,7 @@ class XmlTreeSerializer {
   }
 }
 
-test('uses injected XML parser and serializer constructors and detects parsererror', () => {
+test('uses injected XML parser and serializer constructors after validation', () => {
   let parsedType = '';
   class GoodParser {
     parseFromString(input, type) {
@@ -820,24 +848,49 @@ test('uses injected XML parser and serializer constructors and detects parsererr
     '<root><item>1</item></root>'
   );
 
-  class BadParser {
-    parseFromString() {
-      return {
-        documentElement: {
-          nodeName: 'parsererror',
-          localName: 'parsererror',
-          namespaceURI: 'http://www.mozilla.org/newlayout/xml/parsererror.xml'
-        },
-        getElementsByTagName: () => [{}]
-      };
-    }
-  }
-  assertChineseFailure(codecs.formatXml('<root>', BadParser, GoodSerializer));
   assert.deepEqual(codecs.minifyXml('<root/>'), {
     ok: false,
     value: '',
     message: 'XML 解析器未加载'
   });
+});
+
+test('validates XML explicitly before invoking the DOM parser', () => {
+  let parseCalls = 0;
+  class Parser {
+    parseFromString(input) {
+      parseCalls += 1;
+      return {
+        input,
+        documentElement: { nodeName: 'root' }
+      };
+    }
+  }
+  class Serializer {
+    serializeToString(document) {
+      return document.input;
+    }
+  }
+
+  assert.deepEqual(codecs.formatXml('<root>', Parser, Serializer), {
+    ok: false,
+    value: '',
+    message: 'XML 格式错误，行 1，列 1'
+  });
+  assert.equal(parseCalls, 0);
+
+  const validator = {
+    validate() {
+      return { err: { line: 4, col: 9, msg: 'platform text' } };
+    }
+  };
+  assert.deepEqual(codecs.minifyXml('<root/>', Parser, Serializer, validator), {
+    ok: false,
+    value: '',
+    message: 'XML 格式错误，行 4，列 9'
+  });
+  assert.equal(parseCalls, 0);
+  assert.equal(fastXmlParser.XMLValidator.validate('<root/>'), true);
 });
 
 test('formats realistic XML trees and allows a business parsererror descendant', () => {
@@ -929,7 +982,7 @@ function createParserDocument(input, style, variant = 'error') {
   };
 }
 
-test('matches XML parser errors using the current parser environment signature', () => {
+test('accepts valid parsererror structures in arbitrary namespaces', () => {
   for (const style of ['chromium', 'firefox']) {
     const namespace = style === 'chromium'
       ? 'http://www.w3.org/1999/xhtml'
@@ -940,6 +993,18 @@ test('matches XML parser errors using the current parser environment signature',
       `<parsererror xmlns="${namespace}"><note/></parsererror>`,
       '</root>'
     ].join('');
+    const generatedErrorShape = style === 'chromium'
+      ? [
+        `<html xmlns="${namespace}"><body>`,
+        '<parsererror style="display:block">',
+        '<h3/><div><span/></div><h3/>',
+        '</parsererror></body></html>'
+      ].join('')
+      : [
+        `<parsererror xmlns="${namespace}" data-error="value">`,
+        '<sourcetext/>',
+        '</parsererror>'
+      ].join('');
     class SignatureParser {
       parseFromString(input) {
         if (input === '<root>') {
@@ -969,7 +1034,7 @@ test('matches XML parser errors using the current parser environment signature',
     assert.deepEqual(codecs.formatXml('<root>', SignatureParser, SignatureSerializer), {
       ok: false,
       value: '',
-      message: 'XML 格式错误'
+      message: 'XML 格式错误，行 1，列 1'
     });
     assert.equal(
       valueOf(codecs.formatXml(
@@ -1002,6 +1067,14 @@ test('matches XML parser errors using the current parser environment signature',
         SignatureSerializer
       )),
       sameNamespaceDescendant
+    );
+    assert.equal(
+      valueOf(codecs.formatXml(
+        generatedErrorShape,
+        SignatureParser,
+        SignatureSerializer
+      )),
+      generatedErrorShape
     );
   }
 });
@@ -1037,6 +1110,86 @@ test('accepts XML constructors through a libraries object', () => {
   const libraries = { DOMParser: Parser, XMLSerializer: Serializer };
   assert.equal(valueOf(codecs.formatXml('<root/>', libraries)), '<root/>');
   assert.equal(valueOf(codecs.minifyXml('<root/>', libraries)), '<root/>');
+});
+
+test('builds and loads the browser XML validator before TextCodecs', () => {
+  execFileSync(process.execPath, [path.join(rootPath, 'scripts', 'build-static.js')], {
+    cwd: rootPath,
+    stdio: 'pipe'
+  });
+  const distPath = path.join(rootPath, 'dist');
+  const vendorPath = path.join(
+    distPath,
+    'vendor',
+    'fast-xml-parser',
+    'fxvalidator.min.js'
+  );
+  const distCodecsPath = path.join(distPath, 'text-codecs.js');
+  assert.equal(fs.existsSync(vendorPath), true);
+  assert.equal(fs.existsSync(distCodecsPath), true);
+
+  const html = fs.readFileSync(path.join(distPath, 'TextFormatterTool.html'), 'utf8');
+  const vendorScript = 'vendor/fast-xml-parser/fxvalidator.min.js';
+  assert.ok(html.indexOf(vendorScript) >= 0);
+  assert.ok(html.indexOf(vendorScript) < html.indexOf('text-codecs.js'));
+
+  class BrowserDOMParser {
+    parseFromString(input) {
+      const root = {
+        nodeType: 1,
+        nodeName: 'parsererror',
+        localName: 'parsererror',
+        namespaceURI: 'urn:business',
+        attributes: [],
+        childNodes: [],
+        getAttribute() {
+          return '';
+        }
+      };
+      return {
+        input,
+        nodeType: 9,
+        nodeName: '#document',
+        documentElement: root,
+        childNodes: [root],
+        createTextNode(value) {
+          return {
+            nodeType: 3,
+            nodeName: '#text',
+            nodeValue: value,
+            childNodes: []
+          };
+        },
+        cloneNode() {
+          return this;
+        }
+      };
+    }
+  }
+  class BrowserXMLSerializer {
+    serializeToString(document) {
+      return document.input;
+    }
+  }
+  const context = {
+    DOMParser: BrowserDOMParser,
+    XMLSerializer: BrowserXMLSerializer
+  };
+  vm.createContext(context);
+  vm.runInContext(fs.readFileSync(vendorPath, 'utf8'), context);
+  vm.runInContext(fs.readFileSync(distCodecsPath, 'utf8'), context);
+
+  assert.equal(typeof context.XMLValidator.validate, 'function');
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(context.TextCodecs.formatXml('<root>'))),
+    {
+      ok: false,
+      value: '',
+      message: 'XML 格式错误，行 1，列 1'
+    }
+  );
+  const businessXml = '<parsererror xmlns="urn:business"><child/></parsererror>';
+  assert.equal(context.TextCodecs.minifyXml(businessXml).value, businessXml);
 });
 
 test('dispatches structured conversions and rejects unknown or prototype-chain IDs', () => {

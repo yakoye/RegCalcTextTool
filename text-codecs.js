@@ -1,16 +1,37 @@
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
     let heImpl = null;
+    let xmlValidatorImpl = null;
     try {
       heImpl = require('he');
     } catch (error) {
       heImpl = null;
     }
-    module.exports = factory(heImpl);
+    try {
+      ({ XMLValidator: xmlValidatorImpl } = require('fast-xml-parser'));
+    } catch (error) {
+      xmlValidatorImpl = null;
+    }
+    module.exports = factory(
+      heImpl,
+      xmlValidatorImpl,
+      root && root.DOMParser,
+      root && root.XMLSerializer
+    );
   } else {
-    root.TextCodecs = factory(root && root.he);
+    root.TextCodecs = factory(
+      root && root.he,
+      root && root.XMLValidator,
+      root && root.DOMParser,
+      root && root.XMLSerializer
+    );
   }
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (defaultHe) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (
+  defaultHe,
+  defaultXmlValidator,
+  defaultDOMParser,
+  defaultXMLSerializer
+) {
   'use strict';
 
   const success = (value, message = '') => ({ ok: true, value, message });
@@ -24,8 +45,6 @@
   const MAX_STRUCTURED_NODES = 100000;
   const MAX_STRUCTURED_OUTPUT_BYTES = 5 * 1024 * 1024;
   const MAX_YAML_ALIASES = 100;
-  const MAX_XML_ERROR_FINGERPRINT_DEPTH = 8;
-  const MAX_XML_ERROR_FINGERPRINT_NODES = 256;
 
   function asText(input) {
     return String(input == null ? '' : input);
@@ -511,8 +530,11 @@
     ) {
       try {
         const textarea = document.createElement('textarea');
-        textarea.innerHTML = text;
-        return success(asText(textarea.value));
+        const entityPattern = /&(?:#[xX][0-9A-Fa-f]+|#[0-9]+|[A-Za-z][A-Za-z0-9]+);/gu;
+        return success(text.replace(entityPattern, (entity) => {
+          textarea.innerHTML = entity;
+          return asText(textarea.value);
+        }));
       } catch (error) {
         return failure('HTML 实体解码失败');
       }
@@ -1423,155 +1445,6 @@
     }
   }
 
-  function xmlDocumentNodes(document) {
-    if (!document || !document.documentElement) {
-      return [];
-    }
-    if (document.nodeType === 9 && document.childNodes && document.childNodes.length > 0) {
-      return Array.from(document.childNodes);
-    }
-    return [document.documentElement];
-  }
-
-  function xmlNodeSignature(node) {
-    return `${asText(node.localName || node.nodeName)}\u0000${asText(node.namespaceURI)}`;
-  }
-
-  function xmlAttributeSignature(attribute) {
-    return `${asText(attribute.localName || attribute.name)}\u0000${
-      asText(attribute.namespaceURI)
-    }`;
-  }
-
-  function xmlElementFingerprint(root) {
-    const state = { nodes: 0, truncated: false };
-
-    function build(node, depth) {
-      state.nodes += 1;
-      if (state.nodes > MAX_XML_ERROR_FINGERPRINT_NODES) {
-        state.truncated = true;
-        return [xmlNodeSignature(node), [], ['#node-limit']];
-      }
-
-      const rawAttributes = node.attributes;
-      let attributes = [];
-      if (
-        rawAttributes
-        && Number(rawAttributes.length) > MAX_XML_ERROR_FINGERPRINT_NODES
-      ) {
-        state.truncated = true;
-        attributes = ['#attribute-limit'];
-      } else if (rawAttributes) {
-        attributes = Array.from(rawAttributes)
-          .map(xmlAttributeSignature)
-          .sort();
-      }
-      if (
-        node.childNodes
-        && Number(node.childNodes.length) > MAX_XML_ERROR_FINGERPRINT_NODES
-      ) {
-        state.truncated = true;
-        return [xmlNodeSignature(node), attributes, ['#child-limit']];
-      }
-      let elementChildren = nodeChildren(node).filter((child) => (
-        child && (child.nodeType === 1 || child.nodeType === undefined)
-      ));
-      if (elementChildren.length > MAX_XML_ERROR_FINGERPRINT_NODES) {
-        state.truncated = true;
-        elementChildren = elementChildren.slice(0, MAX_XML_ERROR_FINGERPRINT_NODES);
-      }
-      if (depth >= MAX_XML_ERROR_FINGERPRINT_DEPTH) {
-        if (elementChildren.length > 0) {
-          state.truncated = true;
-        }
-        return [
-          xmlNodeSignature(node),
-          attributes,
-          elementChildren.map(xmlNodeSignature)
-        ];
-      }
-      return [
-        xmlNodeSignature(node),
-        attributes,
-        elementChildren.map((child) => build(child, depth + 1))
-      ];
-    }
-
-    const fingerprint = JSON.stringify(build(root, 0));
-    return state.truncated ? null : fingerprint;
-  }
-
-  function xmlParserErrorFingerprints(document) {
-    const fingerprints = new Set();
-    const stack = xmlDocumentNodes(document);
-    let visited = 0;
-    while (stack.length > 0 && visited <= MAX_STRUCTURED_NODES) {
-      const node = stack.pop();
-      visited += 1;
-      if (node && (node.nodeType === 1 || node.nodeType === undefined)) {
-        const localName = asText(node.localName || node.nodeName).toLowerCase();
-        const namespace = asText(node.namespaceURI);
-        if (localName === 'parsererror' && namespace !== '') {
-          const fingerprint = xmlElementFingerprint(node);
-          if (fingerprint !== null) {
-            fingerprints.add(fingerprint);
-          }
-        }
-      }
-      if (
-        node
-        && node.childNodes
-        && Number(node.childNodes.length) > MAX_STRUCTURED_NODES
-      ) {
-        return fingerprints;
-      }
-      const children = nodeChildren(node);
-      for (let index = 0; index < children.length; index += 1) {
-        stack.push(children[index]);
-      }
-    }
-    return fingerprints;
-  }
-
-  function hasXmlParserError(document, fingerprints) {
-    if (!document || !document.documentElement) {
-      return true;
-    }
-    if (!fingerprints || fingerprints.size === 0) {
-      return false;
-    }
-    const stack = xmlDocumentNodes(document);
-    let visited = 0;
-    while (stack.length > 0 && visited <= MAX_STRUCTURED_NODES) {
-      const node = stack.pop();
-      visited += 1;
-      const fingerprint = node
-        && (node.nodeType === 1 || node.nodeType === undefined)
-        && asText(node.localName || node.nodeName).toLowerCase() === 'parsererror'
-        && asText(node.namespaceURI) !== ''
-        ? xmlElementFingerprint(node)
-        : null;
-      if (
-        fingerprint !== null
-        && fingerprints.has(fingerprint)
-      ) {
-        return true;
-      }
-      if (
-        node
-        && node.childNodes
-        && Number(node.childNodes.length) > MAX_STRUCTURED_NODES
-      ) {
-        return false;
-      }
-      const children = nodeChildren(node);
-      for (let index = 0; index < children.length; index += 1) {
-        stack.push(children[index]);
-      }
-    }
-    return false;
-  }
-
   function nodeChildren(node) {
     return node && node.childNodes ? Array.from(node.childNodes) : [];
   }
@@ -1723,25 +1596,48 @@
     node.appendChild(document.createTextNode(`\n${'  '.repeat(depth)}`));
   }
 
-  function convertXml(input, DOMParserCtor, XMLSerializerCtor, pretty) {
+  function xmlValidationFailure(validation) {
+    const error = validation && validation.err;
+    const line = error && Number(error.line);
+    const column = error && Number(error.col);
+    if (Number.isInteger(line) && line > 0 && Number.isInteger(column) && column > 0) {
+      return failure(`XML 格式错误，行 ${line}，列 ${column}`);
+    }
+    if (Number.isInteger(line) && line > 0) {
+      return failure(`XML 格式错误，行 ${line}`);
+    }
+    return failure('XML 格式错误');
+  }
+
+  function convertXml(
+    input,
+    DOMParserCtor,
+    XMLSerializerCtor,
+    XMLValidatorImpl,
+    pretty
+  ) {
+    const text = asText(input);
+    if (utf8ByteLength(text) > MAX_STRUCTURED_OUTPUT_BYTES) {
+      return failure('XML 数据规模过大');
+    }
+    if (!XMLValidatorImpl || typeof XMLValidatorImpl.validate !== 'function') {
+      return failure('XML 验证库未加载');
+    }
+    let validation;
+    try {
+      validation = XMLValidatorImpl.validate(text);
+    } catch (error) {
+      return failure('XML 验证失败');
+    }
+    if (validation !== true) {
+      return xmlValidationFailure(validation);
+    }
     if (typeof DOMParserCtor !== 'function' || typeof XMLSerializerCtor !== 'function') {
       return failure('XML 解析器未加载');
     }
     try {
-      const text = asText(input);
-      if (utf8ByteLength(text) > MAX_STRUCTURED_OUTPUT_BYTES) {
-        return failure('XML 数据规模过大');
-      }
       const parser = new DOMParserCtor();
-      const sentinel = parser.parseFromString(
-        '<text-codecs-parser-sentinel>',
-        'application/xml'
-      );
-      const parserErrorFingerprints = xmlParserErrorFingerprints(sentinel);
       const parsed = parser.parseFromString(text, 'application/xml');
-      if (hasXmlParserError(parsed, parserErrorFingerprints)) {
-        return failure('XML 格式错误');
-      }
       const budget = inspectXmlDocument(parsed, pretty);
       if (!budget.ok) {
         return structuredBudgetFailure('XML', budget.reason);
@@ -1758,20 +1654,49 @@
     }
   }
 
-  function formatXml(input, DOMParserCtor, XMLSerializerCtor) {
+  function xmlConversionLibraries(DOMParserCtor, XMLSerializerCtor, XMLValidatorImpl) {
     if (DOMParserCtor && typeof DOMParserCtor === 'object' && XMLSerializerCtor === undefined) {
+      XMLValidatorImpl = DOMParserCtor.XMLValidator;
       XMLSerializerCtor = DOMParserCtor.XMLSerializer;
       DOMParserCtor = DOMParserCtor.DOMParser;
     }
-    return convertXml(input, DOMParserCtor, XMLSerializerCtor, true);
+    return {
+      DOMParserCtor: DOMParserCtor === undefined ? defaultDOMParser : DOMParserCtor,
+      XMLSerializerCtor: XMLSerializerCtor === undefined
+        ? defaultXMLSerializer
+        : XMLSerializerCtor,
+      XMLValidatorImpl: XMLValidatorImpl || defaultXmlValidator
+    };
   }
 
-  function minifyXml(input, DOMParserCtor, XMLSerializerCtor) {
-    if (DOMParserCtor && typeof DOMParserCtor === 'object' && XMLSerializerCtor === undefined) {
-      XMLSerializerCtor = DOMParserCtor.XMLSerializer;
-      DOMParserCtor = DOMParserCtor.DOMParser;
-    }
-    return convertXml(input, DOMParserCtor, XMLSerializerCtor, false);
+  function formatXml(input, DOMParserCtor, XMLSerializerCtor, XMLValidatorImpl) {
+    const libraries = xmlConversionLibraries(
+      DOMParserCtor,
+      XMLSerializerCtor,
+      XMLValidatorImpl
+    );
+    return convertXml(
+      input,
+      libraries.DOMParserCtor,
+      libraries.XMLSerializerCtor,
+      libraries.XMLValidatorImpl,
+      true
+    );
+  }
+
+  function minifyXml(input, DOMParserCtor, XMLSerializerCtor, XMLValidatorImpl) {
+    const libraries = xmlConversionLibraries(
+      DOMParserCtor,
+      XMLSerializerCtor,
+      XMLValidatorImpl
+    );
+    return convertXml(
+      input,
+      libraries.DOMParserCtor,
+      libraries.XMLSerializerCtor,
+      libraries.XMLValidatorImpl,
+      false
+    );
   }
 
   const STRUCTURED_CONVERTERS = Object.freeze(Object.assign(Object.create(null), {
@@ -1797,10 +1722,20 @@
     markdownToHtml: (input, libraries) => markdownToHtml(input, libraries.marked),
     htmlToMarkdown: (input, libraries) => htmlToMarkdown(input, libraries.TurndownService),
     xmlFormat: (input, libraries) => (
-      formatXml(input, libraries.DOMParser, libraries.XMLSerializer)
+      formatXml(
+        input,
+        libraries.DOMParser,
+        libraries.XMLSerializer,
+        libraries.XMLValidator
+      )
     ),
     xmlMinify: (input, libraries) => (
-      minifyXml(input, libraries.DOMParser, libraries.XMLSerializer)
+      minifyXml(
+        input,
+        libraries.DOMParser,
+        libraries.XMLSerializer,
+        libraries.XMLValidator
+      )
     )
   }));
 
