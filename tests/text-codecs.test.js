@@ -119,6 +119,17 @@ test('parses Base64 Data URLs and preserves file metadata', () => {
   ));
   assert.equal(Object.hasOwn(special.parameters, '__proto__'), true);
   assert.equal(special.parameters.__proto__, 'safe');
+
+  const defaults = valueOf(codecs.parseDataUrl('data:;base64,QQ=='));
+  assert.equal(defaults.mimeType, 'text/plain');
+  assert.deepEqual(defaults.parameters, { charset: 'US-ASCII' });
+  assert.deepEqual(Array.from(defaults.bytes), [65]);
+
+  const upperCaseScheme = valueOf(codecs.parseDataUrl(
+    'DATA:text/plain;base64,QQ=='
+  ));
+  assert.equal(upperCaseScheme.mimeType, 'text/plain');
+  assert.deepEqual(Array.from(upperCaseScheme.bytes), [65]);
 });
 
 test('builds complete Data URLs and rejects invalid Data URL syntax or MIME', () => {
@@ -130,6 +141,10 @@ test('builds complete Data URLs and rejects invalid Data URL syntax or MIME', ()
   assert.equal(
     built,
     'data:application/octet-stream;charset=binary;name=a%20b.bin;base64,AAEC/w=='
+  );
+  assert.equal(
+    valueOf(codecs.buildDataUrl(Uint8Array.from([65]), '')),
+    'data:application/octet-stream;base64,QQ=='
   );
   assertChineseFailure(codecs.parseDataUrl('data:text/plain,not-base64'));
   assertChineseFailure(codecs.parseDataUrl('data:bad mime;base64,QQ=='));
@@ -178,6 +193,17 @@ test('parses full URLs, question-prefixed input, and pure queries without losing
     valueOf(codecs.parseQuery('a=1#frag?x=2')),
     [{ key: 'a', value: '1' }]
   );
+  assert.deepEqual(valueOf(codecs.parseQuery('//x.test/path')), []);
+  assert.deepEqual(
+    valueOf(codecs.parseQuery('//x.test/path?a=1')),
+    [{ key: 'a', value: '1' }]
+  );
+  assert.deepEqual(valueOf(codecs.parseQuery('mailto:user@example.com')), []);
+  assert.deepEqual(
+    valueOf(codecs.parseQuery('mailto:user@example.com?subject=Hello')),
+    [{ key: 'subject', value: 'Hello' }]
+  );
+  assert.deepEqual(valueOf(codecs.parseQuery('urn:isbn:9780131103627')), []);
 });
 
 test('builds sorted or unsorted query strings while preserving duplicate keys', () => {
@@ -204,6 +230,37 @@ test('encodes and decodes named, decimal, and hexadecimal HTML entities', () => 
   assert.equal(
     valueOf(codecs.decodeHtmlEntities('&amp; &#60; &#x3E; &quot; &apos; &unknown;')),
     `& < > " ' &unknown;`
+  );
+  assert.equal(
+    valueOf(codecs.decodeHtmlEntities(
+      '&nbsp; &copy; &#0; &#128; &#x80; &#xD800; &#x110000; &unknown;'
+    )),
+    '\u00A0 © \uFFFD € € \uFFFD \uFFFD &unknown;'
+  );
+});
+
+test('uses a browser textarea to decode standard named HTML entities', () => {
+  const source = fs.readFileSync(codecsPath, 'utf8');
+  const textarea = {
+    value: '',
+    set innerHTML(input) {
+      this.value = input
+        .replace(/&eacute;/g, 'é')
+        .replace(/&trade;/g, '™');
+    }
+  };
+  const context = {
+    document: {
+      createElement(name) {
+        assert.equal(name, 'textarea');
+        return textarea;
+      }
+    }
+  };
+  vm.runInNewContext(source, context);
+  assert.equal(
+    context.TextCodecs.decodeHtmlEntities('&eacute; &trade; &unknown;').value,
+    'é ™ &unknown;'
   );
 });
 
@@ -306,6 +363,45 @@ test('bounds JSON error scanning depth without regressing ordinary nesting', () 
   });
 });
 
+test('rejects JSON numbers that cannot round-trip safely through JavaScript Number', () => {
+  const operations = [
+    codecs.formatJson,
+    codecs.minifyJson,
+    codecs.validateJson,
+    codecs.sortJsonKeys,
+    codecs.jsonToJavaScriptObjectText,
+    (input) => codecs.jsonToYaml(input, jsyaml),
+    codecs.jsonToQuery
+  ];
+  for (const input of ['9007199254740993', '-9007199254740993', '1e400']) {
+    for (const operation of operations) {
+      assert.deepEqual(operation(input), {
+        ok: false,
+        value: '',
+        message: 'JSON 数值超出安全范围，位置 0'
+      });
+    }
+  }
+
+  assert.equal(
+    valueOf(codecs.minifyJson('9007199254740991')),
+    '9007199254740991'
+  );
+  assert.equal(
+    valueOf(codecs.minifyJson('-9007199254740991')),
+    '-9007199254740991'
+  );
+});
+
+test('rejects deeply nested valid JSON before recursive key sorting', () => {
+  const deepJson = `${'['.repeat(3000)}0${']'.repeat(3000)}`;
+  assert.deepEqual(codecs.sortJsonKeys(deepJson), {
+    ok: false,
+    value: '',
+    message: 'JSON 嵌套层级过深'
+  });
+});
+
 test('sorts JSON object keys recursively without reordering arrays', () => {
   const input = '{"z":{"b":1,"a":2},"a":[{"d":4,"c":3},2]}';
   const sorted = JSON.parse(valueOf(codecs.sortJsonKeys(input)));
@@ -342,6 +438,43 @@ test('escapes JSON strings and produces valid JavaScript object text', () => {
 test('converts YAML through an injected js-yaml implementation and reports missing libraries', () => {
   const json = valueOf(codecs.yamlToJson('name: 中文\nitems:\n  - 1\n  - 2\n', jsyaml));
   assert.deepEqual(JSON.parse(json), { name: '中文', items: [1, 2] });
+  const aliased = valueOf(codecs.yamlToJson(
+    'base: &base\n  - a\n  - b\ncopy: *base\n',
+    jsyaml
+  ));
+  assert.deepEqual(JSON.parse(aliased), {
+    base: ['a', 'b'],
+    copy: ['a', 'b']
+  });
+
+  const aliasBomb = [
+    'base: &base [x]',
+    'items:',
+    ...Array.from({ length: 101 }, () => '  - *base')
+  ].join('\n');
+  const bombResult = codecs.yamlToJson(aliasBomb, jsyaml);
+  assert.equal(bombResult.ok, false);
+  assert.match(bombResult.message, /YAML.*数据规模过大/u);
+
+  const aliases = ['a', 'b', 'c', 'd', 'e', 'f'];
+  const expandedBomb = ['a: &a [x]'];
+  for (let index = 1; index < aliases.length; index += 1) {
+    const previous = `*${aliases[index - 1]}`;
+    expandedBomb.push(
+      `${aliases[index]}: &${aliases[index]} [${Array(10).fill(previous).join(', ')}]`
+    );
+  }
+  assert.deepEqual(codecs.yamlToJson(expandedBomb.join('\n'), jsyaml), {
+    ok: false,
+    value: '',
+    message: 'YAML 数据规模过大'
+  });
+  assert.deepEqual(codecs.yamlToJson('a: &a\n  self: *a\n', jsyaml), {
+    ok: false,
+    value: '',
+    message: 'YAML 数据包含循环引用'
+  });
+
   const yaml = valueOf(codecs.jsonToYaml('{"name":"中文","items":[1,2]}', jsyaml));
   assert.deepEqual(jsyaml.load(yaml), { name: '中文', items: [1, 2] });
   assert.deepEqual(codecs.yamlToJson('a: 1'), {
@@ -371,6 +504,18 @@ test('converts quoted delimiters and embedded newlines through injected Papa Par
     message: 'CSV 解析库未加载'
   });
   assertChineseFailure(codecs.convertDelimited('"unterminated', ',', '\t', Papa));
+  for (const delimiter of ['', '"', '\r', '\n', '\uFEFF', 'x"']) {
+    assert.deepEqual(codecs.convertDelimited('a,b', delimiter, '\t', Papa), {
+      ok: false,
+      value: '',
+      message: '分隔符格式无效'
+    });
+    assert.deepEqual(codecs.convertDelimited('a,b', ',', delimiter, Papa), {
+      ok: false,
+      value: '',
+      message: '分隔符格式无效'
+    });
+  }
 });
 
 test('round-trips duplicate query keys through JSON arrays', () => {
@@ -397,7 +542,159 @@ test('adapts Markdown converters and reports missing injected libraries', () => 
     value: '',
     message: 'HTML 转 Markdown 库未加载'
   });
+  assert.deepEqual(codecs.markdownToHtml('# x', {
+    parse() {
+      return Promise.resolve('<h1>x</h1>');
+    }
+  }), {
+    ok: false,
+    value: '',
+    message: '不支持异步 Markdown 解析器'
+  });
 });
+
+function createXmlDocument(depth = 2, includeBusinessParserError = false) {
+  class XmlNode {
+    constructor(nodeType, nodeName, nodeValue = '', attributes = {}) {
+      this.nodeType = nodeType;
+      this.nodeName = nodeName;
+      this.localName = nodeName;
+      this.nodeValue = nodeValue;
+      this.namespaceURI = null;
+      this.parentNode = null;
+      this.childNodes = [];
+      this.attributes = Object.entries(attributes).map(([name, value]) => ({
+        name,
+        value
+      }));
+    }
+
+    get textContent() {
+      if (this.nodeType === 3) {
+        return this.nodeValue;
+      }
+      return this.childNodes.map((child) => child.textContent).join('');
+    }
+
+    getAttribute(name) {
+      const attribute = this.attributes.find((item) => item.name === name);
+      return attribute ? attribute.value : '';
+    }
+
+    appendChild(child) {
+      child.parentNode = this;
+      this.childNodes.push(child);
+      return child;
+    }
+
+    insertBefore(child, reference) {
+      child.parentNode = this;
+      const index = this.childNodes.indexOf(reference);
+      this.childNodes.splice(index < 0 ? this.childNodes.length : index, 0, child);
+      return child;
+    }
+
+    removeChild(child) {
+      const index = this.childNodes.indexOf(child);
+      if (index >= 0) {
+        this.childNodes.splice(index, 1);
+        child.parentNode = null;
+      }
+      return child;
+    }
+
+    cloneNode(deep) {
+      const attributes = Object.fromEntries(
+        this.attributes.map((attribute) => [attribute.name, attribute.value])
+      );
+      const clone = new XmlNode(this.nodeType, this.nodeName, this.nodeValue, attributes);
+      clone.namespaceURI = this.namespaceURI;
+      if (deep) {
+        for (const child of this.childNodes) {
+          clone.appendChild(child.cloneNode(true));
+        }
+      }
+      return clone;
+    }
+  }
+
+  class XmlDocument extends XmlNode {
+    constructor() {
+      super(9, '#document');
+    }
+
+    get documentElement() {
+      return this.childNodes.find((child) => child.nodeType === 1) || null;
+    }
+
+    createTextNode(value) {
+      return new XmlNode(3, '#text', value);
+    }
+
+    getElementsByTagName(name) {
+      const matches = [];
+      const stack = [...this.childNodes];
+      while (stack.length > 0) {
+        const node = stack.pop();
+        if (node.nodeType === 1 && node.nodeName === name) {
+          matches.push(node);
+        }
+        stack.push(...node.childNodes);
+      }
+      return matches;
+    }
+
+    cloneNode(deep) {
+      const clone = new XmlDocument();
+      if (deep) {
+        for (const child of this.childNodes) {
+          clone.appendChild(child.cloneNode(true));
+        }
+      }
+      return clone;
+    }
+  }
+
+  const document = new XmlDocument();
+  const root = document.appendChild(new XmlNode(1, 'root', '', { id: 'x' }));
+  let parent = root;
+  for (let level = 1; level < depth; level += 1) {
+    parent.appendChild(document.createTextNode('\n  '));
+    parent = parent.appendChild(new XmlNode(1, level === 1 ? 'item' : 'level'));
+  }
+  parent.appendChild(document.createTextNode('1'));
+  if (includeBusinessParserError) {
+    root.appendChild(document.createTextNode('\n  '));
+    root.appendChild(new XmlNode(1, 'parsererror')).appendChild(
+      document.createTextNode('business value')
+    );
+  }
+  root.appendChild(document.createTextNode('\n'));
+  return document;
+}
+
+class XmlTreeSerializer {
+  serializeToString(document) {
+    function serialize(node) {
+      if (node.nodeType === 9) {
+        return node.childNodes.map(serialize).join('');
+      }
+      if (node.nodeType === 3) {
+        return node.nodeValue;
+      }
+      const attributes = node.attributes
+        .map((attribute) => ` ${attribute.name}="${attribute.value}"`)
+        .join('');
+      if (node.childNodes.length === 0) {
+        return `<${node.nodeName}${attributes}/>`;
+      }
+      return `<${node.nodeName}${attributes}>${
+        node.childNodes.map(serialize).join('')
+      }</${node.nodeName}>`;
+    }
+    return serialize(document);
+  }
+}
 
 test('uses injected XML parser and serializer constructors and detects parsererror', () => {
   let parsedType = '';
@@ -442,6 +739,35 @@ test('uses injected XML parser and serializer constructors and detects parsererr
     ok: false,
     value: '',
     message: 'XML 解析器未加载'
+  });
+});
+
+test('formats realistic XML trees and allows a business parsererror descendant', () => {
+  class TreeParser {
+    parseFromString() {
+      return createXmlDocument(2, true);
+    }
+  }
+  assert.equal(
+    valueOf(codecs.formatXml('<ignored/>', TreeParser, XmlTreeSerializer)),
+    '<root id="x">\n  <item>1</item>\n  <parsererror>business value</parsererror>\n</root>'
+  );
+  assert.equal(
+    valueOf(codecs.minifyXml('<ignored/>', TreeParser, XmlTreeSerializer)),
+    '<root id="x"><item>1</item><parsererror>business value</parsererror></root>'
+  );
+});
+
+test('rejects deeply nested XML before recursive formatting', () => {
+  class DeepParser {
+    parseFromString() {
+      return createXmlDocument(300);
+    }
+  }
+  assert.deepEqual(codecs.formatXml('<ignored/>', DeepParser, XmlTreeSerializer), {
+    ok: false,
+    value: '',
+    message: 'XML 嵌套层级过深'
   });
 });
 

@@ -15,6 +15,10 @@
   const MIME_PATTERN = new RegExp(`^${MIME_TOKEN}/${MIME_TOKEN}$`);
   const PARAMETER_NAME_PATTERN = new RegExp(`^${MIME_TOKEN}$`);
   const MAX_JSON_SCAN_DEPTH = 512;
+  const MAX_STRUCTURED_DEPTH = 256;
+  const MAX_STRUCTURED_NODES = 100000;
+  const MAX_STRUCTURED_OUTPUT_BYTES = 5 * 1024 * 1024;
+  const MAX_YAML_ALIASES = 100;
 
   function asText(input) {
     return String(input == null ? '' : input);
@@ -225,14 +229,15 @@
 
   function parseDataUrl(input) {
     const text = asText(input);
-    const match = /^data:([^,]*),(.*)$/su.exec(text);
+    const match = /^data:([^,]*),(.*)$/isu.exec(text);
     if (!match) {
       return failure('Data URL 格式无效');
     }
 
     const metadata = match[1].split(';');
-    const mimeType = metadata.shift();
-    if (!mimeType || !MIME_PATTERN.test(mimeType)) {
+    const declaredMimeType = metadata.shift();
+    const mimeType = declaredMimeType || 'text/plain';
+    if (!MIME_PATTERN.test(mimeType)) {
       return failure('Data URL 的 MIME 类型无效');
     }
     if (metadata.length === 0 || metadata.pop().toLowerCase() !== 'base64') {
@@ -261,6 +266,17 @@
           writable: true
         });
       }
+      if (
+        declaredMimeType === ''
+        && !Object.prototype.hasOwnProperty.call(parameters, 'charset')
+      ) {
+        Object.defineProperty(parameters, 'charset', {
+          value: 'US-ASCII',
+          enumerable: true,
+          configurable: true,
+          writable: true
+        });
+      }
     } catch (error) {
       return failure('Data URL 参数格式无效');
     }
@@ -280,7 +296,7 @@
 
   function buildDataUrl(input, mimeType, options = {}) {
     const bytes = asByteArray(input);
-    const normalizedMime = asText(mimeType);
+    const normalizedMime = asText(mimeType) || 'application/octet-stream';
     if (!bytes) {
       return failure('字节数据格式无效');
     }
@@ -367,14 +383,17 @@
 
   function parseQuery(input) {
     const text = asText(input);
-    const isFullUrl = /^[A-Za-z][A-Za-z0-9+.-]*:\/\//.test(text);
+    const isFullUri = /^(?:\/\/|[A-Za-z][A-Za-z0-9+.-]*:)/.test(text);
     let query;
 
-    if (isFullUrl && typeof URL === 'function') {
+    if (isFullUri && typeof URL === 'function') {
       try {
-        query = new URL(text).search.slice(1);
+        query = new URL(
+          text,
+          text.startsWith('//') ? 'http://query.invalid' : undefined
+        ).search.slice(1);
       } catch (error) {
-        return failure('完整 URL 格式无效');
+        return failure('完整 URI 格式无效');
       }
     } else {
       const hash = text.indexOf('#');
@@ -382,7 +401,7 @@
       const questionMark = query.indexOf('?');
       if (questionMark >= 0) {
         query = query.slice(questionMark + 1);
-      } else if (isFullUrl) {
+      } else if (isFullUri) {
         query = '';
       }
     }
@@ -470,29 +489,76 @@
   }
 
   function decodeHtmlEntities(input) {
+    const text = asText(input);
+    if (typeof document !== 'undefined' && document && typeof document.createElement === 'function') {
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.innerHTML = text;
+        return success(textarea.value);
+      } catch (error) {
+        // Fall through to the deterministic non-DOM decoder.
+      }
+    }
+
     const named = {
       amp: '&',
       lt: '<',
       gt: '>',
       quot: '"',
-      apos: "'"
+      apos: "'",
+      nbsp: '\u00A0',
+      copy: '\u00A9'
     };
-    const output = asText(input).replace(
-      /&(#(?:x[0-9A-Fa-f]+|[0-9]+)|amp|lt|gt|quot|apos);/gi,
+    const numericReplacements = {
+      0x80: 0x20AC,
+      0x82: 0x201A,
+      0x83: 0x0192,
+      0x84: 0x201E,
+      0x85: 0x2026,
+      0x86: 0x2020,
+      0x87: 0x2021,
+      0x88: 0x02C6,
+      0x89: 0x2030,
+      0x8A: 0x0160,
+      0x8B: 0x2039,
+      0x8C: 0x0152,
+      0x8E: 0x017D,
+      0x91: 0x2018,
+      0x92: 0x2019,
+      0x93: 0x201C,
+      0x94: 0x201D,
+      0x95: 0x2022,
+      0x96: 0x2013,
+      0x97: 0x2014,
+      0x98: 0x02DC,
+      0x99: 0x2122,
+      0x9A: 0x0161,
+      0x9B: 0x203A,
+      0x9C: 0x0153,
+      0x9E: 0x017E,
+      0x9F: 0x0178
+    };
+    const output = text.replace(
+      /&(#(?:x[0-9A-Fa-f]+|[0-9]+)|[A-Za-z][A-Za-z0-9]+);/g,
       (entity, body) => {
         if (body.charAt(0) !== '#') {
-          return named[body.toLowerCase()];
+          const replacement = named[body.toLowerCase()];
+          return replacement === undefined ? entity : replacement;
         }
         const hexadecimal = body.charAt(1).toLowerCase() === 'x';
-        const value = Number.parseInt(body.slice(hexadecimal ? 2 : 1), hexadecimal ? 16 : 10);
+        let value = Number.parseInt(
+          body.slice(hexadecimal ? 2 : 1),
+          hexadecimal ? 16 : 10
+        );
         if (
           !Number.isInteger(value)
-          || value < 0
+          || value === 0
           || value > 0x10FFFF
           || (value >= 0xD800 && value <= 0xDFFF)
         ) {
-          return entity;
+          return '\uFFFD';
         }
+        value = numericReplacements[value] || value;
         return String.fromCodePoint(value);
       }
     );
@@ -570,6 +636,7 @@
   function findJsonError(text) {
     let index = 0;
     let depthExceeded = false;
+    let unsafeNumberPosition = -1;
 
     function skipWhitespace() {
       while (
@@ -642,6 +709,7 @@
     }
 
     function parseNumber() {
+      const start = index;
       if (text.charAt(index) === '-') {
         index += 1;
       }
@@ -683,6 +751,16 @@
         while (/[0-9]/.test(text.charAt(index))) {
           index += 1;
         }
+      }
+      const numericValue = Number(text.slice(start, index));
+      if (
+        unsafeNumberPosition < 0
+        && (
+          !Number.isFinite(numericValue)
+          || (Number.isInteger(numericValue) && !Number.isSafeInteger(numericValue))
+        )
+      ) {
+        unsafeNumberPosition = start;
       }
       return -1;
     }
@@ -792,13 +870,15 @@
     if (valueError >= 0) {
       return {
         position: valueError,
-        depthExceeded
+        depthExceeded,
+        unsafeNumberPosition
       };
     }
     skipWhitespace();
     return {
       position: index === text.length ? text.length : index,
-      depthExceeded
+      depthExceeded,
+      unsafeNumberPosition
     };
   }
 
@@ -808,13 +888,180 @@
     return failure(`JSON 格式错误，位置 ${scan.position}${detail}`);
   }
 
+  function utf8ByteLength(input) {
+    const text = asText(input);
+    let bytes = 0;
+    for (let index = 0; index < text.length; index += 1) {
+      const code = text.charCodeAt(index);
+      if (code <= 0x7F) {
+        bytes += 1;
+      } else if (code <= 0x7FF) {
+        bytes += 2;
+      } else if (
+        code >= 0xD800
+        && code <= 0xDBFF
+        && index + 1 < text.length
+        && text.charCodeAt(index + 1) >= 0xDC00
+        && text.charCodeAt(index + 1) <= 0xDFFF
+      ) {
+        bytes += 4;
+        index += 1;
+      } else {
+        bytes += 3;
+      }
+    }
+    return bytes;
+  }
+
+  function estimateJsonStringBytes(input) {
+    const text = asText(input);
+    let bytes = 2;
+    for (let index = 0; index < text.length; index += 1) {
+      const code = text.charCodeAt(index);
+      if (code === 0x22 || code === 0x5C) {
+        bytes += 2;
+      } else if (code <= 0x1F) {
+        bytes += code === 0x08 || code === 0x09 || code === 0x0A
+          || code === 0x0C || code === 0x0D ? 2 : 6;
+      } else if (code <= 0x7F) {
+        bytes += 1;
+      } else if (code <= 0x7FF) {
+        bytes += 2;
+      } else if (
+        code >= 0xD800
+        && code <= 0xDBFF
+        && index + 1 < text.length
+        && text.charCodeAt(index + 1) >= 0xDC00
+        && text.charCodeAt(index + 1) <= 0xDFFF
+      ) {
+        bytes += 4;
+        index += 1;
+      } else {
+        bytes += 3;
+      }
+      if (bytes > MAX_STRUCTURED_OUTPUT_BYTES) {
+        return bytes;
+      }
+    }
+    return bytes;
+  }
+
+  function inspectStructuredValue(root) {
+    const active = new WeakSet();
+    const stack = [{ value: root, depth: 0, exit: false }];
+    let pendingNodes = 1;
+    let nodeCount = 0;
+    let estimatedBytes = 0;
+
+    while (stack.length > 0) {
+      const frame = stack.pop();
+      const value = frame.value;
+      if (frame.exit) {
+        active.delete(value);
+        continue;
+      }
+      pendingNodes -= 1;
+      nodeCount += 1;
+      if (nodeCount > MAX_STRUCTURED_NODES) {
+        return { ok: false, reason: 'size' };
+      }
+      if (frame.depth > MAX_STRUCTURED_DEPTH) {
+        return { ok: false, reason: 'depth' };
+      }
+
+      if (value === null) {
+        estimatedBytes += 4;
+      } else if (typeof value === 'string') {
+        estimatedBytes += estimateJsonStringBytes(value);
+      } else if (typeof value === 'number') {
+        if (!Number.isFinite(value) || (Number.isInteger(value) && !Number.isSafeInteger(value))) {
+          return { ok: false, reason: 'number' };
+        }
+        estimatedBytes += 32;
+      } else if (typeof value === 'boolean') {
+        estimatedBytes += 5;
+      } else if (typeof value !== 'object') {
+        return { ok: false, reason: 'size' };
+      } else {
+        if (active.has(value)) {
+          return { ok: false, reason: 'cycle' };
+        }
+        active.add(value);
+        stack.push({ value, depth: frame.depth, exit: true });
+
+        const isArray = Array.isArray(value);
+        const keys = isArray ? null : Object.keys(value);
+        const childCount = isArray ? value.length : keys.length;
+        if (
+          !Number.isSafeInteger(childCount)
+          || childCount > MAX_STRUCTURED_NODES
+          || nodeCount + pendingNodes + childCount > MAX_STRUCTURED_NODES
+        ) {
+          return { ok: false, reason: 'size' };
+        }
+        estimatedBytes += 2 + Math.max(0, childCount - 1);
+        for (let index = childCount - 1; index >= 0; index -= 1) {
+          const key = isArray ? index : keys[index];
+          if (!isArray) {
+            estimatedBytes += estimateJsonStringBytes(key) + 1;
+          }
+          stack.push({
+            value: value[key],
+            depth: frame.depth + 1,
+            exit: false
+          });
+        }
+        pendingNodes += childCount;
+      }
+
+      if (estimatedBytes > MAX_STRUCTURED_OUTPUT_BYTES) {
+        return { ok: false, reason: 'size' };
+      }
+    }
+    return { ok: true, estimatedBytes, nodeCount };
+  }
+
+  function structuredBudgetFailure(format, reason) {
+    if (reason === 'depth') {
+      return failure(`${format} 嵌套层级过深`);
+    }
+    if (reason === 'number') {
+      return failure(`${format} 数值超出安全范围`);
+    }
+    if (reason === 'cycle') {
+      return failure(`${format} 数据包含循环引用`);
+    }
+    return failure(`${format} 数据规模过大`);
+  }
+
+  function structuredTextResult(text, format) {
+    return utf8ByteLength(text) > MAX_STRUCTURED_OUTPUT_BYTES
+      ? structuredBudgetFailure(format, 'size')
+      : success(text);
+  }
+
   function parseJsonDocument(input) {
     const text = asText(input);
+    const scan = findJsonError(text);
+    if (scan.unsafeNumberPosition >= 0) {
+      return {
+        ok: false,
+        result: failure(`JSON 数值超出安全范围，位置 ${scan.unsafeNumberPosition}`)
+      };
+    }
     try {
+      const value = JSON.parse(text);
+      const budget = inspectStructuredValue(value);
+      if (!budget.ok) {
+        return {
+          ok: false,
+          result: structuredBudgetFailure('JSON', budget.reason)
+        };
+      }
       return {
         ok: true,
         text,
-        value: JSON.parse(text)
+        value
       };
     } catch (error) {
       return {
@@ -839,7 +1086,10 @@
     if (!parsed.ok) {
       return parsed.result;
     }
-    return success(JSON.stringify(parsed.value, null, jsonSpace(options)));
+    return structuredTextResult(
+      JSON.stringify(parsed.value, null, jsonSpace(options)),
+      'JSON'
+    );
   }
 
   function minifyJson(input) {
@@ -847,7 +1097,7 @@
     if (!parsed.ok) {
       return parsed.result;
     }
-    return success(JSON.stringify(parsed.value));
+    return structuredTextResult(JSON.stringify(parsed.value), 'JSON');
   }
 
   function validateJson(input) {
@@ -859,17 +1109,28 @@
   }
 
   function sortJsonValue(value) {
-    if (Array.isArray(value)) {
-      return value.map(sortJsonValue);
+    if (!value || typeof value !== 'object') {
+      return value;
     }
-    if (value && typeof value === 'object') {
-      const output = Object.create(null);
-      for (const key of Object.keys(value).sort()) {
-        output[key] = sortJsonValue(value[key]);
+    const output = Array.isArray(value) ? [] : Object.create(null);
+    const stack = [{ source: value, target: output }];
+    while (stack.length > 0) {
+      const { source, target } = stack.pop();
+      const keys = Array.isArray(source)
+        ? Array.from({ length: source.length }, (_, index) => index)
+        : Object.keys(source).sort();
+      for (const key of keys) {
+        const child = source[key];
+        if (child && typeof child === 'object') {
+          const childOutput = Array.isArray(child) ? [] : Object.create(null);
+          target[key] = childOutput;
+          stack.push({ source: child, target: childOutput });
+        } else {
+          target[key] = child;
+        }
       }
-      return output;
     }
-    return value;
+    return output;
   }
 
   function sortJsonKeys(input, options = {}) {
@@ -877,7 +1138,10 @@
     if (!parsed.ok) {
       return parsed.result;
     }
-    return success(JSON.stringify(sortJsonValue(parsed.value), null, jsonSpace(options)));
+    return structuredTextResult(
+      JSON.stringify(sortJsonValue(parsed.value), null, jsonSpace(options)),
+      'JSON'
+    );
   }
 
   function escapeJsonString(input) {
@@ -910,11 +1174,26 @@
     if (!yamlImpl || typeof yamlImpl.load !== 'function') {
       return failure('YAML 解析库未加载');
     }
+    const text = asText(input);
+    if (utf8ByteLength(text) > MAX_STRUCTURED_OUTPUT_BYTES) {
+      return failure('YAML 数据规模过大');
+    }
     try {
-      const value = yamlImpl.load(asText(input));
-      return success(JSON.stringify(value, null, jsonSpace(options)));
+      const value = yamlImpl.load(text, {
+        maxAliases: MAX_YAML_ALIASES,
+        maxDepth: MAX_STRUCTURED_DEPTH,
+        maxTotalMergeKeys: MAX_STRUCTURED_NODES
+      });
+      const budget = inspectStructuredValue(value);
+      if (!budget.ok) {
+        return structuredBudgetFailure('YAML', budget.reason);
+      }
+      return structuredTextResult(
+        JSON.stringify(value, null, jsonSpace(options)),
+        'YAML'
+      );
     } catch (error) {
-      return failure('YAML 格式错误');
+      return failure('YAML 格式错误或数据规模过大');
     }
   }
 
@@ -927,10 +1206,21 @@
       return parsed.result;
     }
     try {
-      return success(yamlImpl.dump(parsed.value, options.yaml || {}));
+      return structuredTextResult(
+        asText(yamlImpl.dump(parsed.value, options.yaml || {})),
+        'YAML'
+      );
     } catch (error) {
       return failure('YAML 生成失败');
     }
+  }
+
+  function isValidDelimiter(delimiter) {
+    return (
+      typeof delimiter === 'string'
+      && delimiter.length > 0
+      && !/["\r\n\uFEFF]/u.test(delimiter)
+    );
   }
 
   function convertDelimited(input, fromDelimiter, toDelimiter, Papa) {
@@ -938,10 +1228,8 @@
       return failure('CSV 解析库未加载');
     }
     if (
-      typeof fromDelimiter !== 'string'
-      || fromDelimiter.length === 0
-      || typeof toDelimiter !== 'string'
-      || toDelimiter.length === 0
+      !isValidDelimiter(fromDelimiter)
+      || !isValidDelimiter(toDelimiter)
     ) {
       return failure('分隔符格式无效');
     }
@@ -1025,7 +1313,15 @@
       return failure('Markdown 解析库未加载');
     }
     try {
-      return success(asText(parse(asText(input))));
+      const output = parse(asText(input));
+      if (
+        output !== null
+        && (typeof output === 'object' || typeof output === 'function')
+        && typeof output.then === 'function'
+      ) {
+        return failure('不支持异步 Markdown 解析器');
+      }
+      return success(asText(output));
     } catch (error) {
       return failure('Markdown 格式转换失败');
     }
@@ -1050,18 +1346,13 @@
     if (!document || !document.documentElement) {
       return true;
     }
-    const rootName = asText(document.documentElement.nodeName).toLowerCase();
-    if (rootName === 'parsererror') {
-      return true;
-    }
-    try {
-      return (
-        typeof document.getElementsByTagName === 'function'
-        && document.getElementsByTagName('parsererror').length > 0
-      );
-    } catch (error) {
-      return true;
-    }
+    const root = document.documentElement;
+    const rootName = asText(root.localName || root.nodeName)
+      .toLowerCase()
+      .split(':')
+      .pop();
+    const namespace = asText(root.namespaceURI).toLowerCase();
+    return rootName === 'parsererror' || namespace.includes('parsererror');
   }
 
   function nodeChildren(node) {
@@ -1072,6 +1363,91 @@
     if (node && node.parentNode && typeof node.parentNode.removeChild === 'function') {
       node.parentNode.removeChild(node);
     }
+  }
+
+  function inspectXmlDocument(document, pretty) {
+    const root = document && document.nodeType === 9
+      ? document
+      : document && document.documentElement;
+    if (!root) {
+      return { ok: false, reason: 'size' };
+    }
+    const seen = new WeakSet();
+    const stack = [{ node: root, depth: root.nodeType === 9 ? -1 : 0 }];
+    let nodeCount = 0;
+    let estimatedBytes = 0;
+
+    while (stack.length > 0) {
+      const { node, depth } = stack.pop();
+      if (!node || (typeof node !== 'object' && typeof node !== 'function')) {
+        return { ok: false, reason: 'size' };
+      }
+      if (seen.has(node)) {
+        return { ok: false, reason: 'cycle' };
+      }
+      seen.add(node);
+      nodeCount += 1;
+      if (nodeCount > MAX_STRUCTURED_NODES) {
+        return { ok: false, reason: 'size' };
+      }
+      if (depth > MAX_STRUCTURED_DEPTH) {
+        return { ok: false, reason: 'depth' };
+      }
+
+      if (node.nodeType === 1 || (node.nodeType === undefined && node.nodeName)) {
+        const name = asText(node.nodeName);
+        estimatedBytes += utf8ByteLength(name) * 2 + 5;
+        const rawAttributes = node.attributes;
+        if (
+          rawAttributes
+          && Number.isFinite(Number(rawAttributes.length))
+          && Number(rawAttributes.length) > MAX_STRUCTURED_NODES
+        ) {
+          return { ok: false, reason: 'size' };
+        }
+        const attributes = rawAttributes ? Array.from(rawAttributes) : [];
+        if (attributes.length > MAX_STRUCTURED_NODES) {
+          return { ok: false, reason: 'size' };
+        }
+        for (const attribute of attributes) {
+          estimatedBytes += utf8ByteLength(attribute.name) + utf8ByteLength(attribute.value) + 4;
+        }
+        if (pretty && depth > 0) {
+          estimatedBytes += depth * 4 + 2;
+        }
+      } else if ([3, 4, 7, 8].includes(node.nodeType)) {
+        estimatedBytes += utf8ByteLength(node.nodeValue);
+      }
+      if (estimatedBytes > MAX_STRUCTURED_OUTPUT_BYTES) {
+        return { ok: false, reason: 'size' };
+      }
+
+      if (
+        node.childNodes
+        && Number.isFinite(Number(node.childNodes.length))
+        && Number(node.childNodes.length) > MAX_STRUCTURED_NODES
+      ) {
+        return { ok: false, reason: 'size' };
+      }
+      let children = nodeChildren(node);
+      if (
+        children.length === 0
+        && node.nodeType === 9
+        && node.documentElement
+      ) {
+        children = [node.documentElement];
+      }
+      if (
+        children.length > MAX_STRUCTURED_NODES
+        || nodeCount + stack.length + children.length > MAX_STRUCTURED_NODES
+      ) {
+        return { ok: false, reason: 'size' };
+      }
+      for (let index = children.length - 1; index >= 0; index -= 1) {
+        stack.push({ node: children[index], depth: depth + 1 });
+      }
+    }
+    return { ok: true };
   }
 
   function prepareXmlNode(node, document, depth, pretty, inheritedPreserve) {
@@ -1135,15 +1511,26 @@
       return failure('XML 解析器未加载');
     }
     try {
+      const text = asText(input);
+      if (utf8ByteLength(text) > MAX_STRUCTURED_OUTPUT_BYTES) {
+        return failure('XML 数据规模过大');
+      }
       const parser = new DOMParserCtor();
-      const parsed = parser.parseFromString(asText(input), 'application/xml');
+      const parsed = parser.parseFromString(text, 'application/xml');
       if (hasXmlParserError(parsed)) {
         return failure('XML 格式错误');
+      }
+      const budget = inspectXmlDocument(parsed, pretty);
+      if (!budget.ok) {
+        return structuredBudgetFailure('XML', budget.reason);
       }
       const document = typeof parsed.cloneNode === 'function' ? parsed.cloneNode(true) : parsed;
       prepareXmlNode(document, document, 0, pretty, false);
       const serializer = new XMLSerializerCtor();
-      return success(serializer.serializeToString(document));
+      return structuredTextResult(
+        asText(serializer.serializeToString(document)),
+        'XML'
+      );
     } catch (error) {
       return failure('XML 格式转换失败');
     }
