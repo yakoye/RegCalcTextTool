@@ -4,6 +4,7 @@
   "private": true,
   "description": "Static RegCalc and TextFormatter tool for Cloudflare Pages and GitHub Pages.",
   "scripts": {
+    "test": "node --test tests/*.test.js",
     "build": "node scripts/build-static.js",
     "preview": "npm run build && npx wrangler dev",
     "deploy:cloudflare": "npm run build && npx wrangler deploy",
@@ -11,6 +12,10 @@
   },
   "dependencies": {
     "hash-wasm": "^4.12.0",
-    "mathjs": "^15.2.0"
+    "js-yaml": "5.2.2",
+    "marked": "18.0.7",
+    "mathjs": "^15.2.0",
+    "papaparse": "5.5.4",
+    "turndown": "7.2.4"
   }
 }
