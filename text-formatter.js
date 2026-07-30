@@ -1338,7 +1338,15 @@
       if (!groupsHost.contains(event.target)) closeGroups(null);
     });
     doc.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") closeGroups(null);
+      if (event.key === "Escape") {
+        const openGroup = Array.from(
+          groupsHost.querySelectorAll("details.tc-group")
+        ).find((details) => details.open);
+        const summary = openGroup &&
+          openGroup.querySelector(".tc-group-summary");
+        closeGroups(null);
+        if (summary) summary.focus();
+      }
     });
 
     input.addEventListener("input", () => {

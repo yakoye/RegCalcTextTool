@@ -1246,7 +1246,7 @@ body:has(#textconvert-ui.textformatter-panel) {
   border: 0 !important;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   #textconvert-ui .tc-groups {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }

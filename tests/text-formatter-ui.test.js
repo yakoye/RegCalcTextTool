@@ -30,8 +30,14 @@ function cssMediaBlock(source, maxWidth) {
   const marker = new RegExp(`@media\\s*\\(max-width:\\s*${maxWidth}px\\)\\s*\\{`);
   const match = marker.exec(source);
   assert.ok(match, `missing max-width ${maxWidth}px media query`);
-  const nextMedia = source.indexOf('@media', match.index + match[0].length);
-  return source.slice(match.index, nextMedia === -1 ? source.length : nextMedia);
+  const openingBrace = source.indexOf('{', match.index);
+  let depth = 0;
+  for (let index = openingBrace; index < source.length; index += 1) {
+    if (source[index] === '{') depth += 1;
+    if (source[index] === '}') depth -= 1;
+    if (depth === 0) return source.slice(match.index, index + 1);
+  }
+  assert.fail(`unclosed max-width ${maxWidth}px media query`);
 }
 
 const CORE_ACTIONS = [
@@ -353,18 +359,18 @@ test('uses compact desktop sequence tracks without reserving hidden custom space
 
 test('adapts category, sequence, and sequence action grids at narrow widths', () => {
   const css = readSourceText(cssPath);
-  const at900 = cssMediaBlock(css, 900);
+  const at1024 = cssMediaBlock(css, 1024);
   const at640 = cssMediaBlock(css, 640);
   const at360 = cssMediaBlock(css, 360);
 
-  for (const source of [at900, at640]) {
+  for (const source of [at1024, at640]) {
     assert.match(
       cssRule(source, '#textconvert-ui .tc-sequence-grid'),
       /grid-template-columns:\s*repeat\((?:4|2),\s*minmax\(0,\s*1fr\)\)/
     );
   }
   assert.match(
-    cssRule(at900, '#textconvert-ui .tc-groups'),
+    cssRule(at1024, '#textconvert-ui .tc-groups'),
     /grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)/
   );
   assert.match(
@@ -1856,6 +1862,41 @@ test('runs sequence settings, generation, and panel switching through the real D
   document.querySelector('[data-action-id="core-dedupeLines"]').click();
   assert.equal(sequencePanel.hidden, true);
   assert.equal(document.querySelector('[data-panel="line"]').hidden, false);
+});
+
+test('returns focus to the open category summary when Escape closes groups', () => {
+  const TextFormatterUI = require(controllerPath);
+  const { window } = parseHTML(readSourceText(htmlPath));
+  Object.defineProperty(window, 'localStorage', {
+    configurable: true,
+    value: createStorage()
+  });
+  window.toolboxToast = () => {};
+  window.HTMLElement.prototype.scrollIntoView = () => {};
+
+  TextFormatterUI.init(window);
+
+  const document = window.document;
+  const group = document.querySelector('details.tc-group');
+  const summary = group.querySelector('.tc-group-summary');
+  let focusCalls = 0;
+  summary.focus = () => {
+    focusCalls += 1;
+  };
+  group.open = true;
+  group.dispatchEvent(new window.Event('toggle'));
+
+  const escape = new window.Event('keydown');
+  Object.defineProperty(escape, 'key', { value: 'Escape' });
+  document.dispatchEvent(escape);
+
+  assert.equal(group.open, false);
+  assert.equal(focusCalls, 1);
+
+  const escapeWithoutOpenGroup = new window.Event('keydown');
+  Object.defineProperty(escapeWithoutOpenGroup, 'key', { value: 'Escape' });
+  assert.doesNotThrow(() => document.dispatchEvent(escapeWithoutOpenGroup));
+  assert.equal(focusCalls, 1);
 });
 
 test('forces standard Base64 and disables variants for Data URL output', () => {
