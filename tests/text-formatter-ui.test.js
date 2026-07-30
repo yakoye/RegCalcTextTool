@@ -127,6 +127,50 @@ function enableSelectValueAssignment(window) {
   });
 }
 
+function enableActiveElementTracking(window) {
+  let activeElement = null;
+  Object.defineProperty(window.document, 'activeElement', {
+    configurable: true,
+    get() {
+      return activeElement;
+    }
+  });
+  return (element, onFocus = () => {}) => {
+    const nativeFocus = element.focus;
+    element.focus = function focusTrackedElement() {
+      activeElement = this;
+      onFocus();
+      if (nativeFocus) nativeFocus.call(this);
+    };
+  };
+}
+
+function createInitializedTextFormatterWindow() {
+  const TextFormatterUI = require(controllerPath);
+  const { window } = parseHTML(readSourceText(htmlPath));
+  Object.defineProperty(window, 'localStorage', {
+    configurable: true,
+    value: createStorage()
+  });
+  window.toolboxToast = () => {};
+  window.HTMLElement.prototype.scrollIntoView = () => {};
+  enableSelectValueAssignment(window);
+  const trackFocus = enableActiveElementTracking(window);
+  TextFormatterUI.init(window);
+  return { window, trackFocus };
+}
+
+function openTextFormatterGroup(window, group) {
+  group.open = true;
+  group.dispatchEvent(new window.Event('toggle'));
+}
+
+function dispatchEscape(window) {
+  const escape = new window.Event('keydown');
+  Object.defineProperty(escape, 'key', { value: 'Escape' });
+  window.document.dispatchEvent(escape);
+}
+
 test('normalizes temporary CRLF source copies before regex assertions', (t) => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'text-formatter-crlf-'));
   t.after(() => fs.rmSync(tempDir, { recursive: true, force: true }));
@@ -1864,39 +1908,54 @@ test('runs sequence settings, generation, and panel switching through the real D
   assert.equal(document.querySelector('[data-panel="line"]').hidden, false);
 });
 
-test('returns focus to the open category summary when Escape closes groups', () => {
-  const TextFormatterUI = require(controllerPath);
-  const { window } = parseHTML(readSourceText(htmlPath));
-  Object.defineProperty(window, 'localStorage', {
-    configurable: true,
-    value: createStorage()
-  });
-  window.toolboxToast = () => {};
-  window.HTMLElement.prototype.scrollIntoView = () => {};
-
-  TextFormatterUI.init(window);
-
+test('restores Escape focus only when focus was inside the open category', async (t) => {
+  const { window, trackFocus } = createInitializedTextFormatterWindow();
   const document = window.document;
-  const group = document.querySelector('details.tc-group');
+  const group = document.querySelector('details.tc-group[data-group-id="generate"]');
   const summary = group.querySelector('.tc-group-summary');
+  const menuItem = group.querySelector('.tc-menu-item');
+  const sequenceStart = document.getElementById('sequence_start');
   let focusCalls = 0;
-  summary.focus = () => {
+  trackFocus(summary, () => {
     focusCalls += 1;
-  };
-  group.open = true;
-  group.dispatchEvent(new window.Event('toggle'));
+  });
+  trackFocus(menuItem);
+  trackFocus(sequenceStart);
 
-  const escape = new window.Event('keydown');
-  Object.defineProperty(escape, 'key', { value: 'Escape' });
-  document.dispatchEvent(escape);
+  await t.test('menu item focus returns to its summary', () => {
+    focusCalls = 0;
+    openTextFormatterGroup(window, group);
+    menuItem.focus();
+    assert.equal(document.activeElement, menuItem);
 
-  assert.equal(group.open, false);
-  assert.equal(focusCalls, 1);
+    dispatchEscape(window);
+    assert.equal(group.open, false);
+    assert.equal(focusCalls, 1);
+    assert.equal(document.activeElement, summary);
+  });
 
-  const escapeWithoutOpenGroup = new window.Event('keydown');
-  Object.defineProperty(escapeWithoutOpenGroup, 'key', { value: 'Escape' });
-  assert.doesNotThrow(() => document.dispatchEvent(escapeWithoutOpenGroup));
-  assert.equal(focusCalls, 1);
+  await t.test('sequence input focus stays outside the closed category', () => {
+    focusCalls = 0;
+    openTextFormatterGroup(window, group);
+    group.querySelector('[data-action-id="generate-sequence"]').click();
+    sequenceStart.focus();
+    assert.equal(document.activeElement, sequenceStart);
+
+    dispatchEscape(window);
+    assert.equal(group.open, false);
+    assert.equal(focusCalls, 0);
+    assert.equal(document.activeElement, sequenceStart);
+  });
+
+  await t.test('no open category is safe and preserves focus', () => {
+    focusCalls = 0;
+    sequenceStart.focus();
+
+    assert.doesNotThrow(() => dispatchEscape(window));
+    assert.equal(document.querySelector('details.tc-group[open]'), null);
+    assert.equal(focusCalls, 0);
+    assert.equal(document.activeElement, sequenceStart);
+  });
 });
 
 test('forces standard Base64 and disables variants for Data URL output', () => {

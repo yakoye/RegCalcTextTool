@@ -1344,8 +1344,11 @@
         ).find((details) => details.open);
         const summary = openGroup &&
           openGroup.querySelector(".tc-group-summary");
+        const restoreSummaryFocus = Boolean(
+          openGroup && openGroup.contains(doc.activeElement)
+        );
         closeGroups(null);
-        if (summary) summary.focus();
+        if (restoreSummaryFocus && summary) summary.focus();
       }
     });
 
