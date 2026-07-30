@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { parseHTML } = require('linkedom');
 
 const root = path.join(__dirname, '..');
 const htmlPath = path.join(root, 'TextFormatterTool.html');
@@ -77,6 +78,26 @@ function createDeferred() {
     reject = rejectPromise;
   });
   return { promise, resolve, reject };
+}
+
+function enableSelectValueAssignment(window) {
+  const descriptor = Object.getOwnPropertyDescriptor(
+    window.HTMLSelectElement.prototype,
+    'value'
+  );
+  Object.defineProperty(window.HTMLSelectElement.prototype, 'value', {
+    configurable: true,
+    enumerable: descriptor.enumerable,
+    get: descriptor.get,
+    set(value) {
+      const expected = String(value);
+      for (const option of this.options) {
+        option.selected = false;
+      }
+      const match = Array.from(this.options).find((option) => option.value === expected);
+      if (match) match.selected = true;
+    }
+  });
 }
 
 test('normalizes temporary CRLF source copies before regex assertions', (t) => {
@@ -1603,6 +1624,78 @@ test('keeps the custom sequence separator hidden and disabled outside custom mod
   );
   assert.match(updateCustomSeparator[1], /customSeparatorField\.hidden = !isCustom/);
   assert.match(updateCustomSeparator[1], /customSeparator\.disabled = !isCustom/);
+});
+
+test('runs sequence settings, generation, and panel switching through the real DOM', () => {
+  const TextFormatterUI = require(controllerPath);
+  const storage = createStorage({
+    [TextFormatterUI.SETTINGS_KEY]: JSON.stringify({
+      expandedGroupId: '',
+      hexMode: 'strict',
+      saveText: false,
+      sequence: {
+        width: 0,
+        order: 'range',
+        separatorMode: 'newline',
+        start: 1,
+        end: 2,
+        count: null,
+        separator: ','
+      }
+    })
+  });
+  const { window } = parseHTML(readSourceText(htmlPath));
+  Object.defineProperty(window, 'localStorage', {
+    configurable: true,
+    value: storage
+  });
+  window.TextGenerators = require(path.join(root, 'text-generators.js'));
+  window.toolboxToast = () => {};
+  window.HTMLElement.prototype.scrollIntoView = () => {};
+  enableSelectValueAssignment(window);
+
+  TextFormatterUI.init(window);
+
+  const document = window.document;
+  const sequenceButton = document.querySelector('[data-action-id="generate-sequence"]');
+  const sequencePanel = document.querySelector('[data-panel="sequence"]');
+  const radix = document.getElementById('sequence_radix');
+  assert.equal(radix.value, '10');
+  assert.equal(
+    sequenceButton.getAttribute('aria-label'),
+    '序列生成：设置范围、位数、数量、进制、顺序和分隔符'
+  );
+
+  sequenceButton.click();
+  assert.equal(sequencePanel.hidden, false);
+
+  const separatorMode = document.getElementById('sequence_separator_mode');
+  const customField = document.getElementById('sequence_separator_custom_field');
+  const customSeparator = document.getElementById('sequence_separator_custom');
+  separatorMode.value = 'custom';
+  separatorMode.dispatchEvent(new window.Event('change'));
+  assert.equal(customField.hidden, false);
+  assert.equal(customSeparator.disabled, false);
+
+  separatorMode.value = 'newline';
+  separatorMode.dispatchEvent(new window.Event('change'));
+  assert.equal(customField.hidden, true);
+  assert.equal(customSeparator.disabled, true);
+
+  document.getElementById('sequence_start').value = '10';
+  document.getElementById('sequence_end').value = '12';
+  radix.value = '16';
+  document.getElementById('sequence_to_output').click();
+  assert.equal(document.getElementById('textconvert_output').value, '0xA\n0xB\n0xC');
+
+  document.getElementById('sequence_start').value = '15';
+  document.getElementById('sequence_end').value = '16';
+  document.getElementById('sequence_to_input').click();
+  assert.equal(document.getElementById('textconvert_input').value, '0xF\n0x10');
+
+  document.querySelector('[data-action-id="core-dedupeLines"]').click();
+  assert.equal(sequencePanel.hidden, true);
+  assert.equal(document.querySelector('[data-panel="line"]').hidden, false);
 });
 
 test('forces standard Base64 and disables variants for Data URL output', () => {

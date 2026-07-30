@@ -304,7 +304,7 @@
         action(
           "generate-sequence",
           "序列生成",
-          "设置范围、位数、数量、顺序和分隔符",
+          "设置范围、位数、数量、进制、顺序和分隔符",
           "sequence",
           "generator",
           "generateSequence"

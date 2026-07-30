@@ -19,5 +19,8 @@
     "papaparse": "5.5.4",
     "sax": "1.6.1",
     "turndown": "7.2.4"
+  },
+  "devDependencies": {
+    "linkedom": "0.18.12"
   }
 }
