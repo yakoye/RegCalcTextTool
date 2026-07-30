@@ -173,6 +173,100 @@ test('pads negative magnitudes without counting the sign', () => {
   }), '-003,-002,-001,000,001');
 });
 
+test('defaults radix to 10 and preserves explicit decimal output', () => {
+  const options = {
+    start: -10,
+    end: 10,
+    width: 3,
+    separator: ','
+  };
+
+  assert.equal(valueOf(options), valueOf({ ...options, radix: 10 }));
+  assert.equal(valueOf({ ...options, radix: 10 }), [
+    '-010',
+    '-009',
+    '-008',
+    '-007',
+    '-006',
+    '-005',
+    '-004',
+    '-003',
+    '-002',
+    '-001',
+    '000',
+    '001',
+    '002',
+    '003',
+    '004',
+    '005',
+    '006',
+    '007',
+    '008',
+    '009',
+    '010'
+  ].join(','));
+});
+
+test('formats hexadecimal values with uppercase digits and a 0x prefix', () => {
+  assert.equal(valueOf({
+    start: 10,
+    end: 16,
+    radix: 16,
+    separator: ','
+  }), '0xA,0xB,0xC,0xD,0xE,0xF,0x10');
+});
+
+test('pads only hexadecimal digits and places the sign before the prefix', () => {
+  assert.equal(valueOf({
+    start: -10,
+    end: -10,
+    width: 4,
+    radix: 16
+  }), '-0x000A');
+  assert.equal(valueOf({
+    start: 10,
+    end: 10,
+    width: 4,
+    radix: 16
+  }), '0x000A');
+});
+
+test('applies hexadecimal formatting after numeric sorting and count', () => {
+  assert.equal(valueOf({
+    start: 15,
+    end: 17,
+    order: 'desc',
+    count: 2,
+    radix: 16,
+    separator: ','
+  }), '0x11,0x10');
+});
+
+test('applies hexadecimal formatting after numeric shuffling', () => {
+  const randomValues = [0, 0];
+  let calls = 0;
+
+  assert.equal(valueOf({
+    start: 10,
+    end: 12,
+    order: 'random',
+    radix: 16,
+    separator: ',',
+    random() {
+      const value = randomValues[calls];
+      calls += 1;
+      return value;
+    }
+  }), '0xB,0xC,0xA');
+  assert.equal(calls, 2);
+});
+
+test('rejects radices other than 10 and 16 with a stable error', () => {
+  for (const radix of [2, 8, 36, '16', null, NaN, Symbol('16')]) {
+    assertFailure({ radix }, '进制必须是 10 或 16');
+  }
+});
+
 test('preserves safe-integer extremes and rejects unsafe endpoints', () => {
   assert.equal(valueOf({
     start: Number.MAX_SAFE_INTEGER - 1,

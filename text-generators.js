@@ -25,6 +25,7 @@
     const startOption = options.start;
     const endOption = options.end;
     const widthOption = options.width;
+    const radixOption = options.radix;
     const countOption = options.count;
     const orderOption = options.order;
     const separatorOption = options.separator;
@@ -33,6 +34,7 @@
     const start = startOption === undefined ? 1 : startOption;
     const end = endOption === undefined ? 50 : endOption;
     const width = widthOption === undefined ? 0 : widthOption;
+    const radix = radixOption === undefined ? 10 : radixOption;
     const count = countOption === undefined ? null : countOption;
     const order = orderOption === undefined ? 'range' : orderOption;
     const separator = separatorOption === undefined ? '\n' : separatorOption;
@@ -49,6 +51,9 @@
     }
     if (width < 0 || width > 10) {
       return failure('补零位数必须在 0 到 10 之间');
+    }
+    if (radix !== 10 && radix !== 16) {
+      return failure('进制必须是 10 或 16');
     }
     if (count !== null && !Number.isSafeInteger(count)) {
       return failure('生成数量必须是安全整数或 null');
@@ -70,6 +75,7 @@
       start,
       end,
       width,
+      radix,
       count,
       order,
       separator,
@@ -94,9 +100,11 @@
     return success(values);
   }
 
-  function formatNumber(value, width) {
+  function formatNumber(value, width, radix) {
     const sign = value < 0 ? '-' : '';
-    return sign + String(Math.abs(value)).padStart(width, '0');
+    const prefix = radix === 16 ? '0x' : '';
+    const digits = Math.abs(value).toString(radix).toUpperCase().padStart(width, '0');
+    return sign + prefix + digits;
   }
 
   function generateSequenceImpl(options) {
@@ -109,6 +117,7 @@
       start,
       end,
       width,
+      radix,
       count,
       order,
       separator,
@@ -138,7 +147,7 @@
 
     const limited = count === null ? values : values.slice(0, count);
     return success(
-      limited.map((value) => formatNumber(value, width)).join(separator)
+      limited.map((value) => formatNumber(value, width, radix)).join(separator)
     );
   }
 
