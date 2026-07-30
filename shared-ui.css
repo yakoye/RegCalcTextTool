@@ -807,7 +807,7 @@ body:has(#textconvert-ui.textformatter-panel) {
   width: min(100%, 1100px);
   max-width: 1100px;
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
   letter-spacing: 0;
 }
 
@@ -937,15 +937,17 @@ body:has(#textconvert-ui.textformatter-panel) {
   gap: 6px;
   align-items: start;
   min-width: 0;
-  max-height: 320px;
   padding: 2px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
+  overflow: visible;
 }
 
 #textconvert-ui .tc-group {
+  position: relative;
   min-width: 0;
+}
+
+#textconvert-ui .tc-group[open] {
+  z-index: 40;
 }
 
 #textconvert-ui .tc-group-summary {
@@ -1018,12 +1020,25 @@ body:has(#textconvert-ui.textformatter-panel) {
 }
 
 #textconvert-ui .tc-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 50;
   width: 100%;
   max-height: 220px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.76);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+#textconvert-ui .tc-menu.tc-menu-up {
+  top: auto;
+  bottom: calc(100% + 4px);
 }
 
 #textconvert-ui .tc-menu-item {

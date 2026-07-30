@@ -1099,12 +1099,75 @@
       groupsHost.querySelectorAll("details.tc-group").forEach((details) => {
         if (details !== except) details.open = false;
         const menu = details.querySelector(".tc-menu");
-        if (menu) menu.hidden = !details.open;
+        if (menu) {
+          menu.hidden = !details.open;
+          if (!details.open) {
+            menu.classList.remove("tc-menu-up");
+            menu.style.removeProperty("max-height");
+          }
+        }
       });
       if (!except) {
         settings.expandedGroupId = "";
         settings = saveSettings(storage, settings);
       }
+    }
+
+    function hidePanels() {
+      selectedAction = null;
+      base64PanelActive = false;
+      doc.querySelectorAll(".tc-parameter-panel").forEach((item) => {
+        item.hidden = true;
+      });
+    }
+
+    function positionGroupMenu(details) {
+      const summary = details.querySelector(".tc-group-summary");
+      const menu = details.querySelector(".tc-menu");
+      if (
+        !details.open
+        || !summary
+        || !menu
+        || typeof summary.getBoundingClientRect !== "function"
+      ) {
+        return;
+      }
+      const rect = summary.getBoundingClientRect();
+      const viewportHeight = Number(host.innerHeight)
+        || Number(doc.documentElement.clientHeight)
+        || 720;
+      let viewportTop = 0;
+      let viewportBottom = viewportHeight;
+      try {
+        if (host.parent !== host && host.frameElement) {
+          const frameRect = host.frameElement.getBoundingClientRect();
+          const parentHeight = Number(host.parent.innerHeight) || viewportHeight;
+          viewportTop = Math.max(0, -frameRect.top);
+          viewportBottom = Math.min(
+            viewportHeight,
+            Math.max(viewportTop, parentHeight - frameRect.top)
+          );
+        }
+      } catch (_error) {
+        viewportTop = 0;
+        viewportBottom = viewportHeight;
+      }
+      const edgeGap = 8;
+      const spaceBelow = Math.max(0, viewportBottom - rect.bottom - edgeGap);
+      const spaceAbove = Math.max(0, rect.top - viewportTop - edgeGap);
+      const preferredHeight = Math.min(menu.scrollHeight || 220, 230);
+      const openUp = spaceBelow < preferredHeight && spaceAbove > spaceBelow;
+      const availableHeight = Math.max(
+        72,
+        Math.floor(openUp ? spaceAbove : spaceBelow)
+      );
+      menu.classList.toggle("tc-menu-up", openUp);
+      menu.style.maxHeight = `${Math.min(230, availableHeight)}px`;
+    }
+
+    function positionOpenGroupMenu() {
+      const openGroup = groupsHost.querySelector("details.tc-group[open]");
+      if (openGroup) positionGroupMenu(openGroup);
     }
 
     function showPanel(actionItem) {
@@ -1273,6 +1336,7 @@
     }
 
     function selectAction(actionItem) {
+      closeGroups(null);
       if (actionItem.panel) {
         showPanel(actionItem);
       } else {
@@ -1319,15 +1383,26 @@
       details.addEventListener("toggle", () => {
         if (details.open) {
           closeGroups(details);
+          hidePanels();
           settings.expandedGroupId = group.id;
         } else if (settings.expandedGroupId === group.id) {
           settings.expandedGroupId = "";
         }
         menu.hidden = !details.open;
+        if (details.open) positionGroupMenu(details);
         settings = saveSettings(storage, settings);
       });
       groupsHost.appendChild(details);
+      if (details.open) {
+        hidePanels();
+        positionGroupMenu(details);
+      }
     });
+
+    if (typeof host.addEventListener === "function") {
+      host.addEventListener("resize", positionOpenGroupMenu);
+      host.addEventListener("scroll", positionOpenGroupMenu, true);
+    }
 
     panel.addEventListener("click", (event) => {
       const runButton = event.target.closest("[data-run-selected]");

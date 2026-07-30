@@ -296,7 +296,7 @@ test('renders a one-border menu with persistent descriptions and accessible cont
     /function selectAction\(actionItem\) \{([\s\S]*?)\n    \}\n\n    TEXT_TOOL_GROUPS/
   );
   assert.ok(selectAction);
-  assert.doesNotMatch(selectAction[1], /closeGroups/);
+  assert.match(selectAction[1], /closeGroups\(null\)/);
 });
 
 test('styles category summaries as explicit accessible dropdown controls', () => {
@@ -346,19 +346,25 @@ test('styles category summaries as explicit accessible dropdown controls', () =>
   assert.match(focus, /outline-offset:/);
 });
 
-test('bounds category and action lists with internal scrolling below the text workspace', () => {
+test('overlays category menus with viewport-aware internal scrolling', () => {
   const html = readSourceText(htmlPath);
   const css = readSourceText(cssPath);
+  const controller = readSourceText(controllerPath);
   const groups = cssRule(css, '#textconvert-ui .tc-groups');
   const menu = cssRule(css, '#textconvert-ui .tc-menu');
+  const upMenu = cssRule(css, '#textconvert-ui .tc-menu.tc-menu-up');
 
-  assert.match(groups, /max-height:\s*\d+px/);
-  assert.match(groups, /overflow-y:\s*auto/);
-  assert.match(groups, /overscroll-behavior:\s*contain/);
+  assert.match(groups, /overflow:\s*visible/);
   assert.match(menu, /max-height:\s*\d+px/);
   assert.match(menu, /overflow-y:\s*auto/);
+  assert.match(menu, /position:\s*absolute/);
+  assert.match(menu, /z-index:\s*\d+/);
+  assert.match(upMenu, /bottom:\s*calc\(/);
   assert.doesNotMatch(groups, /position:\s*(?:absolute|fixed)/);
-  assert.doesNotMatch(menu, /position:\s*(?:absolute|fixed)/);
+  assert.match(controller, /function positionGroupMenu\(details\)/);
+  assert.match(controller, /spaceBelow\s*<\s*preferredHeight/);
+  assert.match(controller, /classList\.toggle\("tc-menu-up",\s*openUp\)/);
+  assert.match(controller, /function hidePanels\(\)/);
 
   assert.ok(
     html.indexOf('class="tc-text-workspace"') <
@@ -1903,8 +1909,13 @@ test('runs sequence settings, generation, and panel switching through the real D
   document.getElementById('sequence_to_input').click();
   assert.equal(document.getElementById('textconvert_input').value, '0xF\n0x10');
 
-  document.querySelector('[data-action-id="core-dedupeLines"]').click();
+  const lineGroup = document.querySelector('details.tc-group[data-group-id="line"]');
+  openTextFormatterGroup(window, lineGroup);
   assert.equal(sequencePanel.hidden, true);
+  assert.equal(document.querySelector('[data-panel="line"]').hidden, true);
+
+  document.querySelector('[data-action-id="core-dedupeLines"]').click();
+  assert.equal(lineGroup.open, false);
   assert.equal(document.querySelector('[data-panel="line"]').hidden, false);
 });
 
