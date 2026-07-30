@@ -868,7 +868,7 @@ body:has(#textconvert-ui.textformatter-panel) {
   display: block;
   width: 100%;
   min-width: 0;
-  height: 220px;
+  height: 250px;
   min-height: 160px;
   padding: 10px;
   resize: vertical;
@@ -902,12 +902,21 @@ body:has(#textconvert-ui.textformatter-panel) {
 
 #textconvert-ui .tc-workflow-bar {
   min-height: 40px;
-  justify-content: space-between;
+  justify-content: center;
   border-bottom: 1px solid var(--border);
 }
 
+#textconvert-ui .tc-workflow-bar::after,
 #textconvert-ui .tc-status {
+  flex: 1 1 0;
   min-width: 0;
+}
+
+#textconvert-ui .tc-workflow-bar::after {
+  content: "";
+}
+
+#textconvert-ui .tc-status {
   min-height: 20px;
   color: var(--text-muted);
   font-size: 12px;
@@ -919,7 +928,7 @@ body:has(#textconvert-ui.textformatter-panel) {
 }
 
 #textconvert-ui .tc-operation-frame {
-  margin-top: 10px;
+  margin-top: 0;
 }
 
 #textconvert-ui .tc-groups {

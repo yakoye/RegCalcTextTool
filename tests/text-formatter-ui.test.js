@@ -346,7 +346,7 @@ test('styles category summaries as explicit accessible dropdown controls', () =>
   assert.match(focus, /outline-offset:/);
 });
 
-test('bounds category and action lists with internal scrolling above parameters', () => {
+test('bounds category and action lists with internal scrolling below the text workspace', () => {
   const html = readSourceText(htmlPath);
   const css = readSourceText(cssPath);
   const groups = cssRule(css, '#textconvert-ui .tc-groups');
@@ -361,12 +361,12 @@ test('bounds category and action lists with internal scrolling above parameters'
   assert.doesNotMatch(menu, /position:\s*(?:absolute|fixed)/);
 
   assert.ok(
-    html.indexOf('class="tc-operation-frame"') <
-      html.indexOf('id="text_parameter_panels"')
+    html.indexOf('class="tc-text-workspace"') <
+      html.indexOf('class="tc-operation-frame"')
   );
   assert.ok(
-    html.indexOf('id="text_parameter_panels"') <
-      html.indexOf('class="tc-text-workspace"')
+    html.indexOf('class="tc-operation-frame"') <
+      html.indexOf('id="text_parameter_panels"')
   );
 });
 
@@ -1739,14 +1739,14 @@ test('passes raw sequence numbers to TextGenerators before saving preferences', 
   );
 });
 
-test('orders operation controls before the text workspace', () => {
+test('orders the text workspace before operation controls', () => {
   const html = readSourceText(htmlPath);
   const orderedMarkers = [
     '<header class="textformatter-header">',
-    '<section class="tc-operation-frame"',
-    'id="text_parameter_panels"',
+    '<section class="tc-text-workspace"',
     '<div class="tc-workflow-bar">',
-    '<section class="tc-text-workspace"'
+    '<section class="tc-operation-frame"',
+    'id="text_parameter_panels"'
   ];
   let previous = -1;
 
