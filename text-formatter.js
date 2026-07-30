@@ -23,6 +23,7 @@
   const GROUP_IDS = new Set(["", "clean", "lines", "case", "encode", "data", "hex", "generate"]);
   const HEX_MODES = new Set(["strict", "clean"]);
   const SEQUENCE_ORDERS = new Set(["range", "asc", "desc", "random"]);
+  const SEQUENCE_RADICES = new Set([10, 16]);
   const SEPARATOR_MODES = new Set(["newline", "space", "comma", "custom"]);
   const MAX_FILE_BYTES = 16 * 1024 * 1024;
   const MAX_BASE64_ENCODED_CHARS = Math.ceil(MAX_FILE_BYTES / 3) * 4;
@@ -38,6 +39,7 @@
     saveText: false,
     sequence: Object.freeze({
       width: 0,
+      radix: 10,
       order: "range",
       separatorMode: "newline",
       start: 1,
@@ -336,6 +338,9 @@
       saveText: value.saveText === true ? true : defaults.saveText,
       sequence: {
         width: integerOr(sequence.width, sequenceDefaults.width, 0, 10),
+        radix: SEQUENCE_RADICES.has(sequence.radix)
+          ? sequence.radix
+          : sequenceDefaults.radix,
         order: SEQUENCE_ORDERS.has(sequence.order)
           ? sequence.order
           : sequenceDefaults.order,
@@ -928,6 +933,7 @@
       end: numberValue(source.end),
       width: numberValue(source.width),
       count: source.count === "" ? null : numberValue(source.count),
+      radix: numberValue(source.radix),
       order: source.order,
       separatorMode,
       separator: customSeparator
@@ -1485,6 +1491,7 @@
         end: doc.getElementById("sequence_end").value,
         width: doc.getElementById("sequence_width").value,
         count: doc.getElementById("sequence_count").value,
+        radix: doc.getElementById("sequence_radix").value,
         order: doc.getElementById("sequence_order").value,
         separatorMode: doc.getElementById("sequence_separator_mode").value,
         separator: doc.getElementById("sequence_separator_custom").value
@@ -1523,6 +1530,7 @@
       sequence_end: settings.sequence.end,
       sequence_width: settings.sequence.width,
       sequence_count: settings.sequence.count === null ? "" : settings.sequence.count,
+      sequence_radix: settings.sequence.radix,
       sequence_order: settings.sequence.order,
       sequence_separator_mode: settings.sequence.separatorMode,
       sequence_separator_custom: settings.sequence.separator
@@ -1531,9 +1539,12 @@
       doc.getElementById(id).value = value;
     });
     const separatorMode = doc.getElementById("sequence_separator_mode");
+    const customSeparatorField = doc.getElementById("sequence_separator_custom_field");
     const customSeparator = doc.getElementById("sequence_separator_custom");
     function updateCustomSeparator() {
-      customSeparator.disabled = separatorMode.value !== "custom";
+      const isCustom = separatorMode.value === "custom";
+      customSeparatorField.hidden = !isCustom;
+      customSeparator.disabled = !isCustom;
     }
     separatorMode.addEventListener("change", updateCustomSeparator);
     doc.getElementById("sequence_to_output").addEventListener("click", () => generateSequence(output));

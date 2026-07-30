@@ -29,52 +29,6 @@
       </label>
     </header>
 
-    <section class="tc-text-workspace" aria-label="文本输入和处理结果">
-      <div class="tc-editor-pane">
-        <div class="tc-editor-header">
-          <label for="textconvert_input">原文</label>
-          <button type="button" id="text_clear_input">清空</button>
-        </div>
-        <textarea id="textconvert_input" autocomplete="off" spellcheck="false"
-          placeholder="输入或粘贴原文"></textarea>
-        <div class="tc-stats" id="text_input_stats">
-          字符 <span data-stat="characters">0</span> ·
-          行 <span data-stat="lines">0</span> ·
-          UTF-8 <span data-stat="bytes">0</span> 字节
-        </div>
-      </div>
-
-      <div class="tc-transfer-actions" aria-label="文本传递操作">
-        <button type="button" id="text_swap" title="交换原文与结果"
-          aria-label="交换原文与结果">⇄</button>
-        <button type="button" id="text_use_output" title="结果作为原文"
-          aria-label="结果作为原文">←</button>
-      </div>
-
-      <div class="tc-editor-pane">
-        <div class="tc-editor-header">
-          <label for="textconvert_output">结果</label>
-          <div class="tc-inline-actions">
-            <button type="button" id="text_copy_output">复制</button>
-            <button type="button" id="text_clear_output">清空</button>
-          </div>
-        </div>
-        <textarea id="textconvert_output" autocomplete="off" spellcheck="false"
-          placeholder="处理结果"></textarea>
-        <div class="tc-stats" id="text_output_stats">
-          字符 <span data-stat="characters">0</span> ·
-          行 <span data-stat="lines">0</span> ·
-          UTF-8 <span data-stat="bytes">0</span> 字节
-        </div>
-      </div>
-    </section>
-
-    <div class="tc-workflow-bar">
-      <div id="textformatter_status" class="tc-status" role="status"
-        aria-live="polite"></div>
-      <button type="button" id="text_clear_all">清空全部</button>
-    </div>
-
     <section class="tc-operation-frame" aria-label="文本操作">
       <div class="tc-groups" id="text_tool_groups"></div>
     </section>
@@ -211,14 +165,20 @@
           <label class="tc-field">结束
             <input type="number" id="sequence_end" value="50">
           </label>
-          <label class="tc-field">位数
+          <label class="tc-field tc-sequence-field-width">位数
             <input type="number" id="sequence_width" value="0" min="0" max="10">
           </label>
-          <label class="tc-field">数量
+          <label class="tc-field tc-sequence-field-count">数量
             <input type="number" id="sequence_count" min="1" max="10000"
               placeholder="全部">
           </label>
-          <label class="tc-field">顺序
+          <label class="tc-field tc-sequence-field-radix">进制
+            <select id="sequence_radix">
+              <option value="10">十进制</option>
+              <option value="16">十六进制</option>
+            </select>
+          </label>
+          <label class="tc-field tc-sequence-field-order">顺序
             <select id="sequence_order">
               <option value="range">按范围</option>
               <option value="asc">升序</option>
@@ -226,7 +186,7 @@
               <option value="random">随机</option>
             </select>
           </label>
-          <label class="tc-field">分隔方式
+          <label class="tc-field tc-sequence-field-separator">分隔方式
             <select id="sequence_separator_mode">
               <option value="newline">换行</option>
               <option value="space">空格</option>
@@ -234,7 +194,8 @@
               <option value="custom">自定义</option>
             </select>
           </label>
-          <label class="tc-field">自定义分隔符
+          <label class="tc-field tc-sequence-field-custom"
+            id="sequence_separator_custom_field" hidden>自定义分隔符
             <input type="text" id="sequence_separator_custom" value="," disabled>
           </label>
         </div>
@@ -287,6 +248,52 @@
           </div>
           <div id="markdown_table_status" class="markdown-table-status"
             role="status" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="tc-workflow-bar">
+      <div id="textformatter_status" class="tc-status" role="status"
+        aria-live="polite"></div>
+      <button type="button" id="text_clear_all">清空全部</button>
+    </div>
+
+    <section class="tc-text-workspace" aria-label="文本输入和处理结果">
+      <div class="tc-editor-pane">
+        <div class="tc-editor-header">
+          <label for="textconvert_input">原文</label>
+          <button type="button" id="text_clear_input">清空</button>
+        </div>
+        <textarea id="textconvert_input" autocomplete="off" spellcheck="false"
+          placeholder="输入或粘贴原文"></textarea>
+        <div class="tc-stats" id="text_input_stats">
+          字符 <span data-stat="characters">0</span> ·
+          行 <span data-stat="lines">0</span> ·
+          UTF-8 <span data-stat="bytes">0</span> 字节
+        </div>
+      </div>
+
+      <div class="tc-transfer-actions" aria-label="文本传递操作">
+        <button type="button" id="text_swap" title="交换原文与结果"
+          aria-label="交换原文与结果">⇄</button>
+        <button type="button" id="text_use_output" title="结果作为原文"
+          aria-label="结果作为原文">←</button>
+      </div>
+
+      <div class="tc-editor-pane">
+        <div class="tc-editor-header">
+          <label for="textconvert_output">结果</label>
+          <div class="tc-inline-actions">
+            <button type="button" id="text_copy_output">复制</button>
+            <button type="button" id="text_clear_output">清空</button>
+          </div>
+        </div>
+        <textarea id="textconvert_output" autocomplete="off" spellcheck="false"
+          placeholder="处理结果"></textarea>
+        <div class="tc-stats" id="text_output_stats">
+          字符 <span data-stat="characters">0</span> ·
+          行 <span data-stat="lines">0</span> ·
+          UTF-8 <span data-stat="bytes">0</span> 字节
         </div>
       </div>
     </section>

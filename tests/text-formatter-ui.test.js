@@ -240,6 +240,7 @@ test('persists only whitelisted settings and conditionally persisted text', () =
     saveText: true,
     sequence: {
       width: 4,
+      radix: 16,
       order: 'desc',
       separatorMode: 'custom',
       start: 9,
@@ -261,6 +262,7 @@ test('persists only whitelisted settings and conditionally persisted text', () =
     saveText: true,
     sequence: {
       width: 4,
+      radix: 16,
       order: 'desc',
       separatorMode: 'custom',
       start: 9,
@@ -294,6 +296,22 @@ test('uses DEFAULT_SETTINGS as the single sanitization fallback source', () => {
   assert.ok(sanitizeBody);
   assert.match(sanitizeBody[1], /DEFAULT_SETTINGS/);
   assert.doesNotMatch(sanitizeBody[1], /:\s*"strict"|:\s*"newline"|:\s*50|:\s*1|:\s*","/);
+});
+
+test('sanitizes sequence radix and defaults legacy settings to decimal', () => {
+  const { DEFAULT_SETTINGS, sanitizeSettings } = require(controllerPath);
+
+  assert.equal(DEFAULT_SETTINGS.sequence.radix, 10);
+  assert.equal(sanitizeSettings({ sequence: {} }).sequence.radix, 10);
+  assert.equal(sanitizeSettings({ sequence: { radix: 10 } }).sequence.radix, 10);
+  assert.equal(sanitizeSettings({ sequence: { radix: 16 } }).sequence.radix, 16);
+  for (const radix of [2, 8, 36, '10', '16', null, false]) {
+    assert.equal(
+      sanitizeSettings({ sequence: { radix } }).sequence.radix,
+      10,
+      `unexpected sanitized radix for ${String(radix)}`
+    );
+  }
 });
 
 test('handles unavailable Storage getters and failed writes without enabling persistence', () => {
@@ -1462,6 +1480,7 @@ test('passes raw sequence numbers to TextGenerators before saving preferences', 
     end: '3',
     width: '99',
     count: '',
+    radix: '16',
     order: 'range',
     separatorMode: 'newline',
     separator: ','
@@ -1469,6 +1488,8 @@ test('passes raw sequence numbers to TextGenerators before saving preferences', 
 
   assert.equal(request.options.width, 99);
   assert.equal(request.preference.width, 99);
+  assert.equal(request.options.radix, 16);
+  assert.equal(request.preference.radix, 16);
   assert.deepEqual(TextGenerators.generateSequence(request.options), {
     ok: false,
     value: '',
@@ -1485,6 +1506,103 @@ test('passes raw sequence numbers to TextGenerators before saving preferences', 
       generateSequence[1].indexOf('saveSettings(storage, settings)'),
     'sequence preferences should only be saved after generation succeeds'
   );
+});
+
+test('orders operation controls before the text workspace', () => {
+  const html = readSourceText(htmlPath);
+  const orderedMarkers = [
+    '<header class="textformatter-header">',
+    '<section class="tc-operation-frame"',
+    'id="text_parameter_panels"',
+    '<div class="tc-workflow-bar">',
+    '<section class="tc-text-workspace"'
+  ];
+  let previous = -1;
+
+  for (const marker of orderedMarkers) {
+    const index = html.indexOf(marker);
+    assert.ok(index > previous, `${marker} should follow the preceding main section`);
+    previous = index;
+  }
+});
+
+test('provides sequence fields in workflow order with decimal and hexadecimal radix', () => {
+  const html = readSourceText(htmlPath);
+  const panel = html.match(
+    /<div class="tc-parameter-panel" data-panel="sequence" hidden>([\s\S]*?)\n      <\/div>\n\n      <div class="tc-parameter-panel/
+  );
+  assert.ok(panel);
+
+  const fields = panel[1].match(
+    /<div class="tc-option-grid tc-sequence-grid">([\s\S]*?)\n        <\/div>/
+  );
+  assert.ok(fields);
+  assert.deepEqual(
+    Array.from(fields[1].matchAll(/\sid="(sequence_[^"]+)"/g), (match) => match[1]),
+    [
+      'sequence_start',
+      'sequence_end',
+      'sequence_width',
+      'sequence_count',
+      'sequence_radix',
+      'sequence_order',
+      'sequence_separator_mode',
+      'sequence_separator_custom_field',
+      'sequence_separator_custom'
+    ]
+  );
+
+  const radix = fields[1].match(/<select id="sequence_radix">([\s\S]*?)<\/select>/);
+  assert.ok(radix);
+  assert.match(radix[1], /<option value="10">十进制<\/option>/);
+  assert.match(radix[1], /<option value="16">十六进制<\/option>/);
+  assert.ok(
+    radix[1].indexOf('<option value="10">十进制</option>') <
+      radix[1].indexOf('<option value="16">十六进制</option>')
+  );
+
+  const actions = panel[1].match(/<div class="tc-panel-actions">([\s\S]*?)<\/div>/);
+  assert.ok(actions);
+  assert.deepEqual(
+    Array.from(actions[1].matchAll(/\sid="([^"]+)"/g), (match) => match[1]),
+    ['sequence_to_output', 'sequence_to_input']
+  );
+});
+
+test('keeps the custom sequence separator hidden and disabled outside custom mode', () => {
+  const html = readSourceText(htmlPath);
+  const controller = readSourceText(controllerPath);
+  const customField = html.match(
+    /<label[^>]*id="sequence_separator_custom_field"[^>]*>[\s\S]*?<\/label>/
+  );
+  assert.ok(customField);
+  assert.match(customField[0], /\shidden(?:\s|>)/);
+  assert.match(
+    customField[0],
+    /<input[^>]*id="sequence_separator_custom"[^>]*\sdisabled(?:\s|>)/
+  );
+
+  const sequenceReader = controller.match(
+    /function readSequenceRequest\(\) \{([\s\S]*?)\n    \}\n\n    function generateSequence/
+  );
+  assert.ok(sequenceReader);
+  assert.match(sequenceReader[1], /radix:\s*doc\.getElementById\("sequence_radix"\)\.value/);
+  assert.match(controller, /sequence_radix:\s*settings\.sequence\.radix/);
+  assert.match(
+    controller,
+    /const customSeparatorField = doc\.getElementById\("sequence_separator_custom_field"\)/
+  );
+
+  const updateCustomSeparator = controller.match(
+    /function updateCustomSeparator\(\) \{([\s\S]*?)\n    \}/
+  );
+  assert.ok(updateCustomSeparator);
+  assert.match(
+    updateCustomSeparator[1],
+    /const isCustom = separatorMode\.value === "custom"/
+  );
+  assert.match(updateCustomSeparator[1], /customSeparatorField\.hidden = !isCustom/);
+  assert.match(updateCustomSeparator[1], /customSeparator\.disabled = !isCustom/);
 });
 
 test('forces standard Base64 and disables variants for Data URL output', () => {
