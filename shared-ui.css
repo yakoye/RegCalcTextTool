@@ -808,6 +808,7 @@ body:has(#textconvert-ui.textformatter-panel) {
   max-width: 1100px;
   min-width: 0;
   overflow: hidden;
+  letter-spacing: 0;
 }
 
 #textconvert-ui .textformatter-header,
@@ -918,11 +919,7 @@ body:has(#textconvert-ui.textformatter-panel) {
 }
 
 #textconvert-ui .tc-operation-frame {
-  max-height: 340px;
   margin-top: 10px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
 }
 
 #textconvert-ui .tc-groups {
@@ -931,29 +928,77 @@ body:has(#textconvert-ui.textformatter-panel) {
   gap: 6px;
   align-items: start;
   min-width: 0;
+  max-height: 320px;
+  padding: 2px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 #textconvert-ui .tc-group {
   min-width: 0;
-  border-bottom: 1px solid var(--border);
 }
 
 #textconvert-ui .tc-group-summary {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 10px;
   align-items: center;
-  justify-content: space-between;
   gap: 6px;
   min-height: 38px;
   padding: 6px 7px;
+  list-style: none;
+  border: 1px solid rgba(148, 163, 184, 0.72);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.64);
   color: var(--text-main);
   font-size: 12px;
   font-weight: 700;
+  letter-spacing: 0;
+  white-space: nowrap;
   cursor: pointer;
   user-select: none;
+  transition: background-color 0.16s ease, border-color 0.16s ease,
+    color 0.16s ease;
 }
 
 #textconvert-ui .tc-group-summary::marker {
+  content: "";
+}
+
+#textconvert-ui .tc-group-summary::-webkit-details-marker {
+  display: none;
+}
+
+#textconvert-ui .tc-group-summary::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  margin: 0 2px 3px 0;
+  border-right: 2px solid var(--text-muted);
+  border-bottom: 2px solid var(--text-muted);
+  transform: rotate(45deg);
+  transition: transform 0.16s ease;
+}
+
+#textconvert-ui .tc-group-summary:hover {
+  border-color: rgba(47, 143, 87, 0.68);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+#textconvert-ui .tc-group-summary:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+#textconvert-ui .tc-group[open] > .tc-group-summary {
+  border-color: var(--primary);
+  background: var(--primary-soft);
   color: var(--primary);
+}
+
+#textconvert-ui .tc-group[open] > .tc-group-summary::after {
+  border-color: var(--primary);
+  transform: rotate(-135deg);
 }
 
 #textconvert-ui .tc-group-count {
@@ -965,7 +1010,7 @@ body:has(#textconvert-ui.textformatter-panel) {
 
 #textconvert-ui .tc-menu {
   width: 100%;
-  max-height: 250px;
+  max-height: 220px;
   overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -1049,6 +1094,39 @@ body:has(#textconvert-ui.textformatter-panel) {
   gap: 8px;
   min-width: 0;
   margin-bottom: 8px;
+}
+
+#textconvert-ui .tc-sequence-grid {
+  grid-template-columns:
+    minmax(112px, 1fr)
+    minmax(112px, 1fr)
+    62px
+    104px
+    104px
+    92px
+    112px;
+  align-items: end;
+}
+
+#textconvert-ui .tc-sequence-grid:has(.tc-sequence-field-custom:not([hidden])) {
+  grid-template-columns:
+    minmax(112px, 1fr)
+    minmax(112px, 1fr)
+    62px
+    104px
+    104px
+    92px
+    112px
+    minmax(120px, 0.8fr);
+}
+
+#textconvert-ui .tc-sequence-grid > [hidden] {
+  display: none !important;
+}
+
+#textconvert-ui .tc-parameter-panel[data-panel="sequence"] .tc-panel-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 #textconvert-ui .tc-field {
@@ -1170,7 +1248,15 @@ body:has(#textconvert-ui.textformatter-panel) {
 
 @media (max-width: 900px) {
   #textconvert-ui .tc-groups {
-    grid-template-columns: repeat(4, minmax(132px, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  #textconvert-ui .tc-sequence-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  #textconvert-ui .tc-sequence-grid:has(.tc-sequence-field-custom:not([hidden])) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -1207,11 +1293,7 @@ body:has(#textconvert-ui.textformatter-panel) {
   }
 
   #textconvert-ui .tc-groups {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  #textconvert-ui .tc-operation-frame {
-    max-height: 360px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   #textconvert-ui .tc-menu {
@@ -1220,6 +1302,14 @@ body:has(#textconvert-ui.textformatter-panel) {
 
   #textconvert-ui .tc-option-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  #textconvert-ui .tc-sequence-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #textconvert-ui .tc-sequence-grid:has(.tc-sequence-field-custom:not([hidden])) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   #textconvert-ui .tc-panel-actions > button {
@@ -1231,5 +1321,23 @@ body:has(#textconvert-ui.textformatter-panel) {
     max-width: 100%;
     overflow-x: auto;
     overscroll-behavior-inline: contain;
+  }
+}
+
+@media (max-width: 360px) {
+  #textconvert-ui .tc-groups {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #textconvert-ui .tc-sequence-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #textconvert-ui .tc-sequence-grid:has(.tc-sequence-field-custom:not([hidden])) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #textconvert-ui .tc-parameter-panel[data-panel="sequence"] .tc-panel-actions {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

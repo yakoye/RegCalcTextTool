@@ -8,9 +8,30 @@ const { parseHTML } = require('linkedom');
 const root = path.join(__dirname, '..');
 const htmlPath = path.join(root, 'TextFormatterTool.html');
 const controllerPath = path.join(root, 'text-formatter.js');
+const cssPath = path.join(root, 'shared-ui.css');
 
 function readSourceText(filePath) {
   return fs.readFileSync(filePath, 'utf8').replace(/\r\n/g, '\n');
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function cssRule(source, selector) {
+  const match = source.match(
+    new RegExp(`${escapeRegExp(selector)}\\s*\\{([^}]*)\\}`, 's')
+  );
+  assert.ok(match, `missing CSS rule for ${selector}`);
+  return match[1];
+}
+
+function cssMediaBlock(source, maxWidth) {
+  const marker = new RegExp(`@media\\s*\\(max-width:\\s*${maxWidth}px\\)\\s*\\{`);
+  const match = marker.exec(source);
+  assert.ok(match, `missing max-width ${maxWidth}px media query`);
+  const nextMedia = source.indexOf('@media', match.index + match[0].length);
+  return source.slice(match.index, nextMedia === -1 ? source.length : nextMedia);
 }
 
 const CORE_ACTIONS = [
@@ -206,7 +227,7 @@ test('maps every core transform and codec capability to a reachable action', () 
 
 test('renders a one-border menu with persistent descriptions and accessible controls', () => {
   const html = readSourceText(htmlPath);
-  const css = readSourceText(path.join(root, 'shared-ui.css'));
+  const css = readSourceText(cssPath);
   const controller = readSourceText(controllerPath);
 
   assert.match(html, /id="text_tool_groups"/);
@@ -226,6 +247,145 @@ test('renders a one-border menu with persistent descriptions and accessible cont
   );
   assert.ok(selectAction);
   assert.doesNotMatch(selectAction[1], /closeGroups/);
+});
+
+test('styles category summaries as explicit accessible dropdown controls', () => {
+  const css = readSourceText(cssPath);
+  const summary = cssRule(css, '#textconvert-ui .tc-group-summary');
+  const marker = cssRule(
+    css,
+    '#textconvert-ui .tc-group-summary::-webkit-details-marker'
+  );
+  const arrow = cssRule(css, '#textconvert-ui .tc-group-summary::after');
+  const openSummary = cssRule(
+    css,
+    '#textconvert-ui .tc-group[open] > .tc-group-summary'
+  );
+  const openArrow = cssRule(
+    css,
+    '#textconvert-ui .tc-group[open] > .tc-group-summary::after'
+  );
+  const hover = cssRule(css, '#textconvert-ui .tc-group-summary:hover');
+  const focus = cssRule(css, '#textconvert-ui .tc-group-summary:focus-visible');
+
+  assert.match(summary, /list-style:\s*none/);
+  assert.match(summary, /display:\s*grid/);
+  assert.match(
+    summary,
+    /grid-template-columns:\s*minmax\(0,\s*1fr\)\s+auto\s+\d+px/
+  );
+  assert.match(summary, /background:\s*rgba\(255,\s*255,\s*255,\s*0\.\d+\)/);
+  assert.match(summary, /border:\s*1px\s+solid/);
+  assert.match(summary, /border-radius:\s*[5-7]px/);
+  assert.match(summary, /letter-spacing:\s*0/);
+  assert.match(marker, /display:\s*none/);
+  assert.match(arrow, /content:\s*""/);
+  assert.match(arrow, /border-(?:right|bottom):\s*2px\s+solid/);
+  assert.match(arrow, /transform:\s*rotate\([^)]+\)/);
+  assert.match(arrow, /transition:\s*transform/);
+  assert.match(openSummary, /background:\s*var\(--primary-soft\)/);
+  assert.match(openSummary, /border-color:\s*var\(--primary\)/);
+  assert.match(openArrow, /transform:\s*rotate\([^)]+\)/);
+  assert.notEqual(
+    arrow.match(/transform:\s*([^;]+)/)?.[1],
+    openArrow.match(/transform:\s*([^;]+)/)?.[1]
+  );
+  assert.match(hover, /border-color:/);
+  assert.match(hover, /background:/);
+  assert.match(focus, /outline:\s*2px\s+solid/);
+  assert.match(focus, /outline-offset:/);
+});
+
+test('bounds category and action lists with internal scrolling above parameters', () => {
+  const html = readSourceText(htmlPath);
+  const css = readSourceText(cssPath);
+  const groups = cssRule(css, '#textconvert-ui .tc-groups');
+  const menu = cssRule(css, '#textconvert-ui .tc-menu');
+
+  assert.match(groups, /max-height:\s*\d+px/);
+  assert.match(groups, /overflow-y:\s*auto/);
+  assert.match(groups, /overscroll-behavior:\s*contain/);
+  assert.match(menu, /max-height:\s*\d+px/);
+  assert.match(menu, /overflow-y:\s*auto/);
+  assert.doesNotMatch(groups, /position:\s*(?:absolute|fixed)/);
+  assert.doesNotMatch(menu, /position:\s*(?:absolute|fixed)/);
+
+  assert.ok(
+    html.indexOf('class="tc-operation-frame"') <
+      html.indexOf('id="text_parameter_panels"')
+  );
+  assert.ok(
+    html.indexOf('id="text_parameter_panels"') <
+      html.indexOf('class="tc-text-workspace"')
+  );
+});
+
+test('uses compact desktop sequence tracks without reserving hidden custom space', () => {
+  const css = readSourceText(cssPath);
+  const formatter = cssRule(css, '#textconvert-ui.textformatter-panel');
+  const grid = cssRule(css, '#textconvert-ui .tc-sequence-grid');
+  const customGrid = cssRule(
+    css,
+    '#textconvert-ui .tc-sequence-grid:has(.tc-sequence-field-custom:not([hidden]))'
+  );
+  const hidden = cssRule(css, '#textconvert-ui .tc-sequence-grid > [hidden]');
+  const actions = cssRule(
+    css,
+    '#textconvert-ui .tc-parameter-panel[data-panel="sequence"] .tc-panel-actions'
+  );
+
+  assert.match(formatter, /letter-spacing:\s*0/);
+  assert.doesNotMatch(css, /font-size:\s*[^;{}]*(?:vw|vmin|vmax)/);
+  assert.match(grid, /grid-template-columns:/);
+  assert.match(grid, /minmax\(\d+px,\s*1fr\)\s+minmax\(\d+px,\s*1fr\)/);
+  assert.match(grid, /(?:58|59|60|61|62|63|64)px/);
+  assert.match(grid, /(?:96|97|98|99|100|101|102|103|104|105|106|107|108)px/);
+  assert.match(grid, /align-items:\s*end/);
+  assert.match(customGrid, /grid-template-columns:/);
+  assert.match(customGrid, /minmax\(\d+px,\s*(?:0\.\d+fr|1fr)\)\s*;/);
+  assert.match(hidden, /display:\s*none\s*!important/);
+  assert.match(actions, /display:\s*grid/);
+  assert.match(
+    actions,
+    /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/
+  );
+});
+
+test('adapts category, sequence, and sequence action grids at narrow widths', () => {
+  const css = readSourceText(cssPath);
+  const at900 = cssMediaBlock(css, 900);
+  const at640 = cssMediaBlock(css, 640);
+  const at360 = cssMediaBlock(css, 360);
+
+  for (const source of [at900, at640]) {
+    assert.match(
+      cssRule(source, '#textconvert-ui .tc-sequence-grid'),
+      /grid-template-columns:\s*repeat\((?:4|2),\s*minmax\(0,\s*1fr\)\)/
+    );
+  }
+  assert.match(
+    cssRule(at900, '#textconvert-ui .tc-groups'),
+    /grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)/
+  );
+  assert.match(
+    cssRule(at640, '#textconvert-ui .tc-groups'),
+    /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/
+  );
+  assert.match(
+    cssRule(at360, '#textconvert-ui .tc-groups'),
+    /grid-template-columns:\s*minmax\(0,\s*1fr\)/
+  );
+  assert.match(
+    cssRule(at360, '#textconvert-ui .tc-sequence-grid'),
+    /grid-template-columns:\s*minmax\(0,\s*1fr\)/
+  );
+  assert.match(
+    cssRule(
+      at360,
+      '#textconvert-ui .tc-parameter-panel[data-panel="sequence"] .tc-panel-actions'
+    ),
+    /grid-template-columns:\s*minmax\(0,\s*1fr\)/
+  );
 });
 
 test('collapses outside groups only after the active click handler can finish', () => {
