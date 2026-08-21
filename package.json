@@ -6,9 +6,9 @@
   "scripts": {
     "test": "node --test tests/*.test.js",
     "build": "node scripts/build-static.js",
-    "preview": "npm run build && npx wrangler dev",
-    "deploy:cloudflare": "npm run build && npx wrangler deploy",
-    "deploy:pages": "npm run build && npx wrangler pages deploy dist"
+    "preview": "npm run build && wrangler dev",
+    "deploy:cloudflare": "npm run build && wrangler deploy",
+    "deploy:pages": "npm run build && wrangler pages deploy dist"
   },
   "dependencies": {
     "hash-wasm": "^4.12.0",
@@ -21,6 +21,7 @@
     "turndown": "7.2.4"
   },
   "devDependencies": {
-    "linkedom": "0.18.12"
+    "linkedom": "0.18.12",
+    "wrangler": "4.125.0"
   }
 }

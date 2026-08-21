@@ -41,20 +41,22 @@ TextFormatter 的第三方依赖均从仓库内 `vendor/` 加载，运行时不�
 
 1. 在 Cloudflare Dashboard 进入 `Workers & Pages`。
 2. 选择 `Create application`，通过 `Import a repository` 连接这个 GitHub 仓库。
-3. Framework preset 选择 `None`。
+3. Root directory 填写 `/`。
 4. Build command 填写：
 
 ```bash
 npm run build
 ```
 
-5. Build output directory 填写：
+5. Deploy command 填写：
 
-```text
-dist
+```bash
+npx wrangler deploy
 ```
 
-6. 保存并创建 deployment。
+6. Build variables 保持为空，保存并创建 deployment。
+
+项目通过 `.node-version` 固定使用 Cloudflare 构建镜像预装的 Node.js 22.23.2，并在 `package.json` 中固定 Wrangler 版本。`npx wrangler deploy` 会优先使用项目本地安装的 Wrangler，避免每次部署临时下载不同版本。
 
 仓库已包含 `wrangler.toml`：
 
@@ -67,6 +69,8 @@ directory = "./dist"
 ```
 
 注意：Cloudflare Workers Git 集成要求 Dashboard 里的 Worker 名称和 `wrangler.toml` 里的 `name` 完全一致。当前配置已按你的 Cloudflare 项目名 `regcalctexttool` 设置。
+
+如果日志只出现 `Initializing build environment...`，5 分钟后显示 `Build failed to initialize and was timed out`，说明 Cloudflare 尚未启动构建容器，仓库代码、依赖安装和构建命令都还没有执行。此时先在构建详情页点击 `Retry build`；若连续多次出现同样结果，再检查 Cloudflare Status，或在 Worker 的 Builds 设置中重新连接 GitHub 仓库和构建令牌。
 
 如果想在本地直接用 Wrangler 部署到 Worker：
 
@@ -185,6 +189,7 @@ npm run build
 - 2026.08.21 v0.61 RegCalc64 同步 Chrome Extension v0.3.1，新增拖选位域、Mask 运算、动态 Bit Field、清空 Field 与多行滚动
 - 2026.08.21 v0.62 清除 RegCalc64 旧版固定纵横比和全站标题外边距，恢复 Chrome 版紧凑垂直间距
 - 2026.08.21 v0.63 精简 TextFormatter 重复旧版入口和菜单说明，序列生成改为独立入口；DateTime 拆分日期偏移与单位转换模式，并限制装饰文本选择
+- 2026.08.22 v0.64 固定 Cloudflare Workers Builds 的 Node.js 与 Wrangler 版本，校准 Git 构建配置和初始化超时排查说明
 
 ## Refer
 
