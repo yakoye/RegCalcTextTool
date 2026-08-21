@@ -182,6 +182,7 @@ npm run build
 - 2026.07.30 v0.58 优化 TextFormatter 分类下拉和响应式序列布局，参数区移至文本框上方，新增十六进制序列并按需显示自定义分隔符
 - 2026.07.30 v0.59 调整 TextFormatter 为文本框优先布局，分类功能移至下方，并适当增加桌面端文本框高度
 - 2026.07.30 v0.60 TextFormatter 分类菜单改为覆盖式浮层，空间不足时自动上拉，打开菜单时收起原参数面板
+- 2026.08.21 v0.61 RegCalc64 同步 Chrome Extension v0.3.1，新增拖选位域、Mask 运算、动态 Bit Field、清空 Field 与多行滚动
 
 ## Refer
 

@@ -1909,7 +1909,7 @@ test('runs sequence settings, generation, and panel switching through the real D
   document.getElementById('sequence_to_input').click();
   assert.equal(document.getElementById('textconvert_input').value, '0xF\n0x10');
 
-  const lineGroup = document.querySelector('details.tc-group[data-group-id="line"]');
+  const lineGroup = document.querySelector('details.tc-group[data-group-id="lines"]');
   openTextFormatterGroup(window, lineGroup);
   assert.equal(sequencePanel.hidden, true);
   assert.equal(document.querySelector('[data-panel="line"]').hidden, true);

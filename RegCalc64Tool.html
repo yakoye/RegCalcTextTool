@@ -947,7 +947,6 @@
 body { margin: 0; padding: 8px; background: #f8f8f8; }
 .tab-content { display: block !important; margin: 0; border-radius: 0; min-height: auto; }
 </style>
-    <link rel="stylesheet" href="shared-ui.css">
     <style>
         body {
             background:
@@ -1217,20 +1216,673 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
             }
         }
     </style>
-    <script defer src="shared-ui.js"></script>
+
+
+<link rel="stylesheet" href="shared-ui.css">
+<style id="regcalc-v023-source-ui-style">
+:root {
+  --regcalc-scale: 1;
+  --regcalc-content-width: 560px;
+  --regcalc-page-padding: 14px;
+  --regcalc-bit-min-width: 520px;
+  --regcalc-accent: #22c55e;
+  --regcalc-accent-dark: #16a34a;
+  --regcalc-accent-soft: #86efac;
+  --regcalc-page: #f0f4f8;
+  --regcalc-card: #ffffff;
+  --regcalc-line: #e2e8f0;
+  --regcalc-text: #1e293b;
+  --regcalc-muted: #64748b;
+  --regcalc-muted-2: #94a3b8;
+}
+
+html, body {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: fit-content !important;
+  height: fit-content !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  background: transparent !important;
+}
+body { display: inline-block !important; color: var(--regcalc-text) !important; }
+.tab-content#regcalc {
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: fit-content !important;
+  height: fit-content !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#regcalc-ui {
+  display: block !important;
+  width: fit-content !important;
+  max-width: none !important;
+  height: fit-content !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  background: transparent !important;
+  font-family: "JetBrains Mono", "Cascadia Mono", "Consolas", "Microsoft YaHei UI", "Microsoft YaHei", monospace !important;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#regcalc-ui input[type="text"], #regcalc-ui textarea {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* Natural canvas = source design 560px content + 14px page padding on both sides. */
+#regcalc-ui > .regcalc-modern-shell {
+  width: 588px !important;
+  max-width: 588px !important;
+  min-width: 588px !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  border: 1px solid rgba(203, 213, 225, 0.72) !important;
+  border-radius: 18px !important;
+  border-spacing: 0 !important;
+  background: var(--regcalc-page) !important;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255,255,255,.9) !important;
+  overflow: hidden !important;
+  transform: none !important;
+  transform-origin: top left !important;
+  zoom: var(--regcalc-scale) !important;
+}
+#regcalc-ui > .regcalc-modern-shell > tbody > tr > td { border: 0 !important; }
+#regcalc-ui > .regcalc-modern-shell > tbody > tr:first-child > td {
+  padding: 14px 14px 10px !important;
+}
+#regcalc-ui > .regcalc-modern-shell > tbody > tr:nth-child(2) > td {
+  padding: 0 14px 3px !important;
+}
+#regcalc-ui > .regcalc-modern-shell > tbody > tr:nth-child(3) > td {
+  padding: 0 14px 14px !important;
+}
+
+/* Header from the provided source UI. */
+#regcalc-ui .regcalc-title-table { width: 100%; margin: 0 !important; border-spacing: 0 !important; }
+#regcalc-ui .regcalc-title-table td {
+  width: var(--regcalc-content-width);
+  padding: 0 !important;
+  display: flex;
+  align-items: baseline;
+  min-height: 20px;
+  line-height: 1 !important;
+  white-space: nowrap;
+  cursor: move;
+}
+#regcalc-ui .regcalc-brand {
+  color: var(--regcalc-accent-dark);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: .1em;
+}
+#regcalc-ui .regcalc-brand-64 { color: var(--regcalc-accent-soft); }
+#regcalc-ui .regcalc-subtitle {
+  margin-left: 8px;
+  color: var(--regcalc-muted-2);
+  font-size: 10px;
+  font-weight: 500;
+}
+#regcalc-ui .regcalc-help-button {
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  min-height: 20px !important;
+  margin: 0 0 0 7px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--regcalc-muted-2) !important;
+  font: 700 12px/20px "JetBrains Mono", "Cascadia Mono", "Consolas", "Microsoft YaHei UI", "Microsoft YaHei", monospace !important;
+  cursor: pointer !important;
+}
+#regcalc-ui .regcalc-help-button:hover { color: var(--regcalc-accent-dark) !important; background: transparent !important; }
+
+/* 64-bit card: exact source structure — 4 rows × 4 nibbles × 4 bits. */
+#regcalc-ui .regcalc-bit-grid {
+  display:block;
+  width:560px !important;
+  max-width:560px !important;
+  min-width:var(--regcalc-bit-min-width) !important;
+  box-sizing:border-box;
+  margin:0 !important;
+  padding:10px 10px 6px !important;
+  border:1.5px solid var(--regcalc-line) !important;
+  border-radius:12px !important;
+  background:var(--regcalc-card) !important;
+  box-shadow:0 1px 4px rgba(0,0,0,.05) !important;
+}
+#regcalc-ui .regcalc-bit-row {
+  display:flex;
+  gap:4px;
+  margin:0 0 4px;
+}
+#regcalc-ui .regcalc-bit-row:last-child { margin-bottom:0; }
+#regcalc-ui .regcalc-bit-separator {
+  height:1px;
+  margin:3px 2px 6px;
+  background:#e8edf3;
+}
+#regcalc-ui .regcalc-bit-nibble {
+  flex:1 1 0;
+  min-width:0;
+  display:flex;
+  gap:2px;
+  padding:3px 2px;
+  border-radius:7px;
+}
+#regcalc-ui .regcalc-bit-nibble:nth-child(odd) { background:#f8fafc; }
+#regcalc-ui .regcalc-bit-nibble:nth-child(even) { background:#eef2f7; }
+#regcalc-ui .regcalc-bit-cell {
+  flex:1 1 0;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:1px;
+  padding:0 !important;
+  border:0 !important;
+  background:transparent !important;
+  border-radius:0 !important;
+}
+#regcalc-ui .regcalc-bit-index {
+  height:auto !important;
+  color:var(--regcalc-muted-2) !important;
+  font-size:9px !important;
+  line-height:1 !important;
+  font-weight:500 !important;
+}
+#regcalc-ui .regcalc-bit-grid .regcalc-bit-toggle {
+  width:90% !important;
+  min-width:0 !important;
+  height:28px !important;
+  min-height:28px !important;
+  margin:0 !important;
+  padding:0 !important;
+  border:1.5px solid #dde3ed !important;
+  border-radius:5px !important;
+  background:#fff !important;
+  color:#b0bec5 !important;
+  box-shadow:0 1px 2px rgba(0,0,0,.04) !important;
+  font-size:12px !important;
+  font-weight:700 !important;
+  line-height:1 !important;
+  font-family:"JetBrains Mono","Cascadia Mono","Consolas","Microsoft YaHei UI","Microsoft YaHei",monospace !important;
+  cursor:pointer;
+  transition:transform .08s ease,box-shadow .12s ease,border-color .12s ease,background .12s ease;
+}
+#regcalc-ui .regcalc-bit-grid .regcalc-bit-toggle:hover {
+  transform:translateY(-1px);
+  background:#f0fdf4 !important;
+  border-color:#86efac !important;
+  color:#16a34a !important;
+  box-shadow:0 2px 5px rgba(34,197,94,.10) !important;
+}
+#regcalc-ui .regcalc-bit-grid .regcalc-bit-toggle:active { transform:translateY(0) scale(.96); }
+#regcalc-ui .regcalc-bit-grid .regcalc-bit-toggle.is-one {
+  border-color:#16a34a !important;
+  background:linear-gradient(180deg,#4ade80,#22c55e) !important;
+  color:#fff !important;
+  box-shadow:0 2px 6px rgba(34,197,94,.22) !important;
+}
+#regcalc-ui .regcalc-bit-grid .regcalc-bit-toggle.is-one:hover {
+  background:linear-gradient(180deg,#6ee7b7,#34d399) !important;
+  border-color:#16a34a !important;
+  color:#fff !important;
+}
+
+/* Source card/input rhythm. */
+.regcalc-new-form { margin-top: 3px; }
+.regcalc-ui-card {
+  margin: 0 0 3px;
+  padding: 10px 13px;
+  border: 1.5px solid var(--regcalc-line);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+}
+.regcalc-ui-row { display:flex; align-items:center; gap:7px; }
+.regcalc-ui-row-top { align-items:flex-start; }
+.regcalc-ui-label {
+  width:max-content;
+  flex:0 0 auto;
+  color:var(--regcalc-muted);
+  font-size:11px;
+  font-weight:600;
+  text-align:left;
+  white-space:nowrap;
+}
+.regcalc-ui-row-top .regcalc-ui-label { padding-top:5px; }
+.regcalc-value-card {
+  display:grid;
+  grid-template-columns:max-content minmax(0,1fr) 68px;
+  grid-template-rows:auto auto auto;
+  column-gap:7px;
+  row-gap:7px;
+}
+.regcalc-value-card .regcalc-ui-row { display:contents; }
+.regcalc-value-card .regcalc-ui-label { grid-column:1; align-self:center; }
+.regcalc-value-card .regcalc-value-row-hex > input,
+.regcalc-value-card .regcalc-value-row-dec > input,
+.regcalc-value-card .regcalc-value-row-bin > textarea { grid-column:2; }
+.regcalc-value-row-hex > .regcalc-ui-label, .regcalc-value-row-hex > input { grid-row:1; }
+.regcalc-value-row-dec > .regcalc-ui-label, .regcalc-value-row-dec > input { grid-row:2; }
+.regcalc-value-row-bin > .regcalc-ui-label, .regcalc-value-row-bin > textarea { grid-row:3; }
+.regcalc-value-row-bin > .regcalc-ui-label { align-self:start; padding-top:5px; }
+.regcalc-value-actions {
+  grid-column:3;
+  grid-row:1 / 4;
+  display:grid;
+  grid-template-columns:68px;
+  grid-template-rows:30px minmax(0,1fr);
+  gap:7px;
+  width:68px;
+  min-width:68px;
+  justify-self:end;
+}
+#regcalc-ui .regcalc-value-actions #regcalc_human {
+  grid-column:1 !important;
+  grid-row:1 !important;
+  width:68px !important;
+  min-width:68px !important;
+  max-width:68px !important;
+  height:30px;
+  box-sizing:border-box;
+}
+#regcalc-ui #regcalc_clean.regcalc-clear-all-side {
+  width:68px !important;
+  min-width:68px !important;
+  min-height:0 !important;
+  padding:4px 5px !important;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:2px;
+  line-height:1.05 !important;
+}
+#regcalc-ui .regcalc-clear-all-side span { display:block; }
+#regcalc-ui .regcalc-clear-all-side:hover {
+  background:#fee2e2 !important;
+  border-color:#fca5a5 !important;
+  color:#dc2626 !important;
+}
+.regcalc-expr-card {
+  display:grid;
+  grid-template-columns:max-content minmax(0,1fr) 36px 36px 36px 36px;
+  grid-template-rows:auto auto;
+  column-gap:7px;
+  row-gap:7px;
+}
+.regcalc-expr-card .regcalc-ui-row { display:contents; }
+.regcalc-expr-card .regcalc-ui-label { grid-column:1; align-self:center; }
+.regcalc-expr-row > .regcalc-ui-label, .regcalc-expr-row > textarea, .regcalc-expr-row > .regcalc-row-actions { grid-row:1; }
+.regcalc-result-row > .regcalc-ui-label, .regcalc-result-row > input, .regcalc-result-row > .regcalc-row-actions { grid-row:2; }
+.regcalc-expr-row > textarea { grid-column:2 / 5; }
+.regcalc-result-row > input { grid-column:2; }
+.regcalc-expr-row > .regcalc-row-actions {
+  grid-column:5 / 7;
+  justify-self:stretch;
+  justify-content:flex-end;
+}
+.regcalc-result-row > .regcalc-row-actions {
+  grid-column:3 / 7;
+  justify-self:stretch;
+  justify-content:flex-end;
+}
+.regcalc-row-actions {
+  display:flex;
+  align-items:center;
+  gap:7px;
+}
+
+
+#regcalc-ui .regcalc-new-form input[type=text],
+#regcalc-ui .regcalc-new-form textarea {
+  min-width:0;
+  min-height:30px;
+  margin:0 !important;
+  padding:4px 8px !important;
+  border:1.5px solid var(--regcalc-line) !important;
+  border-radius:7px !important;
+  outline:none;
+  background:#fff !important;
+  color:var(--regcalc-text) !important;
+  box-shadow:none !important;
+  font-size:13px !important;
+  line-height:1.4 !important;
+  font-family:"JetBrains Mono","Cascadia Mono","Consolas","Microsoft YaHei UI","Microsoft YaHei",monospace !important;
+  box-sizing:border-box;
+  transition:border-color .12s ease,box-shadow .12s ease,background .12s ease;
+}
+#regcalc-ui .regcalc-new-form input[type=text]:focus,
+#regcalc-ui .regcalc-new-form textarea:focus {
+  border-color:var(--regcalc-accent) !important;
+  box-shadow:0 0 0 2px rgba(34,197,94,.10) !important;
+}
+#regcalc_hex,#regcalc_dec,#regcalc_bin,#regcalc_calcInput,#regcalc_calcResult { flex:1 1 auto; width:auto !important; }
+#regcalc_bin,#regcalc_calcInput { resize:none !important; overflow-x:hidden !important; overflow-y:hidden !important; }
+#regcalc_calcResult { background:#f8fafc !important; color:#16a34a !important; font-weight:600; }
+
+#regcalc-ui .regcalc-ui-btn {
+  font-family:"JetBrains Mono","Cascadia Mono","Consolas","Microsoft YaHei UI","Microsoft YaHei",monospace !important;
+  min-height:30px;
+  padding:4px 11px !important;
+  border:1.5px solid var(--regcalc-line) !important;
+  border-radius:7px !important;
+  background:#f8fafc !important;
+  color:#475569 !important;
+  box-shadow:none !important;
+  font-size:12px !important;
+  font-weight:600 !important;
+  line-height:1 !important;
+  white-space:nowrap;
+  cursor:pointer;
+  transition:transform .08s ease,background .12s ease,border-color .12s ease,box-shadow .12s ease;
+}
+#regcalc-ui .regcalc-ui-btn:hover { transform:translateY(-1px); background:#f1f5f9 !important; border-color:#cbd5e1 !important; box-shadow:0 2px 6px rgba(15,23,42,.06) !important; }
+#regcalc-ui .regcalc-ui-btn:active { transform:translateY(0) scale(.97); }
+#regcalc-ui .regcalc-ui-btn-primary { background:#22c55e !important; border-color:#22c55e !important; color:#fff !important; font-size:14px !important; font-weight:700 !important; }
+#regcalc-ui .regcalc-equals-btn {
+  background:#f8fafc !important;
+  border-color:var(--regcalc-line) !important;
+  color:#475569 !important;
+  font-size:14px !important;
+  font-weight:700 !important;
+}
+#regcalc-ui .regcalc-equals-btn:hover {
+  background:#f0fdf4 !important;
+  border-color:#86efac !important;
+  color:#166534 !important;
+}
+#regcalc-ui .regcalc-ui-btn-danger { background:#fff5f5 !important; border-color:#fecaca !important; color:#ef4444 !important; }
+#regcalc-ui .regcalc-ui-btn-danger:hover { background:#fee2e2 !important; border-color:#fca5a5 !important; color:#dc2626 !important; }
+#regcalc-ui .regcalc-ui-square { width:36px; min-width:36px; padding:0 !important; }
+#regcalc-ui .regcalc-format-btn { min-width:34px; padding:4px 8px !important; font-size:11px !important; }
+#regcalc-ui .regcalc-format-btn.is-active { color:#16a34a !important; border-color:#22c55e !important; background:#f0fdf4 !important; }
+#regcalc-ui .regcalc-format-btn.is-active:hover { color:#166534 !important; border-color:#86efac !important; background:#dcfce7 !important; }
+
+.regcalc-ops-card { display:flex; align-items:center; gap:6px; padding-top:9px; padding-bottom:9px; }
+.regcalc-ops-left { display:flex; flex:1 1 auto; flex-wrap:nowrap; align-items:center; gap:6px; }
+#regcalc-ui .regcalc-shift-shared { width:34px !important; min-width:34px; padding:4px !important; text-align:center; }
+#regcalc-ui .regcalc-shift-symbol { width:38px; min-width:38px; height:30px; min-height:30px; padding:0 !important; font-size:13px !important; font-weight:700 !important; }
+.regcalc-op-divider { width:1px; height:20px; margin:0 2px; background:var(--regcalc-line); }
+.regcalc-mask-label { color:var(--regcalc-muted-2); font-size:11px; }
+#regcalc-ui .regcalc-mask-input { width:118px !important; min-width:100px; flex:1 1 118px; padding:4px 8px !important; }
+#regcalc-ui .regcalc-op-or { color:#475569 !important; border-color:#dcfce7 !important; background:#f0fdf4 !important; }
+#regcalc-ui .regcalc-op-or:hover { background:#dcfce7 !important; border-color:#86efac !important; }
+#regcalc-ui .regcalc-op-and { color:#475569 !important; border-color:#dbeafe !important; background:#eff6ff !important; }
+#regcalc-ui .regcalc-op-and:hover { background:#dbeafe !important; border-color:#bfdbfe !important; }
+#regcalc-ui .regcalc-op-not { color:#475569 !important; border-color:#fef3c7 !important; background:#fffbeb !important; }
+#regcalc-ui .regcalc-op-not:hover { background:#fef3c7 !important; border-color:#fde68a !important; }
+#regcalc-ui .regcalc-op-xor { color:#475569 !important; border-color:#f3e8ff !important; background:#faf5ff !important; }
+#regcalc-ui .regcalc-op-xor:hover { background:#f3e8ff !important; border-color:#e9d5ff !important; }
+
+.regcalc-bitfield-header,.regcalc-bitfield-row {
+  display:grid;
+  grid-template-columns:72px 24px 76px 68px 1fr 40px;
+  align-items:center;
+  gap:0;
+}
+.regcalc-bitfield-header { padding:0 0 4px; margin-bottom:2px; border-bottom:1.5px solid var(--regcalc-line); }
+.regcalc-bitfield-header span { padding:0 4px; color:var(--regcalc-muted-2); font-size:10px; font-weight:700; text-align:left; }
+.regcalc-bitfield-header .regcalc-center { text-align:center; }
+.regcalc-bitfield-row { min-height:29px; border-bottom:1px solid #f1f5f9; }
+.regcalc-bitfield-row:last-child { border-bottom:0; }
+#regcalc-ui .regcalc-new-form .regcalc-bitfield-row input[type="text"] {
+  width:100% !important;
+  min-height:27px;
+  padding:4px !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  font-size:12px !important;
+}
+#regcalc-ui .regcalc-new-form .regcalc-bitfield-row input[type="text"]:hover { background:#f8fafc !important; }
+#regcalc-ui .regcalc-new-form .regcalc-bitfield-row input[type="text"]:focus { background:#f0fdf4 !important; box-shadow:inset 0 -1px 0 #22c55e !important; }
+#regcalc-ui .regcalc-sub-hex { color:#22c55e !important; }
+#regcalc-ui .regcalc-sub-dec { color:#64748b !important; }
+#regcalc-ui .regcalc-sub-bin { color:#94a3b8 !important; font-size:11px !important; }
+.regcalc-bit-width { color:#94a3b8; font-size:11px; text-align:center; }
+.regcalc-bitfield-buttons { display:flex; align-items:center; justify-content:flex-end; gap:1px; padding:0 3px; }
+#regcalc-ui .regcalc-bitfield-buttons button { width:20px; min-width:20px; height:20px; min-height:20px; padding:0 !important; border:0 !important; border-radius:4px !important; background:transparent !important; box-shadow:none !important; font-size:16px !important; line-height:20px !important; cursor:pointer; }
+#regcalc-ui .regcalc-bitfield-buttons button:first-child { color:#22c55e !important; font-weight:700 !important; }
+#regcalc-ui .regcalc-bitfield-buttons button:first-child:hover { background:#f0fdf4 !important; color:#16a34a !important; }
+#regcalc-ui .regcalc-bitfield-buttons button:last-child { color:#fca5a5 !important; }
+#regcalc-ui .regcalc-bitfield-buttons button:last-child:hover { background:#fff1f2 !important; color:#ef4444 !important; }
+#regcalc-ui .regcalc-bitfield-buttons button:disabled { visibility:hidden; opacity:0; cursor:default; pointer-events:none; }
+#regcalc-ui .regcalc-bitfield-clear-all {
+  justify-self:end;
+  width:20px !important;
+  min-width:20px !important;
+  height:20px !important;
+  min-height:20px !important;
+  padding:0 !important;
+  margin:0 3px 0 0 !important;
+  border:0 !important;
+  border-radius:4px !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  color:#94a3b8 !important;
+  font:700 14px/20px "JetBrains Mono","Cascadia Mono","Consolas",monospace !important;
+  cursor:pointer !important;
+}
+#regcalc-ui .regcalc-bitfield-clear-all:hover { background:#fff1f2 !important; color:#ef4444 !important; }
+
+
+/* v0.2.8 layout correction:
+   legacy ID-width rules must not override the new grid columns. */
+#regcalc-ui .regcalc-value-card #regcalc_hex,
+#regcalc-ui .regcalc-value-card #regcalc_dec,
+#regcalc-ui .regcalc-value-card #regcalc_bin {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  justify-self: stretch;
+}
+
+#regcalc-ui .regcalc-expr-card #regcalc_calcInput,
+#regcalc-ui .regcalc-expr-card #regcalc_calcResult {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  justify-self: stretch;
+}
+
+</style>
+
+
+<style id="regcalc-v030-selection-style">
+/* v0.3.0 bit-range drag selection.  Selection is distinct from bit=1 state. */
+#regcalc-ui .regcalc-bit-cell.regcalc-selection-active .regcalc-bit-index,
+#regcalc-ui .regcalc-bit-index.regcalc-selection-index-active {
+  color: #16a34a !important;
+  font-weight: 800 !important;
+}
+#regcalc-ui .regcalc-bit-cell.regcalc-selection-active .regcalc-bit-toggle:not(.is-one) {
+  background: #f0fdf4 !important;
+  border-color: #22c55e !important;
+  color: #16a34a !important;
+  box-shadow: 0 0 0 1px rgba(34,197,94,.10), inset 0 1px 0 rgba(255,255,255,.92) !important;
+}
+#regcalc-ui .regcalc-bit-cell.regcalc-selection-active .regcalc-bit-toggle.is-one {
+  box-shadow: 0 0 0 2px rgba(34,197,94,.34), 0 3px 9px rgba(34,197,94,.16), inset 0 1px 0 rgba(255,255,255,.38) !important;
+}
+#regcalc-ui .regcalc-bit-selection-bar {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 31px;
+  margin-top: 7px;
+  padding: 4px 8px 4px 10px;
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  background: #f0fdf4;
+  color: #475569;
+  font-family: "JetBrains Mono", "Cascadia Mono", "Consolas", "Microsoft YaHei UI", monospace;
+  font-size: 11px;
+  line-height: 1.25;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+#regcalc-ui .regcalc-bit-selection-bar.is-visible { display: flex; }
+#regcalc-ui .regcalc-selection-range {
+  color: #15803d;
+  font-weight: 700;
+}
+#regcalc-ui .regcalc-selection-sep,
+#regcalc-ui .regcalc-selection-width {
+  color: #94a3b8;
+}
+#regcalc-ui .regcalc-selection-edit {
+  width: auto !important;
+  min-width: 4ch !important;
+  max-width: 20ch !important;
+  height: 22px !important;
+  min-height: 22px !important;
+  margin: 0 !important;
+  padding: 1px 3px !important;
+  border: 0 !important;
+  border-bottom: 1px solid transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #0f172a !important;
+  font: inherit !important;
+  font-weight: 700 !important;
+  outline: none !important;
+}
+#regcalc-ui #regcalc-selection-hex { width: 9ch !important; }
+#regcalc-ui #regcalc-selection-dec { width: 11ch !important; }
+#regcalc-ui .regcalc-selection-edit:hover {
+  background: #dcfce7 !important;
+}
+#regcalc-ui .regcalc-selection-edit:focus {
+  border-bottom-color: #22c55e !important;
+  background: #dcfce7 !important;
+}
+#regcalc-ui .regcalc-selection-edit.is-invalid {
+  border-bottom-color: #ef4444 !important;
+  background: #fef2f2 !important;
+  color: #b91c1c !important;
+}
+#regcalc-ui .regcalc-selection-close {
+  margin-left: auto;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 5px !important;
+  background: transparent !important;
+  color: #94a3b8 !important;
+  box-shadow: none !important;
+  font: 700 13px/20px "JetBrains Mono", "Cascadia Mono", "Consolas", monospace !important;
+  cursor: pointer;
+}
+#regcalc-ui .regcalc-selection-close:hover {
+  background: #fee2e2 !important;
+  color: #dc2626 !important;
+}
+</style>
+
+<style id="regcalc64-web-host-style">
+html.regcalc64-web-host,
+html.regcalc64-web-host body {
+  width: 100% !important;
+  height: auto !important;
+  min-width: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+html.regcalc64-web-host body {
+  display: block !important;
+}
+html.regcalc64-web-host .tab-content#regcalc {
+  width: 100% !important;
+}
+html.regcalc64-web-host #regcalc-ui {
+  width: 100% !important;
+  overflow: hidden !important;
+}
+html.regcalc64-web-host #regcalc-ui > .regcalc-modern-shell {
+  margin-right: auto !important;
+  margin-left: auto !important;
+}
+html.regcalc64-web-host #regcalc-ui .regcalc-help-button {
+  margin-left: auto !important;
+}
+</style>
+<script defer src="shared-ui.js"></script>
+<script id="regcalc64-web-host-adapter">
+(function () {
+  document.documentElement.classList.add('regcalc64-web-host');
+
+  function syncWebScale() {
+    var viewportWidth = document.documentElement.clientWidth || window.innerWidth || 588;
+    var chromeDefaultScale = 560 / 588;
+    var scale = Math.min(chromeDefaultScale, Math.max(0.25, (viewportWidth - 4) / 588));
+    document.documentElement.style.setProperty('--regcalc-scale', String(scale));
+  }
+
+  function installWebHelpButton() {
+    var titleCell = document.querySelector('#regcalc-ui .regcalc-title-table td');
+    if (!titleCell || document.getElementById('regcalc64_web_help')) return;
+    var button = document.createElement('button');
+    button.id = 'regcalc64_web_help';
+    button.className = 'regcalc-help-button';
+    button.type = 'button';
+    button.title = 'Help / About';
+    button.setAttribute('aria-label', 'Help / About');
+    button.textContent = '?';
+    button.addEventListener('click', function () {
+      if (typeof window.regcalc_showHelp === 'function') window.regcalc_showHelp();
+    });
+    titleCell.appendChild(button);
+    window.postMessage({
+      type: 'REGCALC64_EXTENSION_META',
+      version: '0.3.1'
+    }, '*');
+  }
+
+  syncWebScale();
+  window.addEventListener('resize', syncWebScale);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', syncWebScale);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', installWebHelpButton, { once: true });
+  } else {
+    installWebHelpButton();
+  }
+})();
+</script>
 </head>
 <body>
 <div class="tab-content active" id="regcalc">
         <div id="regcalc-ui">
             <!-- 只做ID隔离 -->
             <!-- <br> -->
-            <table align="center" border="1">
+            <table align="center" border="1" class="regcalc-modern-shell">
                 <tr>
                     <td>
                         <table align="center" class="regcalc-title-table">
                             <tr align="center">
                                 <!-- <td><h3>64位寄存器计算 (RegCalc)</h3></td> -->
-                                <td><b>64位寄存器计算 (RegCalc64)</b></td>
+                                <td><span class="regcalc-brand">RegCalc<span class="regcalc-brand-64">64</span></span><span class="regcalc-subtitle">64位寄存器计算</span></td>
                             </tr>
                         </table>
                     </td>
@@ -1453,32 +2105,52 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
                             (function regcalc_renderModernBitGrid() {
                                 const legacyTable = document.querySelector("#regcalc-ui .regcalc-bit-table");
                                 if (!legacyTable) return;
+
                                 const grid = document.createElement("div");
                                 grid.className = "regcalc-bit-grid";
-                                for (let label = 63; label >= 0; label--) {
-                                    const idNumber = 63 - label;
-                                    const id = idNumber < 10 ? "0" + idNumber : "" + idNumber;
-                                    const cell = document.createElement("div");
-                                    cell.className = "regcalc-bit-cell";
-                                    if (label % 4 === 0) cell.classList.add("regcalc-group-end");
-                                    if (label % 16 === 0) cell.classList.add("regcalc-row-end");
-                                    if (label <= 31 && label >= 16) cell.classList.add("regcalc-major-gap");
 
-                                    const bitIndex = document.createElement("div");
-                                    bitIndex.className = "regcalc-bit-index";
-                                    bitIndex.textContent = String(label);
+                                [63, 47, 31, 15].forEach(function (start, rowIndex) {
+                                    if (rowIndex === 2) {
+                                        const separator = document.createElement("div");
+                                        separator.className = "regcalc-bit-separator";
+                                        grid.appendChild(separator);
+                                    }
 
-                                    const button = document.createElement("input");
-                                    button.type = "button";
-                                    button.value = "0";
-                                    button.id = "regcalc_" + id;
-                                    button.className = "regcalc-bit-toggle";
-                                    button.onclick = function () { regcalc_set_button_value(id); };
+                                    const row = document.createElement("div");
+                                    row.className = "regcalc-bit-row";
 
-                                    cell.appendChild(bitIndex);
-                                    cell.appendChild(button);
-                                    grid.appendChild(cell);
-                                }
+                                    for (let nibbleIndex = 0; nibbleIndex < 4; nibbleIndex++) {
+                                        const nibble = document.createElement("div");
+                                        nibble.className = "regcalc-bit-nibble";
+
+                                        for (let bitIndexInNibble = 0; bitIndexInNibble < 4; bitIndexInNibble++) {
+                                            const label = start - nibbleIndex * 4 - bitIndexInNibble;
+                                            const idNumber = 63 - label;
+                                            const id = idNumber < 10 ? "0" + idNumber : "" + idNumber;
+
+                                            const cell = document.createElement("div");
+                                            cell.className = "regcalc-bit-cell";
+
+                                            const bitIndex = document.createElement("div");
+                                            bitIndex.className = "regcalc-bit-index";
+                                            bitIndex.textContent = String(label);
+
+                                            const button = document.createElement("input");
+                                            button.type = "button";
+                                            button.value = "0";
+                                            button.id = "regcalc_" + id;
+                                            button.className = "regcalc-bit-toggle";
+                                            button.onclick = function () { regcalc_set_button_value(id); };
+
+                                            cell.appendChild(bitIndex);
+                                            cell.appendChild(button);
+                                            nibble.appendChild(cell);
+                                        }
+                                        row.appendChild(nibble);
+                                    }
+                                    grid.appendChild(row);
+                                });
+
                                 legacyTable.replaceWith(grid);
                             })();
                         </script>
@@ -1486,87 +2158,83 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
                 </tr>
                 <tr>
                     <td>
-                        <table class="regcalc-form-table">
-                            <tr>
-                                <td class="regcalc-label" title="十六进制(Hexadecimal)">Hex(16)：</td>
-                                <td class="regcalc-control">
-                                    <input type="text" name="hex" id="regcalc_hex" style="width:260px;" placeholder="0x0" oninput="regcalc_set_text_value('hex')">
-                                    <!-- <button onclick="regcalc_syncHexTocalcInput()" title="同步到计算的输入框中"> ⭣ </button> -->
-                                </td>
-                                <td class="regcalc-actions" title="自动显示可读容量大小(Show readable size automatically)"><input type="text" name="human" id="regcalc_human" placeholder="Size" oninput="regcalc_set_text_value('human')"></td>
-                            </tr>
-                            <tr>
-                                <td class="regcalc-label" title="十进制(Decimal)">Dec(10)：</td>
-                                <td class="regcalc-control">
-                                    <input type="text" name="dec" id="regcalc_dec" value="0" style="width:260px;" placeholder="0" oninput="regcalc_set_text_value('dec')">
-                                </td>
-                                <td class="regcalc-actions"></td>
-                            </tr>
-                            <tr>
-                                <td class="regcalc-label" title="二进制(Binary)">Bin(2)：</td>
-                                <td class="regcalc-control">
-                                    <textarea name="bin" id="regcalc_bin" placeholder="0" oninput="regcalc_set_text_value('bin'); regcalc_resizeBinInput()"></textarea>
-                                </td>
-                                <td class="regcalc-actions"></td>
-                            </tr>
-                            <tbody id="regcalc_bitfieldRows">
-                                <tr class="regcalc-bitfield-row">
-                                    <td class="regcalc-label" title="位域编辑(Edit bit field)">Bit Field：</td>
-                                    <td class="regcalc-control">
-                                        <input type="text" class="regcalc-bit-range" placeholder="14:12" oninput="regcalc_handleBitFieldRangeChange(this)">
-                                        <input type="text" class="regcalc-sub-hex" placeholder="0x0" oninput="regcalc_updateFromBitField(this, 'hex')">
-                                        <input type="text" class="regcalc-sub-dec" placeholder="0" oninput="regcalc_updateFromBitField(this, 'dec')">
-                                    </td>
-                                    <td class="regcalc-actions regcalc-bitfield-buttons">
-                                        <button type="button" onclick="regcalc_addBitFieldRow(this)" title="新增位域行(Add bit-field row)">+</button>
-                                        <button type="button" onclick="regcalc_removeBitFieldRow(this)" title="删除此位域行(Delete this bit-field row)">-</button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                            <tr>
-                                <td class="regcalc-label" title="位移操作(Bit shift operation)">Shift：</td>
-                                <td class="regcalc-control">
-                                    <input type="text" id="regcalc_shiftLeft" style="width:32px;text-align: center;" placeholder="1" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
-                                    <button onclick="regcalc_handleShift('left')" title="左移(Shift left)">&lt;&lt;</button>
-                                    <button onclick="regcalc_handleShift('right')" title="右移(Shift right)">&gt;&gt;</button>
-                                    <input type="text" id="regcalc_shiftRight" style="width:32px;text-align: center;" placeholder="1" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
-                                </td>
-                                <td class="regcalc-actions"></td>
-                            </tr>
-                            <tr class="regcalc-spacer">
-                                <td colspan="3"></td>
-                            </tr>
-                              <!-- 第一行：计算输入 -->
-                            <tr>
-                                <td class="regcalc-label" title="表达式(expression)">Expr：</td>
-                                <td class="regcalc-control">
-                                    <textarea id="regcalc_calcInput" rows="1" title="输入计算表达式(Expression input)" placeholder="Enter expression, e.g. 0x43+10" oninput="regcalc_resizeCalcInput()" onkeydown="regcalc_handleEnterKey(event)"></textarea>
-                                </td>
-                                <td class="regcalc-actions">
-                                    <button onclick="regcalc_calculate()" title="计算表达式(Evaluate expression)">=</button>
-                                    <button onclick="regcalc_clearCalculation()" title="清空计算输入和结果(Clear input and result)">C</button>
-                                    <button onclick="regcalc_syncResultToHex()" title="同步结果到十六进制输入框中(Sync result to Hex(16) input field)"> ↑ </button>
-                                </td>
-                            </tr>
-                            <!-- 第二行：结果输出 -->
-                            <tr>
-                                <td class="regcalc-label"  title="计算结果(result)">Result：</td>
-                                <td class="regcalc-control"><input type="text" id="regcalc_calcResult" style="width:260px;" readonly></td>
-                                <td class="regcalc-actions">
-                                    <button onclick="regcalc_setResultFormat('hex')" title="显示十六进制结果(Show result as hexadecimal)">16</button>
-                                    <button onclick="regcalc_setResultFormat('dec')" title="显示十进制结果(Show result as decimal)">10</button>
-                                    <button onclick="regcalc_setResultFormat('bin')" title="显示二进制结果(Show result as binary)">2</button>
-                                </td>
-                            </tr>
-                            <!-- 第三行：截断提示 -->
-                            <tr>
-                                <td colspan="3" class="regcalc-footer-actions">
-                                    <input type="button" value="Clear All" title="清空所有输入框内容(Clear all input fields)" onclick="regcalc_clean_all_value()" id="regcalc_clean">
-                                    <a href="javascript:void(0)" onclick="regcalc_showHelp()"
-                                    title="查看使用说明(View usage guide)" style="font-size:12px;">help(?)</a>
-                                </td>
-                            </tr>
-                        </table>
+                        <div class="regcalc-new-form">
+  <section class="regcalc-ui-card regcalc-value-card">
+    <div class="regcalc-ui-row regcalc-value-row-hex">
+      <label class="regcalc-ui-label" for="regcalc_hex">HEX <sub>16</sub></label>
+      <input type="text" name="hex" id="regcalc_hex" placeholder="0x0" oninput="regcalc_set_text_value('hex')">
+    </div>
+    <div class="regcalc-ui-row regcalc-value-row-dec">
+      <label class="regcalc-ui-label" for="regcalc_dec">DEC <sub>10</sub></label>
+      <input type="text" name="dec" id="regcalc_dec" value="0" placeholder="0" oninput="regcalc_set_text_value('dec')">
+    </div>
+    <div class="regcalc-ui-row regcalc-ui-row-top regcalc-value-row-bin">
+      <label class="regcalc-ui-label" for="regcalc_bin">BIN <sub>2</sub></label>
+      <textarea name="bin" id="regcalc_bin" rows="1" placeholder="0" oninput="regcalc_set_text_value('bin'); regcalc_resizeBinInput()"></textarea>
+    </div>
+    <div class="regcalc-value-actions">
+      <input type="text" name="human" id="regcalc_human" placeholder="Size" oninput="regcalc_set_text_value('human')" title="Show readable size automatically">
+      <button id="regcalc_clean" class="regcalc-ui-btn regcalc-ui-btn-danger regcalc-clear-all-side" type="button" onclick="regcalc_clearAllUi()" title="Clear All"><span>CLR</span><span>ALL</span></button>
+    </div>
+  </section>
+
+  <section class="regcalc-ui-card regcalc-expr-card">
+    <div class="regcalc-ui-row regcalc-expr-row">
+      <label class="regcalc-ui-label" for="regcalc_calcInput">Expr</label>
+      <textarea id="regcalc_calcInput" rows="1" title="Expression input" placeholder="0x43 + 10 | (1 << 5)" oninput="regcalc_resizeCalcInput()" onkeydown="regcalc_handleEnterKey(event)"></textarea>
+      <div class="regcalc-row-actions">
+        <button class="regcalc-ui-btn regcalc-equals-btn regcalc-ui-square" type="button" onclick="regcalc_calculate()">=</button>
+        <button class="regcalc-ui-btn regcalc-ui-btn-danger regcalc-ui-square" type="button" onclick="regcalc_clearCalculation()">C</button>
+      </div>
+    </div>
+    <div class="regcalc-ui-row regcalc-result-row">
+      <label class="regcalc-ui-label" for="regcalc_calcResult">Result</label>
+      <input type="text" id="regcalc_calcResult" readonly placeholder="—">
+      <div class="regcalc-row-actions">
+        <button class="regcalc-ui-btn regcalc-format-btn" data-result-format="hex" type="button" onclick="regcalc_setResultFormat('hex')">16</button>
+        <button class="regcalc-ui-btn regcalc-format-btn" data-result-format="dec" type="button" onclick="regcalc_setResultFormat('dec')">10</button>
+        <button class="regcalc-ui-btn regcalc-format-btn" data-result-format="bin" type="button" onclick="regcalc_setResultFormat('bin')">2</button>
+        <button class="regcalc-ui-btn regcalc-ui-square" type="button" onclick="regcalc_syncResultToHex()" title="Sync result to Hex">↑</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="regcalc-ui-card regcalc-ops-card">
+    <div class="regcalc-ops-left">
+      <input type="text" id="regcalc_shiftShared" class="regcalc-shift-shared" placeholder="n" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,''); regcalc_syncSharedShift()">
+      <input type="hidden" id="regcalc_shiftLeft" value="">
+      <input type="hidden" id="regcalc_shiftRight" value="">
+      <button class="regcalc-ui-btn regcalc-shift-symbol" type="button" onclick="regcalc_handleSharedShift('left')" title="Shift Left">&lt;&lt;</button>
+      <button class="regcalc-ui-btn regcalc-shift-symbol" type="button" onclick="regcalc_handleSharedShift('right')" title="Shift Right">&gt;&gt;</button>
+      <span class="regcalc-op-divider"></span>
+      <span class="regcalc-mask-label">Mask</span>
+      <input type="text" id="regcalc_logicMask" class="regcalc-mask-input" placeholder="0xFF">
+      <button class="regcalc-ui-btn regcalc-op-or" type="button" onclick="regcalc_applyLogic('or')">OR</button>
+      <button class="regcalc-ui-btn regcalc-op-and" type="button" onclick="regcalc_applyLogic('and')">AND</button>
+      <button class="regcalc-ui-btn regcalc-op-not" type="button" onclick="regcalc_applyLogic('not')">NOT</button>
+      <button class="regcalc-ui-btn regcalc-op-xor" type="button" onclick="regcalc_applyLogic('xor')">XOR</button>
+    </div>
+  </section>
+
+  <section class="regcalc-ui-card regcalc-bitfield-card">
+    <div class="regcalc-bitfield-header">
+      <span>Bit Range</span><span class="regcalc-center">W</span><span>Hex</span><span>Dec</span><span>Bin</span><button id="regcalc_bitfieldClearAll" class="regcalc-bitfield-clear-all" type="button" onclick="regcalc_clearAllBitFields()" title="Clear all bit fields" aria-label="Clear all bit fields">×</button>
+    </div>
+    <div id="regcalc_bitfieldRows" class="regcalc-bitfield-rows">
+      <div class="regcalc-bitfield-row">
+        <input type="text" class="regcalc-bit-range" placeholder="14:12" oninput="regcalc_handleBitFieldRangeChange(this)">
+        <span class="regcalc-bit-width">—</span>
+        <input type="text" class="regcalc-sub-hex" placeholder="—" oninput="regcalc_updateFromBitField(this, 'hex')">
+        <input type="text" class="regcalc-sub-dec" placeholder="—" oninput="regcalc_updateFromBitField(this, 'dec')">
+        <input type="text" class="regcalc-sub-bin" placeholder="—" oninput="regcalc_updateFromBitFieldBin(this)">
+        <div class="regcalc-bitfield-buttons">
+          <button type="button" onclick="regcalc_addBitFieldRow(this)" title="Add bit-field row">+</button>
+          <button type="button" onclick="regcalc_removeBitFieldRow(this)" title="Remove bit-field row">×</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
                     </td>
                 </tr>
             </table>
@@ -1574,10 +2242,31 @@ body { margin: 0; padding: 8px; background: #f8f8f8; }
     </div>
 
     <!-- TextConvert内容区 -->
-    
-    <script src="vendor/mathjs/math.js?v=0.25"></script>
+
+<script>
+// Minimal decimal-expression fallback for the extension package.
+// Input is still validated by regcalc_calculateFloat before this is called.
+window.math = window.math || {
+  create: function(){ return this; },
+  all: {},
+  config: function(){},
+  evaluate: function(expr){
+    if (!/^[\d.eE()+\-*/%\s]+$/.test(expr)) throw new Error('非法浮点表达式');
+    var value = Function('"use strict"; return (' + expr + ')')();
+    return { valueOf: function(){ return value; }, toString: function(){ return String(value); }, isFinite: function(){ return Number.isFinite(Number(value)); } };
+  },
+  isBigNumber: function(v){ return v && typeof v.valueOf === 'function' && Number.isFinite(Number(v.valueOf())); },
+  format: function(v){
+    var n = Number(v.valueOf());
+    if (!Number.isFinite(n)) throw new Error('计算结果无效');
+    return n.toPrecision(15).replace(/\.?0+$/, '');
+  }
+};
+</script>
+
 <script>
 function regcalc_fitToMobileScreen() {
+    if (window.parent && window.parent !== window) return;
     const ui = document.getElementById('regcalc-ui');
     const panel = document.getElementById('regcalc');
     const table = ui ? ui.querySelector(':scope > table') : null;
@@ -1845,39 +2534,38 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', regc
     function regcalc_getBitFieldParts(row) {
         return {
             range: row.querySelector('.regcalc-bit-range'),
+            width: row.querySelector('.regcalc-bit-width'),
             subHex: row.querySelector('.regcalc-sub-hex'),
-            subDec: row.querySelector('.regcalc-sub-dec')
+            subDec: row.querySelector('.regcalc-sub-dec'),
+            subBin: row.querySelector('.regcalc-sub-bin')
         };
     }
 
     function regcalc_clearBitFieldRow(row) {
-        const { subHex, subDec } = regcalc_getBitFieldParts(row);
+        const { width, subHex, subDec, subBin } = regcalc_getBitFieldParts(row);
         regcalc_isProgrammatic = true;
+        if (width) width.textContent = '—';
         subHex.value = '';
         subDec.value = '';
+        if (subBin) subBin.value = '';
         regcalc_isProgrammatic = false;
     }
 
     function regcalc_updateBitFieldRow(row) {
         try {
-            const { range, subHex, subDec } = regcalc_getBitFieldParts(row);
+            const { range, width, subHex, subDec, subBin } = regcalc_getBitFieldParts(row);
             const parsed = regcalc_parseBitRange(range.value);
-            if (!parsed) {
-                regcalc_clearBitFieldRow(row);
-                return;
-            }
-
+            if (!parsed) { regcalc_clearBitFieldRow(row); return; }
             const fullValue = regcalc_getFullHexValue();
             const mask = (1n << BigInt(parsed.width)) - 1n;
             const subValue = (fullValue >> BigInt(parsed.lo)) & mask;
-
             regcalc_isProgrammatic = true;
+            if (width) width.textContent = String(parsed.width);
             subHex.value = '0x' + subValue.toString(16);
             subDec.value = subValue.toString(10);
+            if (subBin) subBin.value = subValue.toString(2).padStart(parsed.width, '0');
             regcalc_isProgrammatic = false;
-        } catch {
-            regcalc_clearBitFieldRow(row);
-        }
+        } catch { regcalc_clearBitFieldRow(row); }
     }
 
     function regcalc_updateAllBitFields() {
@@ -1920,21 +2608,19 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', regc
     }
 
     function regcalc_createBitFieldRow(range = '') {
-        const tr = document.createElement('tr');
-        tr.className = 'regcalc-bitfield-row';
-        tr.innerHTML = `
-            <td class="regcalc-label">Bit Field：</td>
-            <td class="regcalc-control">
-                <input type="text" class="regcalc-bit-range" placeholder="14:12" value="${range}" oninput="regcalc_handleBitFieldRangeChange(this)">
-                <input type="text" class="regcalc-sub-hex" placeholder="0x0" oninput="regcalc_updateFromBitField(this, 'hex')">
-                <input type="text" class="regcalc-sub-dec" placeholder="0" oninput="regcalc_updateFromBitField(this, 'dec')">
-            </td>
-            <td class="regcalc-actions regcalc-bitfield-buttons">
-                <button type="button" onclick="regcalc_addBitFieldRow(this)" title="新增位域行">+</button>
-                <button type="button" onclick="regcalc_removeBitFieldRow(this)" title="删除此位域行">-</button>
-            </td>
-        `;
-        return tr;
+        const row = document.createElement('div');
+        row.className = 'regcalc-bitfield-row';
+        row.innerHTML = `
+          <input type="text" class="regcalc-bit-range" placeholder="14:12" value="${range}" oninput="regcalc_handleBitFieldRangeChange(this)">
+          <span class="regcalc-bit-width">—</span>
+          <input type="text" class="regcalc-sub-hex" placeholder="—" oninput="regcalc_updateFromBitField(this, 'hex')">
+          <input type="text" class="regcalc-sub-dec" placeholder="—" oninput="regcalc_updateFromBitField(this, 'dec')">
+          <input type="text" class="regcalc-sub-bin" placeholder="—" oninput="regcalc_updateFromBitFieldBin(this)">
+          <div class="regcalc-bitfield-buttons">
+            <button type="button" onclick="regcalc_addBitFieldRow(this)" title="Add bit-field row">+</button>
+            <button type="button" onclick="regcalc_removeBitFieldRow(this)" title="Remove bit-field row">×</button>
+          </div>`;
+        return row;
     }
 
     function regcalc_addBitFieldRow(button) {
@@ -1963,11 +2649,30 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', regc
     }
 
     function regcalc_clearAllBitFields() {
-        regcalc_getBitFieldRows().forEach(row => {
-            const { range } = regcalc_getBitFieldParts(row);
-            range.value = '';
-            regcalc_clearBitFieldRow(row);
-        });
+        const rowsRoot = document.getElementById('regcalc_bitfieldRows');
+        if (!rowsRoot) return;
+
+        let rows = regcalc_getBitFieldRows();
+        let firstRow = rows[0];
+        if (!firstRow) {
+            firstRow = regcalc_createBitFieldRow();
+            rowsRoot.appendChild(firstRow);
+            rows = [firstRow];
+        }
+
+        rows.slice(1).forEach(row => row.remove());
+        const { range } = regcalc_getBitFieldParts(firstRow);
+        range.value = '';
+        regcalc_clearBitFieldRow(firstRow);
+        regcalc_refreshBitFieldButtons();
+
+        if (typeof window.regcalc_clearBitSelection === 'function') {
+            window.regcalc_clearBitSelection();
+        }
+        if (typeof window.regcalc_forceStateSave === 'function') {
+            setTimeout(window.regcalc_forceStateSave, 0);
+        }
+        regcalc_fitToMobileScreen();
     }
 
     function regcalc_handleBitRangeChange() { regcalc_updateAllBitFields(); }
@@ -2443,6 +3148,87 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', regc
         window.visualViewport.addEventListener('resize', regcalc_resizeBinInput);
     }
     </script>
+<script>
+
+    // v0.2 UI adapters. Existing register/shift/expression core stays unchanged.
+    function regcalc_syncSharedShift() {
+        const shared = document.getElementById('regcalc_shiftShared');
+        const value = shared ? shared.value : '';
+        const left = document.getElementById('regcalc_shiftLeft');
+        const right = document.getElementById('regcalc_shiftRight');
+        if (left) left.value = value;
+        if (right) right.value = value;
+    }
+    function regcalc_handleSharedShift(direction) {
+        regcalc_syncSharedShift();
+        regcalc_handleShift(direction);
+    }
+    function regcalc_parseLogicMask() {
+        const input = document.getElementById('regcalc_logicMask');
+        let raw = input ? input.value.trim().replace(/_/g, '') : '';
+        if (!raw) return 0n;
+        if (!/^0x/i.test(raw)) raw = '0x' + raw;
+        if (!/^0x[0-9a-f]+$/i.test(raw)) throw new Error('Mask must be hexadecimal.');
+        return BigInt(raw) & 0xFFFFFFFFFFFFFFFFn;
+    }
+    function regcalc_applyLogic(op) {
+        try {
+            const value = regcalc_getFullHexValue() & 0xFFFFFFFFFFFFFFFFn;
+            let result = value;
+            if (op === 'not') result = (~value) & 0xFFFFFFFFFFFFFFFFn;
+            else {
+                const mask = regcalc_parseLogicMask();
+                if (op === 'or') result = value | mask;
+                else if (op === 'and') result = value & mask;
+                else if (op === 'xor') result = value ^ mask;
+                else return;
+            }
+            document.getElementById('regcalc_hex').value = '0x' + result.toString(16).toUpperCase();
+            regcalc_set_text_value('hex');
+        } catch (e) { alert('Mask operation error: ' + e.message); }
+    }
+    function regcalc_updateFromBitFieldBin(input) {
+        if (regcalc_isProgrammatic) return;
+        const row = input.closest('.regcalc-bitfield-row');
+        const { range, subBin } = regcalc_getBitFieldParts(row);
+        const parsed = regcalc_parseBitRange(range.value);
+        if (!parsed) { regcalc_clearBitFieldRow(row); return; }
+        try {
+            const rawValue = subBin.value.replace(/[^01]/g, '');
+            subBin.value = rawValue;
+            if (!rawValue) return;
+            const subValue = BigInt('0b' + rawValue);
+            const mask = (1n << BigInt(parsed.width)) - 1n;
+            let fullValue = regcalc_getFullHexValue();
+            fullValue &= ~(mask << BigInt(parsed.lo));
+            fullValue |= (subValue & mask) << BigInt(parsed.lo);
+            document.getElementById('regcalc_hex').value = '0x' + fullValue.toString(16);
+            regcalc_set_text_value('hex');
+        } catch { regcalc_clearBitFieldRow(row); }
+    }
+    function regcalc_clearAllUi() {
+        regcalc_clean_all_value();
+        const shared = document.getElementById('regcalc_shiftShared');
+        const mask = document.getElementById('regcalc_logicMask');
+        if (shared) shared.value = '';
+        if (mask) mask.value = '';
+    }
+    function regcalc_syncResultFormatButtons() {
+        document.querySelectorAll('.regcalc-format-btn').forEach(btn => {
+            btn.classList.toggle('is-active', btn.dataset.resultFormat === regcalc_g_resultFormat);
+        });
+    }
+    document.addEventListener('click', function (e) {
+        if (e.target && e.target.closest && e.target.closest('#regcalc-ui')) setTimeout(regcalc_syncResultFormatButtons, 0);
+    }, true);
+    window.addEventListener('load', function () {
+        regcalc_syncSharedShift();
+        regcalc_syncResultFormatButtons();
+        regcalc_refreshBitFieldButtons();
+        regcalc_updateAllBitFields();
+    });
+
+</script>
     <!-- END RegCalc -->
 
 
@@ -2458,5 +3244,812 @@ window.addEventListener('DOMContentLoaded', function () {
   });
 });
 </script>
+
+<script id="regcalc-popup-size-script">
+(function () {
+  var reportFrame = 0;
+  var cardObserver = null;
+
+  function getCurrentScale() {
+    var raw = window.getComputedStyle(document.documentElement).getPropertyValue('--regcalc-scale').trim();
+    var scale = parseFloat(raw);
+    return Number.isFinite(scale) ? scale : 1;
+  }
+
+  function getNaturalCardSize() {
+    var card = document.querySelector('#regcalc-ui > table');
+    if (!card) return null;
+    var scale = getCurrentScale();
+    var rect = card.getBoundingClientRect();
+    return {
+      naturalWidth: rect.width / scale,
+      naturalHeight: rect.height / scale,
+      scale: scale
+    };
+  }
+
+  function reportPopupSize() {
+    reportFrame = 0;
+    var size = getNaturalCardSize();
+    if (!size) return;
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({
+        type: 'regcalc-popup-size',
+        naturalWidth: size.naturalWidth,
+        naturalHeight: size.naturalHeight,
+        width: Math.ceil(size.naturalWidth * size.scale),
+        height: Math.ceil(size.naturalHeight * size.scale),
+        scale: size.scale
+      }, '*');
+    }
+  }
+
+  function scheduleReport() {
+    if (reportFrame) cancelAnimationFrame(reportFrame);
+    reportFrame = requestAnimationFrame(reportPopupSize);
+  }
+
+  function setScrollMode(enabled) {
+    var value = enabled ? 'auto' : 'hidden';
+    document.documentElement.style.setProperty('overflow-y', value, 'important');
+    document.body.style.setProperty('overflow-y', value, 'important');
+    document.documentElement.style.setProperty('overflow-x', 'hidden', 'important');
+    document.body.style.setProperty('overflow-x', 'hidden', 'important');
+  }
+
+  window.addEventListener('message', function (event) {
+    var data = event.data || {};
+    if (data.type === 'REGCALC64_SET_SCALE') {
+      var scale = parseFloat(data.scale);
+      if (!Number.isFinite(scale)) return;
+      document.documentElement.style.setProperty('--regcalc-scale', String(scale));
+      var card = document.querySelector('#regcalc-ui > table');
+      if (card) {
+        card.style.transform = 'none';
+        card.style.zoom = String(scale);
+      }
+      scheduleReport();
+      setTimeout(scheduleReport, 40);
+      return;
+    }
+    if (data.type === 'REGCALC64_SET_SCROLL') setScrollMode(!!data.enabled);
+  });
+
+  window.addEventListener('load', function () {
+    var card = document.querySelector('#regcalc-ui > table');
+    if (card && window.ResizeObserver) {
+      cardObserver = new ResizeObserver(scheduleReport);
+      cardObserver.observe(card);
+    }
+    document.addEventListener('input', scheduleReport, true);
+    document.addEventListener('change', scheduleReport, true);
+    document.addEventListener('click', scheduleReport, true);
+    reportPopupSize();
+    setTimeout(reportPopupSize, 50);
+    setTimeout(reportPopupSize, 200);
+  });
+  window.addEventListener('resize', scheduleReport);
+})();
+</script>
+
+
+<script id="regcalc64-shared-state-and-help">
+(function () {
+  var regcalcExtensionVersion = "";
+  var applyingState = false;
+  var stateReady = false;
+  var saveTimer = null;
+
+  function byId(id) {
+    return document.getElementById(id);
+  }
+
+  function getBitFields() {
+    return Array.from(document.querySelectorAll("#regcalc_bitfieldRows .regcalc-bitfield-row")).map(function (row) {
+      return {
+        range: row.querySelector(".regcalc-bit-range")?.value || "",
+        hex: row.querySelector(".regcalc-sub-hex")?.value || "",
+        dec: row.querySelector(".regcalc-sub-dec")?.value || "",
+        bin: row.querySelector(".regcalc-sub-bin")?.value || ""
+      };
+    });
+  }
+
+  function snapshotState() {
+    return {
+      version: 2,
+      hex: byId("regcalc_hex")?.value || "",
+      dec: byId("regcalc_dec")?.value || "",
+      bin: byId("regcalc_bin")?.value || "",
+      human: byId("regcalc_human")?.value || "",
+      shiftLeft: byId("regcalc_shiftLeft")?.value || "",
+      shiftRight: byId("regcalc_shiftRight")?.value || "",
+      shiftShared: byId("regcalc_shiftShared")?.value || "",
+      logicMask: byId("regcalc_logicMask")?.value || "",
+      calcInput: byId("regcalc_calcInput")?.value || "",
+      calcResult: byId("regcalc_calcResult")?.value || "",
+      bitFields: getBitFields(),
+      updatedAt: Date.now()
+    };
+  }
+
+  function hasUsefulState(state) {
+    if (!state || typeof state !== "object") return false;
+    if (state.hex || state.dec || state.bin || state.human || state.shiftLeft || state.shiftRight || state.shiftShared || state.logicMask || state.calcInput || state.calcResult) {
+      return true;
+    }
+    if (Array.isArray(state.bitFields)) {
+      return state.bitFields.some(function (item) {
+        return item && (item.range || item.hex || item.dec);
+      });
+    }
+    return false;
+  }
+
+  function postStateNow() {
+    if (applyingState || !stateReady) return;
+    var state = snapshotState();
+
+    // 防止新 Tab 的初始空白计算器把旧状态覆盖掉。
+    // Clear All 以后 hex/dec/bin 会有明确同步动作，因此仍可通过用户输入保存。
+    if (!hasUsefulState(state)) return;
+
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({
+        type: "REGCALC64_STATE_CHANGED",
+        state: state
+      }, "*");
+    }
+  }
+
+  function schedulePostState() {
+    if (applyingState || !stateReady) return;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(postStateNow, 120);
+  }
+
+  function forcePostStateNow() {
+    if (applyingState || !stateReady) return;
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({
+        type: "REGCALC64_STATE_CHANGED",
+        state: snapshotState()
+      }, "*");
+    }
+  }
+  window.regcalc_forceStateSave = forcePostStateNow;
+
+  function ensureBitFieldRows(count) {
+    var rowsRoot = byId("regcalc_bitfieldRows");
+    if (!rowsRoot) return;
+    count = Math.max(1, count || 1);
+    var rows = Array.from(rowsRoot.querySelectorAll(".regcalc-bitfield-row"));
+
+    while (rows.length < count) {
+      var last = rows[rows.length - 1];
+      var addBtn = last && last.querySelector(".regcalc-bitfield-buttons button");
+      if (typeof window.regcalc_addBitFieldRow === "function" && addBtn) {
+        window.regcalc_addBitFieldRow(addBtn);
+      } else if (last) {
+        rowsRoot.appendChild(last.cloneNode(true));
+      } else {
+        break;
+      }
+      rows = Array.from(rowsRoot.querySelectorAll(".regcalc-bitfield-row"));
+    }
+
+    while (rows.length > count) {
+      var lastRow = rows[rows.length - 1];
+      var removeBtn = lastRow && lastRow.querySelector(".regcalc-bitfield-buttons button:nth-child(2)");
+      if (typeof window.regcalc_removeBitFieldRow === "function" && removeBtn) {
+        window.regcalc_removeBitFieldRow(removeBtn);
+      } else if (lastRow) {
+        lastRow.remove();
+      } else {
+        break;
+      }
+      rows = Array.from(rowsRoot.querySelectorAll(".regcalc-bitfield-row"));
+    }
+  }
+
+  function setValue(id, value) {
+    var el = byId(id);
+    if (el) el.value = value || "";
+  }
+
+  function applyState(state) {
+    applyingState = true;
+
+    try {
+      if (hasUsefulState(state)) {
+        setValue("regcalc_hex", state.hex);
+        setValue("regcalc_dec", state.dec);
+        setValue("regcalc_bin", state.bin);
+        setValue("regcalc_human", state.human);
+        setValue("regcalc_shiftLeft", state.shiftLeft);
+        setValue("regcalc_shiftRight", state.shiftRight);
+        setValue("regcalc_shiftShared", state.shiftShared || state.shiftLeft || state.shiftRight);
+        setValue("regcalc_logicMask", state.logicMask);
+        setValue("regcalc_calcInput", state.calcInput);
+        setValue("regcalc_calcResult", state.calcResult);
+
+        var bitFields = Array.isArray(state.bitFields) ? state.bitFields : [];
+        ensureBitFieldRows(Math.max(1, bitFields.length || 1));
+        var rows = Array.from(document.querySelectorAll("#regcalc_bitfieldRows .regcalc-bitfield-row"));
+        rows.forEach(function (row, index) {
+          var item = bitFields[index] || {};
+          var range = row.querySelector(".regcalc-bit-range");
+          var hex = row.querySelector(".regcalc-sub-hex");
+          var dec = row.querySelector(".regcalc-sub-dec");
+          var bin = row.querySelector(".regcalc-sub-bin");
+          if (range) range.value = item.range || "";
+          if (hex) hex.value = item.hex || "";
+          if (dec) dec.value = item.dec || "";
+          if (bin) bin.value = item.bin || "";
+        });
+
+        if (state.hex && typeof window.regcalc_set_text_value === "function") {
+          window.regcalc_set_text_value("hex");
+        } else if (state.dec && typeof window.regcalc_set_text_value === "function") {
+          window.regcalc_set_text_value("dec");
+        } else if (state.bin && typeof window.regcalc_set_text_value === "function") {
+          window.regcalc_set_text_value("bin");
+        }
+
+        setValue("regcalc_calcInput", state.calcInput);
+        setValue("regcalc_calcResult", state.calcResult);
+
+        if (typeof window.regcalc_resizeBinInput === "function") window.regcalc_resizeBinInput();
+        if (typeof window.regcalc_resizeCalcInput === "function") window.regcalc_resizeCalcInput();
+        if (typeof window.regcalc_syncSharedShift === "function") window.regcalc_syncSharedShift();
+        if (typeof window.regcalc_updateAllBitFields === "function") window.regcalc_updateAllBitFields();
+        if (typeof window.regcalc_updateHeaderSummary === "function") window.regcalc_updateHeaderSummary();
+      }
+
+      // 收到父窗口状态以后才允许保存。即使状态为空，也说明初始化流程结束。
+      stateReady = true;
+    } finally {
+      setTimeout(function () { applyingState = false; }, 80);
+    }
+  }
+
+  window.addEventListener("message", function (event) {
+    var data = event.data || {};
+    if (data.type === "REGCALC64_EXTENSION_META") {
+      regcalcExtensionVersion = String(data.version || "");
+      return;
+    }
+    if (data.type === "REGCALC64_APPLY_STATE") {
+      applyState(data.state || {});
+      return;
+    }
+    if (data.type === "REGCALC64_SHOW_HELP") {
+      if (typeof window.regcalc_showHelp === "function") window.regcalc_showHelp();
+    }
+  });
+
+  window.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener("input", schedulePostState, true);
+    document.addEventListener("change", schedulePostState, true);
+    document.addEventListener("click", function (event) {
+      var target = event.target;
+      if (target && target.closest && target.closest("#regcalc-ui")) {
+        setTimeout(schedulePostState, 0);
+      }
+    }, true);
+  });
+
+  window.regcalc_showHelp = function () {
+    var old = document.getElementById("regcalc64_help_overlay");
+    if (old) old.remove();
+
+    var overlay = document.createElement("div");
+    overlay.id = "regcalc64_help_overlay";
+    var versionLabel = regcalcExtensionVersion ? "Chrome Extension v" + regcalcExtensionVersion : "Chrome Extension";
+    overlay.innerHTML = `
+      <div class="regcalc64-help-card">
+        <button class="regcalc64-help-close" type="button" title="Close">×</button>
+        <div class="regcalc64-help-body">
+          <h3>RegCalc64 Help <span class="regcalc64-help-version">${versionLabel}</span></h3>
+          <h4>Features</h4>
+          <ul>
+            <li>Convert 64-bit register values between Hex, Dec and Bin.</li>
+            <li>Click any bit button to toggle 0 / 1 and update the value instantly.</li>
+            <li>Drag across bit buttons to select a range; edit the selection Hex/Dec value directly and sync it to Bit Field.</li>
+            <li>Edit bit fields such as <code>14:12</code>; Width, Hex, Dec and Bin stay synchronized. Use the table-header × to clear all fields and keep one blank row.</li>
+            <li>Use the shared Shift value with &lt;&lt; / &gt;&gt; to shift the current register value.</li>
+            <li>Use Mask with OR / AND / NOT / XOR for quick 64-bit logic operations.</li>
+            <li><code>CLR ALL</code> is the original Clear All action and resets the calculator.</li>
+            <li>Use Expr to calculate expressions such as <code>0x43 + 10</code>, then sync the result back to Hex.</li>
+            <li>The floating calculator shares one state across tabs, like carrying one physical calculator between pages.</li>
+          </ul>
+          <h4>Usage Tips</h4>
+          <ul>
+            <li>Double-click an input box to copy its content.</li>
+            <li>Click the extension icon to show or hide the floating calculator.</li>
+            <li>Drag the title area to move the calculator. Its position will be remembered.</li>
+          </ul>
+
+          <h3>RegCalc64 使用说明</h3>
+          <h4>功能介绍</h4>
+          <ul>
+            <li>支持 64 位寄存器数值在 Hex、Dec、Bin 之间转换。</li>
+            <li>点击任意 bit 按钮，可在 0 / 1 之间切换，并实时更新数值。</li>
+            <li>按住鼠标拖过 bit 可选择连续位域；可直接编辑选区 Hex/Dec，并同步到 Bit Field。</li>
+            <li>支持位域编辑，例如 <code>14:12</code>，并同步显示 W、Hex、Dec、Bin；点击表头 × 可清空全部 Field，仅保留一条空白行。</li>
+            <li>使用同一个 Shift 数值配合 &lt;&lt; / &gt;&gt; 对当前寄存器值左移或右移。</li>
+            <li>Mask 配合 OR / AND / NOT / XOR 可快速执行 64 位逻辑运算。</li>
+            <li><code>CLR ALL</code> 就是原来的 Clear All，用于清空整个计算器现场。</li>
+            <li>Expr 可计算表达式，例如 <code>0x43 + 10</code>，结果可同步回 Hex。</li>
+            <li>悬浮计算器在不同 Tab 之间共享同一份现场，就像把一个实体计算器拿到不同桌面上使用。</li>
+          </ul>
+          <h4>使用提示</h4>
+          <ul>
+            <li>双击输入框可复制当前内容。</li>
+            <li>点击扩展图标可显示或隐藏悬浮计算器。</li>
+            <li>拖动标题区域可移动计算器，位置会自动记住。</li>
+          </ul>
+        </div>
+      </div>
+    `;
+
+    var style = document.createElement("style");
+    style.textContent = `
+      #regcalc64_help_overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 999999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(15, 23, 42, 0.18);
+        font-family: "JetBrains Mono", "Cascadia Mono", "Consolas", "Microsoft YaHei UI", "Microsoft YaHei", monospace;
+      }
+      .regcalc64-help-card {
+        position: relative;
+        width: min(86%, 390px);
+        max-height: 86%;
+        overflow: auto;
+        padding: 14px 16px 16px;
+        border: 1px solid rgba(203, 213, 225, 0.78);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.96);
+        color: #18212f;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.18);
+      }
+      .regcalc64-help-close {
+        position: sticky;
+        float: right;
+        top: 0;
+        width: 22px;
+        height: 22px;
+        border: 0;
+        border-radius: 999px;
+        background: rgba(100, 116, 139, 0.14);
+        color: rgba(15, 23, 42, 0.72);
+        font: 700 16px/22px Arial, sans-serif;
+        cursor: pointer;
+      }
+      .regcalc64-help-close:hover {
+        background: rgba(239, 68, 68, 0.16);
+        color: #b91c1c;
+      }
+      .regcalc64-help-body h3 {
+        margin: 4px 0 8px;
+        font-size: 16px;
+      }
+      .regcalc64-help-version {
+        margin-left: 6px;
+        color: #94a3b8;
+        font-size: 11px;
+        font-weight: 500;
+      }
+      .regcalc64-help-body h4 {
+        margin: 10px 0 5px;
+        font-size: 13px;
+      }
+      .regcalc64-help-body ul {
+        margin: 0 0 8px 18px;
+        padding: 0;
+      }
+      .regcalc64-help-body li {
+        margin: 3px 0;
+        font-size: 12px;
+        line-height: 1.45;
+      }
+      .regcalc64-help-body code {
+        padding: 1px 4px;
+        border-radius: 4px;
+        background: #f1f5f9;
+        font-family: "JetBrains Mono", "Cascadia Mono", "Consolas", "Microsoft YaHei UI", "Microsoft YaHei", monospace;
+      }
+    `;
+
+    overlay.appendChild(style);
+    document.body.appendChild(overlay);
+
+    overlay.querySelector(".regcalc64-help-close").addEventListener("click", function () {
+      overlay.remove();
+    });
+    overlay.addEventListener("click", function (event) {
+      if (event.target === overlay) overlay.remove();
+    });
+  };
+})();
+</script>
+
+<script id="regcalc64-header-drag-bridge">
+(function () {
+  function bindHeaderDrag() {
+    const header = document.querySelector("#regcalc-ui .regcalc-title-table td");
+    if (!header || header.dataset.regcalcDragBound === "1") return;
+    header.dataset.regcalcDragBound = "1";
+
+    let dragging = false;
+    let pointerId = null;
+    let lastX = 0;
+    let lastY = 0;
+
+    header.addEventListener("pointerdown", function (event) {
+      if (event.button !== 0) return;
+      if (event.target.closest("button,a,input,textarea,select")) return;
+      dragging = true;
+      pointerId = event.pointerId;
+      lastX = event.screenX;
+      lastY = event.screenY;
+      try { header.setPointerCapture(pointerId); } catch {}
+      window.parent.postMessage({ type: "REGCALC64_HEADER_DRAG_START" }, "*");
+      event.preventDefault();
+    });
+
+    header.addEventListener("pointermove", function (event) {
+      if (!dragging || event.pointerId !== pointerId) return;
+      const dx = event.screenX - lastX;
+      const dy = event.screenY - lastY;
+      lastX = event.screenX;
+      lastY = event.screenY;
+      if (dx || dy) {
+        window.parent.postMessage({ type: "REGCALC64_HEADER_DRAG_MOVE", dx: dx, dy: dy }, "*");
+      }
+      event.preventDefault();
+    });
+
+    function endDrag(event) {
+      if (!dragging) return;
+      dragging = false;
+      try { header.releasePointerCapture(pointerId); } catch {}
+      pointerId = null;
+      window.parent.postMessage({ type: "REGCALC64_HEADER_DRAG_END" }, "*");
+      if (event) event.preventDefault();
+    }
+
+    header.addEventListener("pointerup", endDrag);
+    header.addEventListener("pointercancel", endDrag);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bindHeaderDrag, { once: true });
+  } else {
+    bindHeaderDrag();
+  }
+})();
+</script>
+
+
+<script id="regcalc-v030-selection-script">
+(function () {
+  let regcalc_selectionDragStart = null;
+  let regcalc_selectionDragEnd = null;
+  let regcalc_selectionPointerId = null;
+  let regcalc_selectionDidDrag = false;
+  let regcalc_selectionSuppressNextClick = false;
+  let regcalc_selectionCurrent = null;
+  let regcalc_selectionBar = null;
+
+  function regcalc_normalizeSelectionRange(a, b) {
+    const hi = Math.max(Number(a), Number(b));
+    const lo = Math.min(Number(a), Number(b));
+    return { hi, lo, width: hi - lo + 1 };
+  }
+
+  function regcalc_extractSelectionValue(fullValue, hi, lo) {
+    const width = Number(hi) - Number(lo) + 1;
+    const mask = (1n << BigInt(width)) - 1n;
+    return (BigInt(fullValue) >> BigInt(lo)) & mask;
+  }
+
+  function regcalc_getBitButtonFromPoint(x, y) {
+    const hit = document.elementFromPoint(x, y);
+    if (!hit) return null;
+    if (hit.matches && hit.matches('.regcalc-bit-toggle')) return hit;
+    const cell = hit.closest ? hit.closest('.regcalc-bit-cell') : null;
+    return cell ? cell.querySelector('.regcalc-bit-toggle') : null;
+  }
+
+  function regcalc_getButtonBit(button) {
+    if (!button) return null;
+    if (button.dataset.regcalcBit !== undefined) return Number(button.dataset.regcalcBit);
+    const index = button.closest('.regcalc-bit-cell')?.querySelector('.regcalc-bit-index');
+    if (!index) return null;
+    const bit = Number(index.textContent);
+    if (!Number.isInteger(bit) || bit < 0 || bit > 63) return null;
+    button.dataset.regcalcBit = String(bit);
+    return bit;
+  }
+
+  function regcalc_clearSelectionHighlight() {
+    document.querySelectorAll('#regcalc-ui .regcalc-bit-cell.regcalc-selection-active').forEach(cell => {
+      cell.classList.remove('regcalc-selection-active');
+      cell.querySelector('.regcalc-bit-index')?.classList.remove('regcalc-selection-index-active');
+    });
+  }
+
+  function regcalc_renderSelectionHighlight(range) {
+    regcalc_clearSelectionHighlight();
+    if (!range) return;
+    document.querySelectorAll('#regcalc-ui .regcalc-bit-toggle').forEach(button => {
+      const bit = regcalc_getButtonBit(button);
+      if (bit === null || bit < range.lo || bit > range.hi) return;
+      const cell = button.closest('.regcalc-bit-cell');
+      if (!cell) return;
+      cell.classList.add('regcalc-selection-active');
+      cell.querySelector('.regcalc-bit-index')?.classList.add('regcalc-selection-index-active');
+    });
+  }
+
+  function regcalc_formatSelectionRange(range) {
+    return range.hi === range.lo ? `[${range.hi}]` : `[${range.hi}:${range.lo}]`;
+  }
+
+  function regcalc_ensureSelectionBar() {
+    if (regcalc_selectionBar && document.body.contains(regcalc_selectionBar)) return regcalc_selectionBar;
+    const grid = document.querySelector('#regcalc-ui .regcalc-bit-grid');
+    if (!grid) return null;
+
+    const bar = document.createElement('div');
+    bar.id = 'regcalc-bit-selection-bar';
+    bar.className = 'regcalc-bit-selection-bar';
+    bar.innerHTML = `
+      <span id="regcalc-selection-range" class="regcalc-selection-range">[19:12]</span>
+      <span class="regcalc-selection-sep">:</span>
+      <input id="regcalc-selection-hex" class="regcalc-selection-edit" type="text" value="0x0" spellcheck="false" aria-label="Selected field hexadecimal value">
+      <span class="regcalc-selection-sep">=</span>
+      <input id="regcalc-selection-dec" class="regcalc-selection-edit" type="text" value="0" spellcheck="false" aria-label="Selected field decimal value">
+      <span class="regcalc-selection-sep">,</span>
+      <span id="regcalc-selection-width" class="regcalc-selection-width">8bit</span>
+      <button id="regcalc-selection-close" class="regcalc-selection-close" type="button" title="Clear selection" aria-label="Clear selection">×</button>`;
+    grid.insertAdjacentElement('afterend', bar);
+    regcalc_selectionBar = bar;
+
+    const hexInput = bar.querySelector('#regcalc-selection-hex');
+    const decInput = bar.querySelector('#regcalc-selection-dec');
+    const closeButton = bar.querySelector('#regcalc-selection-close');
+    hexInput.addEventListener('change', function () { regcalc_updateSelectionFromHex(this); });
+    decInput.addEventListener('change', function () { regcalc_updateSelectionFromDec(this); });
+    [hexInput, decInput].forEach(input => {
+      input.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') { event.preventDefault(); this.blur(); }
+      });
+      input.addEventListener('input', function () { this.classList.remove('is-invalid'); this.removeAttribute('title'); });
+    });
+    closeButton.addEventListener('click', function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      regcalc_clearBitSelection();
+    });
+    return bar;
+  }
+
+  function regcalc_readSelectionValue(range) {
+    try {
+      return regcalc_extractSelectionValue(regcalc_getFullHexValue(), range.hi, range.lo);
+    } catch {
+      return 0n;
+    }
+  }
+
+  function regcalc_refreshSelectionBar() {
+    const range = regcalc_selectionCurrent;
+    const bar = regcalc_ensureSelectionBar();
+    if (!bar) return;
+    if (!range) {
+      bar.classList.remove('is-visible');
+      return;
+    }
+
+    bar.classList.add('is-visible');
+    bar.querySelector('#regcalc-selection-range').textContent = regcalc_formatSelectionRange(range);
+    bar.querySelector('#regcalc-selection-width').textContent = `${range.width}bit`;
+
+    const value = regcalc_readSelectionValue(range);
+    const hexInput = bar.querySelector('#regcalc-selection-hex');
+    const decInput = bar.querySelector('#regcalc-selection-dec');
+    if (document.activeElement !== hexInput) hexInput.value = '0x' + value.toString(16).toUpperCase();
+    if (document.activeElement !== decInput) decInput.value = value.toString(10);
+  }
+
+  function regcalc_showSelection(range) {
+    regcalc_selectionCurrent = range;
+    regcalc_renderSelectionHighlight(range);
+    regcalc_refreshSelectionBar();
+  }
+
+  function regcalc_clearBitSelection() {
+    regcalc_selectionCurrent = null;
+    regcalc_selectionDragStart = null;
+    regcalc_selectionDragEnd = null;
+    regcalc_selectionDidDrag = false;
+    regcalc_clearSelectionHighlight();
+    regcalc_refreshSelectionBar();
+  }
+  window.regcalc_clearBitSelection = regcalc_clearBitSelection;
+
+  function regcalc_findBitFieldRowForRange(range) {
+    const rows = regcalc_getBitFieldRows();
+    for (const row of rows) {
+      const input = row.querySelector('.regcalc-bit-range');
+      const parsed = regcalc_parseBitRange(input?.value || '');
+      if (parsed && parsed.hi === range.hi && parsed.lo === range.lo) return row;
+    }
+    return null;
+  }
+
+  function regcalc_findBlankBitFieldRow() {
+    return regcalc_getBitFieldRows().find(row => {
+      const input = row.querySelector('.regcalc-bit-range');
+      return !input || !input.value.trim();
+    }) || null;
+  }
+
+  function regcalc_syncSelectionToBitField(range) {
+    const rowsRoot = document.getElementById('regcalc_bitfieldRows');
+    if (!rowsRoot || !range) return null;
+
+    let row = regcalc_findBitFieldRowForRange(range);
+    if (!row) row = regcalc_findBlankBitFieldRow();
+    if (!row) {
+      row = regcalc_createBitFieldRow();
+      rowsRoot.appendChild(row);
+    }
+
+    const rangeInput = row.querySelector('.regcalc-bit-range');
+    rangeInput.value = range.hi === range.lo ? String(range.hi) : `${range.hi}:${range.lo}`;
+    regcalc_updateBitFieldRow(row);
+    regcalc_refreshBitFieldButtons();
+    rangeInput.dispatchEvent(new Event('change', { bubbles: true }));
+    return row;
+  }
+
+  function regcalc_setSelectionInputInvalid(input, message) {
+    input.classList.add('is-invalid');
+    input.title = message;
+  }
+
+  function regcalc_commitSelectionValue(input, radix) {
+    const range = regcalc_selectionCurrent;
+    if (!range) return;
+    let row = regcalc_findBitFieldRowForRange(range) || regcalc_syncSelectionToBitField(range);
+    if (!row) return;
+
+    const raw = input.value.trim();
+    let value;
+    try {
+      if (radix === 16) {
+        const clean = raw.replace(/^0x/i, '');
+        if (!clean || !/^[0-9a-f]+$/i.test(clean)) throw new Error('Enter a hexadecimal value.');
+        value = BigInt('0x' + clean);
+      } else {
+        if (!/^\d+$/.test(raw)) throw new Error('Enter a decimal value.');
+        value = BigInt(raw);
+      }
+      const maxValue = (1n << BigInt(range.width)) - 1n;
+      if (value > maxValue) throw new Error(`Value exceeds ${range.width}-bit range.`);
+    } catch (error) {
+      regcalc_setSelectionInputInvalid(input, error.message || 'Invalid value.');
+      return;
+    }
+
+    input.classList.remove('is-invalid');
+    input.removeAttribute('title');
+    const target = radix === 16 ? row.querySelector('.regcalc-sub-hex') : row.querySelector('.regcalc-sub-dec');
+    target.value = radix === 16 ? '0x' + value.toString(16) : value.toString(10);
+    regcalc_updateFromBitField(target, radix === 16 ? 'hex' : 'dec');
+    regcalc_updateBitFieldRow(row);
+    regcalc_refreshSelectionBar();
+  }
+
+  function regcalc_updateSelectionFromHex(input) {
+    regcalc_commitSelectionValue(input, 16);
+  }
+
+  function regcalc_updateSelectionFromDec(input) {
+    regcalc_commitSelectionValue(input, 10);
+  }
+
+  function regcalc_selectionStart(button, event) {
+    if (event.button !== 0) return;
+    const bit = regcalc_getButtonBit(button);
+    if (bit === null) return;
+    regcalc_selectionDragStart = bit;
+    regcalc_selectionDragEnd = bit;
+    regcalc_selectionDidDrag = false;
+    regcalc_selectionPointerId = event.pointerId;
+    try { button.setPointerCapture(event.pointerId); } catch {}
+  }
+
+  function regcalc_selectionMove(event) {
+    if (regcalc_selectionDragStart === null || regcalc_selectionPointerId !== event.pointerId) return;
+    if ((event.buttons & 1) === 0) return;
+    const button = regcalc_getBitButtonFromPoint(event.clientX, event.clientY);
+    const bit = regcalc_getButtonBit(button);
+    if (bit === null || bit === regcalc_selectionDragEnd) return;
+    regcalc_selectionDragEnd = bit;
+    if (bit !== regcalc_selectionDragStart) regcalc_selectionDidDrag = true;
+    if (regcalc_selectionDidDrag) {
+      regcalc_showSelection(regcalc_normalizeSelectionRange(regcalc_selectionDragStart, regcalc_selectionDragEnd));
+    }
+  }
+
+  function regcalc_selectionEnd(event) {
+    if (regcalc_selectionDragStart === null || regcalc_selectionPointerId !== event.pointerId) return;
+    if (regcalc_selectionDidDrag) {
+      const range = regcalc_normalizeSelectionRange(regcalc_selectionDragStart, regcalc_selectionDragEnd);
+      regcalc_showSelection(range);
+      regcalc_syncSelectionToBitField(range);
+      regcalc_refreshSelectionBar();
+      regcalc_selectionSuppressNextClick = true;
+    }
+    regcalc_selectionDragStart = null;
+    regcalc_selectionDragEnd = null;
+    regcalc_selectionPointerId = null;
+    regcalc_selectionDidDrag = false;
+  }
+
+  function regcalc_installBitSelection() {
+    regcalc_ensureSelectionBar();
+    document.querySelectorAll('#regcalc-ui .regcalc-bit-toggle').forEach(button => {
+      regcalc_getButtonBit(button);
+      button.addEventListener('pointerdown', function (event) { regcalc_selectionStart(button, event); });
+      button.addEventListener('click', function (event) {
+        if (!regcalc_selectionSuppressNextClick) return;
+        regcalc_selectionSuppressNextClick = false;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }, true);
+    });
+
+    document.addEventListener('pointermove', regcalc_selectionMove, true);
+    document.addEventListener('pointerup', regcalc_selectionEnd, true);
+    document.addEventListener('pointercancel', regcalc_selectionEnd, true);
+
+    // Keep the selection readout synchronized when the register changes through existing controls.
+    document.addEventListener('input', function (event) {
+      if (!regcalc_selectionCurrent) return;
+      if (event.target?.closest?.('#regcalc-bit-selection-bar')) return;
+      setTimeout(regcalc_refreshSelectionBar, 0);
+    }, true);
+    document.addEventListener('click', function (event) {
+      if (!regcalc_selectionCurrent) return;
+      if (event.target?.closest?.('#regcalc-bit-selection-bar')) return;
+      setTimeout(regcalc_refreshSelectionBar, 0);
+    }, true);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', regcalc_installBitSelection, { once: true });
+  } else {
+    regcalc_installBitSelection();
+  }
+
+  window.regcalc_normalizeSelectionRange = regcalc_normalizeSelectionRange;
+  window.regcalc_extractSelectionValue = regcalc_extractSelectionValue;
+  window.regcalc_syncSelectionToBitField = regcalc_syncSelectionToBitField;
+  window.regcalc_updateSelectionFromHex = regcalc_updateSelectionFromHex;
+  window.regcalc_updateSelectionFromDec = regcalc_updateSelectionFromDec;
+  window.regcalc_clearBitSelection = regcalc_clearBitSelection;
+  window.regcalc_selectionSuppressNextClick = regcalc_selectionSuppressNextClick;
+})();
+</script>
+
 </body>
 </html>
