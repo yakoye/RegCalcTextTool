@@ -80,6 +80,17 @@
     );
   }
 
+  const TEXT_DIRECT_ACTIONS = Object.freeze([
+    action(
+      "generate-sequence",
+      "序列生成",
+      "设置范围、位数、数量、进制、顺序和分隔符",
+      "sequence",
+      "generator",
+      "generateSequence"
+    )
+  ]);
+
   const TEXT_TOOL_GROUPS = Object.freeze([
     Object.freeze({
       id: "clean",
@@ -144,12 +155,8 @@
       id: "encode",
       name: "编码与转义",
       actions: Object.freeze([
-        core("urlEncode", "旧版 URL 编码", "使用原有 URL component 编码"),
-        core("urlDecode", "旧版 URL 解码", "使用原有 URL component 解码"),
-        core("base64Encode", "旧版 Base64 编码", "把 UTF-8 文本编码为标准 Base64"),
-        core("base64Decode", "旧版 Base64 解码", "把标准 Base64 解码为 UTF-8 文本"),
-        codec("encodeUrlComponent", "URL component 编码", "编码查询参数或路径片段"),
-        codec("decodeUrlComponent", "URL component 解码", "解码查询参数或路径片段"),
+        codec("encodeUrlComponent", "URL 编码", "编码查询参数或路径片段"),
+        codec("decodeUrlComponent", "URL 解码", "解码查询参数或路径片段"),
         codec("encodeFullUrl", "完整 URL 编码", "保留 URL 结构并编码必要字符"),
         codec("decodeFullUrl", "完整 URL 解码", "保留 URL 结构并解码内容"),
         codec("parseQuery", "Query 解析", "解析完整 URL 或查询字符串"),
@@ -158,8 +165,8 @@
         codec("decodeHtmlEntities", "HTML 实体解码", "解码命名和数字 HTML 实体"),
         codec("escapeUnicode", "Unicode 转义", "转换为 Unicode 转义序列"),
         codec("unescapeUnicode", "Unicode 反转义", "恢复 Unicode 转义序列"),
-        codec("encodeUtf8Base64", "UTF-8 Base64 编码", "使用 codec 编码 UTF-8 文本"),
-        codec("decodeUtf8Base64", "UTF-8 Base64 解码", "严格解码为 UTF-8 文本"),
+        codec("encodeUtf8Base64", "Base64 编码", "把 UTF-8 文本编码为标准 Base64"),
+        codec("decodeUtf8Base64", "Base64 解码", "严格解码 Base64 为 UTF-8 文本"),
         codec("toBase64Url", "Base64 转 URL-safe", "转换字符并移除默认填充"),
         codec("fromBase64Url", "URL-safe 转 Base64", "恢复标准 Base64 字符和填充"),
         action(
@@ -184,8 +191,6 @@
       id: "data",
       name: "数据格式化",
       actions: Object.freeze([
-        core("jsonFormat", "旧版 JSON 格式化", "使用原有 JSON 缩进格式化"),
-        core("jsonMinify", "旧版 JSON 压缩", "使用原有 JSON 单行压缩"),
         structured("formatJson", "JSON 格式化", "无损格式化 JSON"),
         structured("minifyJson", "JSON 压缩", "无损压缩 JSON"),
         structured("validateJson", "JSON 校验", "校验 JSON 并返回原文"),
@@ -257,12 +262,6 @@
       id: "hex",
       name: "Hex与字节",
       actions: Object.freeze([
-        core("hexFormat1Byte", "旧版 1B 分组", "逐字节添加 0x 前缀"),
-        core("hexFormat4Byte", "旧版 4B 大端", "按四字节大端分组"),
-        core("hexFormat4ByteLe", "旧版 4B 小端", "按四字节小端分组"),
-        core("hexFormat8Byte", "旧版 8B 大端", "按八字节大端分组"),
-        core("hexFormat8ByteLe", "旧版 8B 小端", "按八字节小端分组"),
-        core("hexReverse", "旧版移除 0x", "清理并逐字节输出"),
         codec("normalizeHex", "规范化 Hex", "按 Strict 或 Clean 模式规范化", "hex"),
         codec("groupHex", "Hex 1B 分组", "校验完整字节并逐字节分组", "hex", {
           byteCount: 1,
@@ -295,20 +294,6 @@
         codec("decimalToHex", "十进制转 Hex", "支持任意长度非负整数"),
         codec("toCByteArray", "C 字节数组", "生成 C 风格字节数组", "hex"),
         codec("toJavaScriptByteArray", "JavaScript 字节数组", "生成 JavaScript 数组", "hex")
-      ])
-    }),
-    Object.freeze({
-      id: "generate",
-      name: "生成器",
-      actions: Object.freeze([
-        action(
-          "generate-sequence",
-          "序列生成",
-          "设置范围、位数、数量、进制、顺序和分隔符",
-          "sequence",
-          "generator",
-          "generateSequence"
-        )
       ])
     })
   ]);
@@ -1116,6 +1101,10 @@
     function hidePanels() {
       selectedAction = null;
       base64PanelActive = false;
+      groupsHost.querySelectorAll(".tc-direct-action").forEach((button) => {
+        button.classList.remove("is-active");
+        button.setAttribute("aria-pressed", "false");
+      });
       doc.querySelectorAll(".tc-parameter-panel").forEach((item) => {
         item.hidden = true;
       });
@@ -1173,6 +1162,11 @@
     function showPanel(actionItem) {
       selectedAction = actionItem;
       base64PanelActive = actionItem.panel === "base64";
+      groupsHost.querySelectorAll(".tc-direct-action").forEach((button) => {
+        const active = button.dataset.actionId === actionItem.id;
+        button.classList.toggle("is-active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
       if (
         base64PanelActive
         && !forceSensitiveInput(storage, settings, textOrigins, textPersistence)
@@ -1345,6 +1339,19 @@
       }
     }
 
+    TEXT_DIRECT_ACTIONS.forEach((actionItem) => {
+      const button = doc.createElement("button");
+      button.type = "button";
+      button.className = "tc-direct-action";
+      button.dataset.actionId = actionItem.id;
+      button.title = actionItem.description;
+      button.setAttribute("aria-label", `${actionItem.label}：${actionItem.description}`);
+      button.setAttribute("aria-pressed", "false");
+      button.textContent = actionItem.label;
+      button.addEventListener("click", () => selectAction(actionItem));
+      groupsHost.appendChild(button);
+    });
+
     TEXT_TOOL_GROUPS.forEach((group) => {
       const details = doc.createElement("details");
       details.className = "tc-group";
@@ -1367,14 +1374,12 @@
         button.type = "button";
         button.className = "tc-menu-item";
         button.dataset.actionId = actionItem.id;
+        button.title = actionItem.description;
         button.setAttribute("aria-label", `${actionItem.label}：${actionItem.description}`);
         const label = doc.createElement("span");
         label.className = "tc-menu-label";
         label.textContent = actionItem.label;
-        const description = doc.createElement("span");
-        description.className = "tc-menu-desc";
-        description.textContent = actionItem.description;
-        button.append(label, description);
+        button.appendChild(label);
         button.addEventListener("click", () => selectAction(actionItem));
         menu.appendChild(button);
       });
@@ -1896,6 +1901,7 @@
     MAX_BASE64_ENCODED_CHARS,
     MAX_STATS_CHARACTERS,
     PERSISTENCE_DELAY_MS,
+    TEXT_DIRECT_ACTIONS,
     TEXT_TOOL_GROUPS,
     DEFAULT_SETTINGS,
     sanitizeSettings,

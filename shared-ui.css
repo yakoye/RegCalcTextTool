@@ -27,6 +27,19 @@ body {
     linear-gradient(145deg, #f7f9fc 0%, #eef3f8 48%, #f9fbfd 100%) !important;
   color: var(--text-main) !important;
   font-family: Inter, "Segoe UI", Arial, "Microsoft YaHei", sans-serif !important;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input,
+textarea,
+[contenteditable="true"],
+.tool-output,
+.result-value,
+.password-text,
+#externallinks-ui {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 html.embedded-tool,
@@ -946,6 +959,28 @@ body:has(#textconvert-ui.textformatter-panel) {
   min-width: 0;
 }
 
+#textconvert-ui .tc-direct-action {
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 6px 9px !important;
+  border: 1px solid rgba(148, 163, 184, 0.72) !important;
+  border-radius: 6px !important;
+  background: rgba(255, 255, 255, 0.64) !important;
+  color: var(--text-main) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  text-align: left;
+}
+
+#textconvert-ui .tc-direct-action:hover,
+#textconvert-ui .tc-direct-action:focus-visible,
+#textconvert-ui .tc-direct-action.is-active {
+  border-color: var(--primary) !important;
+  background: var(--primary-soft) !important;
+  color: var(--primary) !important;
+}
+
 #textconvert-ui .tc-group[open] {
   z-index: 40;
 }
@@ -1042,11 +1077,10 @@ body:has(#textconvert-ui.textformatter-panel) {
 }
 
 #textconvert-ui .tc-menu-item {
-  display: grid;
-  gap: 2px;
+  display: block;
   width: 100%;
-  min-height: 48px;
-  padding: 7px 8px !important;
+  min-height: 34px;
+  padding: 7px 9px !important;
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
@@ -1066,16 +1100,6 @@ body:has(#textconvert-ui.textformatter-panel) {
   color: var(--text-main);
   font-size: 12px;
   font-weight: 700;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-
-#textconvert-ui .tc-menu-desc {
-  display: block;
-  color: var(--text-muted);
-  font-size: 10px;
-  font-weight: 400;
-  line-height: 1.35;
   white-space: normal;
   overflow-wrap: anywhere;
 }

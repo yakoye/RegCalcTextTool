@@ -45,10 +45,7 @@ const CORE_ACTIONS = [
   'removeAllLineBreaks', 'removeInterruptedBreaks', 'dedupeLines', 'sortLines',
   'addLineNumbers', 'removeLineNumbers', 'upperCase', 'lowerCase',
   'pascalCase', 'camelCase', 'snakeCase', 'kebabCase', 'spaceCase',
-  'urlEncode', 'urlDecode', 'base64Encode', 'base64Decode',
-  'jsonFormat', 'jsonMinify', 'verticalLayout', 'horizontalLayout',
-  'hexFormat1Byte', 'hexFormat4Byte', 'hexFormat4ByteLe',
-  'hexFormat8Byte', 'hexFormat8ByteLe', 'hexReverse',
+  'verticalLayout', 'horizontalLayout',
   'removeAllWhitespace', 'removeControlCharacters', 'normalizeLineBreaks',
   'collapseBlankLines', 'fullWidthToHalfWidth', 'halfWidthToFullWidth',
   'chinesePunctuationToEnglish', 'englishPunctuationToChinese',
@@ -222,9 +219,9 @@ test('loads local libraries and controllers in dependency order without inline h
   assert.doesNotMatch(html, /https?:\/\/[^"' ]+\.js/i);
 });
 
-test('defines seven configured accordion groups with described actions and panels', () => {
+test('defines six accordion groups plus a direct sequence action', () => {
   const controller = require(controllerPath);
-  const { TEXT_TOOL_GROUPS } = controller;
+  const { TEXT_DIRECT_ACTIONS, TEXT_TOOL_GROUPS } = controller;
   assert.equal(typeof controller.setOutput, 'function');
   assert.deepEqual(
     TEXT_TOOL_GROUPS.map(({ id, name }) => [id, name]),
@@ -234,13 +231,16 @@ test('defines seven configured accordion groups with described actions and panel
       ['case', '大小写与命名'],
       ['encode', '编码与转义'],
       ['data', '数据格式化'],
-      ['hex', 'Hex与字节'],
-      ['generate', '生成器']
+      ['hex', 'Hex与字节']
     ]
+  );
+  assert.deepEqual(
+    TEXT_DIRECT_ACTIONS.map(({ id, label, panel }) => [id, label, panel]),
+    [['generate-sequence', '序列生成', 'sequence']]
   );
 
   const ids = new Set();
-  for (const group of TEXT_TOOL_GROUPS) {
+  for (const group of [...TEXT_TOOL_GROUPS, { id: 'direct', actions: TEXT_DIRECT_ACTIONS }]) {
     assert.ok(group.actions.length > 0, `${group.id} should contain actions`);
     for (const action of group.actions) {
       assert.equal(typeof action.id, 'string');
@@ -252,13 +252,17 @@ test('defines seven configured accordion groups with described actions and panel
       assert.equal(typeof action.panel, 'string');
       assert.equal(ids.has(action.id), false, `${action.id} should be unique`);
       ids.add(action.id);
+      assert.doesNotMatch(action.label, /旧版/);
     }
   }
 });
 
-test('maps every core transform and codec capability to a reachable action', () => {
-  const { TEXT_TOOL_GROUPS } = require(controllerPath);
-  const actions = TEXT_TOOL_GROUPS.flatMap((group) => group.actions);
+test('maps retained transforms, codec capabilities, and generators to reachable actions', () => {
+  const { TEXT_DIRECT_ACTIONS, TEXT_TOOL_GROUPS } = require(controllerPath);
+  const actions = [
+    ...TEXT_DIRECT_ACTIONS,
+    ...TEXT_TOOL_GROUPS.flatMap((group) => group.actions)
+  ];
   const reachable = new Set();
   for (const action of actions) {
     if (action.method) reachable.add(action.method);
@@ -275,7 +279,7 @@ test('maps every core transform and codec capability to a reachable action', () 
   assert.equal(reachable.has('MarkdownTable'), true);
 });
 
-test('renders a one-border menu with persistent descriptions and accessible controls', () => {
+test('renders compact menus with tooltip descriptions and a direct generator control', () => {
   const html = readSourceText(htmlPath);
   const css = readSourceText(cssPath);
   const controller = readSourceText(controllerPath);
@@ -285,7 +289,9 @@ test('renders a one-border menu with persistent descriptions and accessible cont
   assert.match(controller, /className\s*=\s*["']tc-menu["']/);
   assert.match(controller, /className\s*=\s*["']tc-menu-item["']/);
   assert.match(controller, /className\s*=\s*["']tc-menu-label["']/);
-  assert.match(controller, /className\s*=\s*["']tc-menu-desc["']/);
+  assert.doesNotMatch(controller, /className\s*=\s*["']tc-menu-desc["']/);
+  assert.match(controller, /className\s*=\s*["']tc-direct-action["']/);
+  assert.match(controller, /button\.title\s*=\s*actionItem\.description/);
   assert.match(controller, /button\.type\s*=\s*["']button["']/);
   assert.match(controller, /event\.key\s*===\s*["']Escape["']/);
   assert.match(css, /#textconvert-ui\s+\.tc-menu\s*\{[^}]*border:/s);
@@ -293,7 +299,7 @@ test('renders a one-border menu with persistent descriptions and accessible cont
   assert.doesNotMatch(css, /\[data-tip\][^{]*::after/);
 
   const selectAction = controller.match(
-    /function selectAction\(actionItem\) \{([\s\S]*?)\n    \}\n\n    TEXT_TOOL_GROUPS/
+    /function selectAction\(actionItem\) \{([\s\S]*?)\n    \}\n\n    TEXT_DIRECT_ACTIONS/
   );
   assert.ok(selectAction);
   assert.match(selectAction[1], /closeGroups\(null\)/);
@@ -1919,12 +1925,13 @@ test('runs sequence settings, generation, and panel switching through the real D
   assert.equal(document.querySelector('[data-panel="line"]').hidden, false);
 });
 
-test('restores Escape focus only when focus was inside the open category', async (t) => {
+test('restores Escape focus only when focus was inside an open category', async (t) => {
   const { window, trackFocus } = createInitializedTextFormatterWindow();
   const document = window.document;
-  const group = document.querySelector('details.tc-group[data-group-id="generate"]');
+  const group = document.querySelector('details.tc-group[data-group-id="lines"]');
   const summary = group.querySelector('.tc-group-summary');
   const menuItem = group.querySelector('.tc-menu-item');
+  const sequenceButton = document.querySelector('[data-action-id="generate-sequence"]');
   const sequenceStart = document.getElementById('sequence_start');
   let focusCalls = 0;
   trackFocus(summary, () => {
@@ -1948,7 +1955,7 @@ test('restores Escape focus only when focus was inside the open category', async
   await t.test('sequence input focus stays outside the closed category', () => {
     focusCalls = 0;
     openTextFormatterGroup(window, group);
-    group.querySelector('[data-action-id="generate-sequence"]').click();
+    sequenceButton.click();
     sequenceStart.focus();
     assert.equal(document.activeElement, sequenceStart);
 

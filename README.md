@@ -184,6 +184,7 @@ npm run build
 - 2026.07.30 v0.60 TextFormatter 分类菜单改为覆盖式浮层，空间不足时自动上拉，打开菜单时收起原参数面板
 - 2026.08.21 v0.61 RegCalc64 同步 Chrome Extension v0.3.1，新增拖选位域、Mask 运算、动态 Bit Field、清空 Field 与多行滚动
 - 2026.08.21 v0.62 清除 RegCalc64 旧版固定纵横比和全站标题外边距，恢复 Chrome 版紧凑垂直间距
+- 2026.08.21 v0.63 精简 TextFormatter 重复旧版入口和菜单说明，序列生成改为独立入口；DateTime 拆分日期偏移与单位转换模式，并限制装饰文本选择
 
 ## Refer
 
