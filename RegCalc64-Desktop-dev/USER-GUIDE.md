@@ -1,4 +1,4 @@
-# RegCalc64 Desktop v0.1.5 使用说明
+# RegCalc64 Desktop v0.1.6 使用说明
 
 ## 直接运行
 
@@ -10,54 +10,34 @@ RegCalc64.exe
 
 如果系统已有 Microsoft Edge WebView2 Runtime，RegCalc64 会直接启动。
 
-## Warm Mode：关闭后再次打开更快
+## 关闭、托盘与 Warm Mode
 
-v0.1.5 默认使用 Warm Mode：
-
-```text
-第一次启动
-  -> 创建 RegCalc64 + WebView2
-
-点击右上角 ×
-  -> 隐藏到系统托盘
-  -> 不销毁 WebView2
-
-再次双击 RegCalc64.exe
-  -> 检测到已有实例
-  -> 直接显示原窗口
-```
-
-因此第二次、第三次打开不再完整重启 WebView2，Hex / Bit Field / Selection / Expr 等现场也会保留。
-
-系统托盘中的 RegCalc64 图标支持：
-
-- 左键：重新打开窗口。
-- 右键 -> **打开 RegCalc64**：显示窗口。
-- 右键 -> **置顶**：切换 Always on Top。
-- 右键 -> **退出**：真正退出程序并释放 WebView2。
-
-如果希望完全关闭 RegCalc64，请使用托盘菜单的 **退出**，而不是窗口右上角的 ×。
-
-## 首次启动还是慢？
-
-v0.1.5 会记录启动阶段耗时：
+默认情况下，系统托盘菜单中的：
 
 ```text
-%LOCALAPPDATA%\RegCalc64\startup.log
+✓ 关闭按钮隐藏到托盘
 ```
 
-典型内容会包含：
+处于勾选状态。因此点击右上角 `×` 时，窗口会隐藏到系统托盘，但程序和 WebView2 不退出；再次双击 `RegCalc64.exe` 会快速恢复原窗口和计算现场。
 
-```text
-process_start
-webview2_runtime_ready
-webview2_environment_ready
-webview2_controller_ready
-navigation_started
-tool_ui_ready
-```
+系统托盘右键菜单：
 
-每行前面的 `+xxxms` 是从本次 EXE 启动开始经过的时间。把这个文件发给开发者，可以继续定位首次启动到底慢在 Runtime 检测、WebView2 Environment、Controller，还是 UI 加载。
+- **打开 RegCalc64**：恢复窗口并切到前台。
+- **置顶**：切换 Always on Top，并记住选择。
+- **关闭按钮隐藏到托盘**：决定右上角 `×` 是隐藏到托盘还是真正退出，并记住选择。
+- **退出**：无条件真正退出程序并释放 WebView2。
+
+如果你不希望 RegCalc64 常驻后台，只需取消勾选 **关闭按钮隐藏到托盘**。之后点击 `×` 就会真正退出。
+
+## 任务栏图标
+
+最小化按钮 `—` 会正常最小化到 Windows 任务栏。无边框桌面窗口保留标准 Windows 最小化/恢复语义，因此可以通过任务栏 RegCalc64 图标在显示/激活与最小化/恢复之间切换。
+
+从托盘隐藏后重新双击 `RegCalc64.exe` 或选择托盘的 **打开 RegCalc64**，窗口会恢复并主动切到当前前台，而不是停留在文件资源管理器等窗口后面。
+
+## 日志与调试
+
+v0.1.6 已关闭临时启动性能日志和 trace；RegCalc64 不再写入自己的启动诊断文件或调试 trace。WebView2 DevTools 同样在正式桌面壳中关闭。
 
 ## 缺少 WebView2 Runtime
 

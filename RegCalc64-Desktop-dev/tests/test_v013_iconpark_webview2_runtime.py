@@ -12,8 +12,8 @@ build = (ROOT / 'build.bat').read_text(encoding='utf-8')
 readme = (ROOT / 'README.md').read_text(encoding='utf-8')
 
 # Version contract.
-assert 'project(RegCalc64Desktop VERSION 0.1.5' in cmake
-assert 'const DESKTOP_VERSION = "0.1.5"' in js
+assert 'project(RegCalc64Desktop VERSION 0.1.6' in cmake
+assert 'const DESKTOP_VERSION = "0.1.6"' in js
 
 # One consistent IconPark outline-style SVG system: 48x48 viewBox and 4px stroke.
 for button in ('help-btn', 'topmost-btn', 'minimize-btn', 'close-btn'):
@@ -47,4 +47,4 @@ assert 'IDR_WEBVIEW2_BOOTSTRAPPER' in main
 for token in ('Windows 11', '立即安装', 'Evergreen Standalone Installer', 'x64'):
     assert token in readme
 
-print('v0.1.5 IconPark + WebView2 runtime contract: PASS')
+print('v0.1.6 IconPark + WebView2 runtime contract: PASS')

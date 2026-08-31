@@ -4,7 +4,7 @@ cd /d "%~dp0"
 
 set "WEBVIEW2_VERSION=1.0.4191.47"
 
-echo === RegCalc64 Desktop v0.1.5 build ===
+echo === RegCalc64 Desktop v0.1.6 build ===
 where cmake >nul 2>nul
 if errorlevel 1 (
   echo [ERROR] CMake not found. Install Visual Studio C++ Desktop workload with CMake tools.

@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const DESKTOP_VERSION = "0.1.5";
+  const DESKTOP_VERSION = "0.1.6";
   const NATURAL_WIDTH = 588;
   const MIN_SCALE = 0.62;
   const MAX_SCALE = 1.70;
@@ -72,10 +72,15 @@
     topmostBtn.title = active ? "Disable always on top" : "Always on top";
   }
 
+  function setCloseBehaviorVisual(hidesToTray) {
+    const label = hidesToTray ? "Close to tray" : "Close";
+    closeBtn.title = label;
+    closeBtn.setAttribute("aria-label", label);
+  }
+
   frame.addEventListener("load", () => {
     postToTool({ type: "REGCALC64_EXTENSION_META", version: DESKTOP_VERSION });
     postToTool({ type: "REGCALC64_APPLY_STATE", state: loadState() });
-    hostMessage("app:ready");
     scheduleLayout();
     setTimeout(scheduleLayout, 60);
     setTimeout(() => postToTool({ type: "REGCALC64_EXTENSION_META", version: DESKTOP_VERSION }), 80);
@@ -106,6 +111,8 @@
       const message = String(event.data || "");
       if (message === "topmost:1") setTopmostVisual(true);
       if (message === "topmost:0") setTopmostVisual(false);
+      if (message === "close-to-tray:1") setCloseBehaviorVisual(true);
+      if (message === "close-to-tray:0") setCloseBehaviorVisual(false);
     });
   }
 
@@ -140,6 +147,7 @@
   window.addEventListener("load", () => {
     scheduleLayout();
     hostMessage("window:get-topmost");
+    hostMessage("window:get-close-to-tray");
   });
 
   Object.defineProperty(window, "regcalc64DesktopScale", {

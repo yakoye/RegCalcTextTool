@@ -10,7 +10,6 @@
 #include <algorithm>
 #include <cstring>
 #include <filesystem>
-#include <iomanip>
 #include <sstream>
 #include <string>
 
@@ -32,7 +31,8 @@ constexpr UINT WM_APP_TRAY = WM_APP + 4;
 constexpr UINT WM_APP_EXIT = WM_APP + 5;
 constexpr UINT ID_TRAY_OPEN = 2001;
 constexpr UINT ID_TRAY_TOPMOST = 2002;
-constexpr UINT ID_TRAY_EXIT = 2003;
+constexpr UINT ID_TRAY_CLOSE_TO_TRAY = 2003;
+constexpr UINT ID_TRAY_EXIT = 2004;
 constexpr UINT kTrayIconId = 1;
 
 struct SavedGeometry {
@@ -72,10 +72,6 @@ std::wstring GetWebViewDataPath() {
     std::error_code ec;
     std::filesystem::create_directories(path, ec);
     return path.wstring();
-}
-
-std::wstring GetStartupLogPath() {
-    return (std::filesystem::path(GetLocalAppDataDirectory()) / L"startup.log").wstring();
 }
 
 bool ReadIniInt(const wchar_t* section, const wchar_t* key, int& value) {
@@ -174,19 +170,14 @@ class RegCalcApp {
 public:
     int Run(HINSTANCE instance, int showCommand) {
         instance_ = instance;
-        startupTick_ = GetTickCount64();
-        startupLogPath_ = GetStartupLogPath();
-        TraceStartup("process_start");
 
         singleInstanceMutex_ = CreateMutexW(nullptr, FALSE, kSingleInstanceMutex);
         if (singleInstanceMutex_ && GetLastError() == ERROR_ALREADY_EXISTS) {
-            TraceStartup("secondary_instance_detected");
             ActivateExistingInstance();
             CloseHandle(singleInstanceMutex_);
             singleInstanceMutex_ = nullptr;
             return 0;
         }
-        TraceStartup("primary_instance");
 
         SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
@@ -195,7 +186,6 @@ public:
             CloseSingleInstanceMutex();
             return 1;
         }
-        TraceStartup("com_initialized");
 
         INITCOMMONCONTROLSEX commonControls{sizeof(commonControls), ICC_STANDARD_CLASSES};
         InitCommonControlsEx(&commonControls);
@@ -216,13 +206,14 @@ public:
 
         auto g = NormalizeGeometry(LoadGeometry());
         alwaysOnTop_ = LoadAlwaysOnTop();
+        closeToTray_ = LoadCloseToTray();
         const DWORD exStyle = WS_EX_APPWINDOW | (alwaysOnTop_ ? WS_EX_TOPMOST : 0);
 
         hwnd_ = CreateWindowExW(
             exStyle,
             kWindowClass,
             kWindowTitle,
-            WS_POPUP | WS_THICKFRAME | WS_CLIPCHILDREN,
+            WS_POPUP | WS_THICKFRAME | WS_CLIPCHILDREN | WS_SYSMENU | WS_MINIMIZEBOX,
             g.x, g.y, g.width, g.height,
             nullptr, nullptr, instance_, this);
 
@@ -231,7 +222,6 @@ public:
             CloseSingleInstanceMutex();
             return 1;
         }
-        TraceStartup("window_created");
 
         ApplyDwmStyle();
         AddTrayIcon();
@@ -288,6 +278,18 @@ private:
             mmi->ptMinTrackSize.y = kMinHeight;
             return 0;
         }
+        case WM_SYSCOMMAND:
+            switch (wParam & 0xFFF0) {
+            case SC_MINIMIZE:
+                ShowWindow(hwnd_, SW_MINIMIZE);
+                return 0;
+            case SC_RESTORE:
+                ShowAndActivateWindow();
+                return 0;
+            default:
+                break;
+            }
+            break;
         case WM_APP_DRAG:
             ReleaseCapture();
             SendMessageW(hwnd_, WM_NCLBUTTONDOWN, HTCAPTION, 0);
@@ -306,7 +308,11 @@ private:
             RequestExit();
             return 0;
         case WM_CLOSE:
-            HideWindowToTray();
+            if (closeToTray_) {
+                HideWindowToTray();
+            } else {
+                RequestExit();
+            }
             return 0;
         case WM_DESTROY:
             SaveGeometry(hwnd_);
@@ -339,49 +345,18 @@ private:
                               &preference, sizeof(preference));
     }
 
-    void TraceStartup(const char* stage) const {
-        if (!stage) return;
-
-        const ULONGLONG elapsed = GetTickCount64() - startupTick_;
-        SYSTEMTIME now{};
-        GetLocalTime(&now);
-
-        std::ostringstream line;
-        line << std::setfill('0')
-             << now.wYear << '-'
-             << std::setw(2) << now.wMonth << '-'
-             << std::setw(2) << now.wDay << ' '
-             << std::setw(2) << now.wHour << ':'
-             << std::setw(2) << now.wMinute << ':'
-             << std::setw(2) << now.wSecond << '.'
-             << std::setw(3) << now.wMilliseconds
-             << " pid=" << GetCurrentProcessId()
-             << " +" << elapsed << "ms " << stage << "\r\n";
-
-        const std::string text = line.str();
-        OutputDebugStringA(text.c_str());
-
-        if (startupLogPath_.empty()) return;
-        HANDLE file = CreateFileW(
-            startupLogPath_.c_str(),
-            FILE_APPEND_DATA,
-            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-            nullptr,
-            OPEN_ALWAYS,
-            FILE_ATTRIBUTE_NORMAL,
-            nullptr);
-        if (file == INVALID_HANDLE_VALUE) return;
-
-        DWORD written = 0;
-        WriteFile(file, text.data(), static_cast<DWORD>(text.size()), &written, nullptr);
-        CloseHandle(file);
-    }
-
     bool ActivateExistingInstance() const {
         for (int attempt = 0; attempt < 40; ++attempt) {
             HWND existing = FindWindowW(kWindowClass, nullptr);
             if (existing) {
+                DWORD existingProcessId = 0;
+                GetWindowThreadProcessId(existing, &existingProcessId);
+                if (existingProcessId != 0) {
+                    AllowSetForegroundWindow(existingProcessId);
+                }
+                ShowWindowAsync(existing, IsIconic(existing) ? SW_RESTORE : SW_SHOW);
                 PostMessageW(existing, WM_APP_SHOW, 0, 0);
+                SetForegroundWindow(existing);
                 return true;
             }
             Sleep(25);
@@ -433,6 +408,11 @@ private:
             MF_STRING | (alwaysOnTop_ ? MF_CHECKED : MF_UNCHECKED),
             ID_TRAY_TOPMOST,
             zh ? L"置顶" : L"Always on top");
+        AppendMenuW(
+            menu,
+            MF_STRING | (closeToTray_ ? MF_CHECKED : MF_UNCHECKED),
+            ID_TRAY_CLOSE_TO_TRAY,
+            zh ? L"关闭按钮隐藏到托盘" : L"Close button hides to tray");
         AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
         AppendMenuW(menu, MF_STRING, ID_TRAY_EXIT, zh ? L"退出" : L"Exit");
 
@@ -454,6 +434,8 @@ private:
             ShowAndActivateWindow();
         } else if (command == ID_TRAY_TOPMOST) {
             SetAlwaysOnTop(!alwaysOnTop_);
+        } else if (command == ID_TRAY_CLOSE_TO_TRAY) {
+            SetCloseToTray(!closeToTray_);
         } else if (command == ID_TRAY_EXIT) {
             RequestExit();
         }
@@ -476,7 +458,6 @@ private:
         }
         SaveGeometry(hwnd_);
         ShowWindow(hwnd_, SW_HIDE);
-        TraceStartup("window_hidden_to_tray");
     }
 
     void ShowAndActivateWindow() {
@@ -492,10 +473,32 @@ private:
             SetWindowPos(
                 hwnd_, HWND_TOPMOST, 0, 0, 0, 0,
                 SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+        } else {
+            SetWindowPos(
+                hwnd_, HWND_TOP, 0, 0, 0, 0,
+                SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
         }
+
+        // SetForegroundWindow can be rejected for a background process by the
+        // Windows foreground-lock policy. A secondary RegCalc64 launch grants
+        // us permission first; the thread-input attachment below is a fallback
+        // for tray/menu activation and other shell edge cases.
+        HWND foreground = GetForegroundWindow();
+        const DWORD foregroundThread = foreground
+            ? GetWindowThreadProcessId(foreground, nullptr)
+            : 0;
+        const DWORD currentThread = GetCurrentThreadId();
+        const bool attached = foregroundThread != 0 && foregroundThread != currentThread
+            && AttachThreadInput(currentThread, foregroundThread, TRUE) != FALSE;
+
         BringWindowToTop(hwnd_);
         SetForegroundWindow(hwnd_);
-        TraceStartup("window_shown_or_reactivated");
+        SetActiveWindow(hwnd_);
+        SetFocus(hwnd_);
+
+        if (attached) {
+            AttachThreadInput(currentThread, foregroundThread, FALSE);
+        }
     }
 
     void ShutdownWebView() {
@@ -512,7 +515,6 @@ private:
     void RequestExit() {
         if (exiting_) return;
         exiting_ = true;
-        TraceStartup("exit_requested");
         SaveGeometry(hwnd_);
         RemoveTrayIcon();
         ShutdownWebView();
@@ -701,6 +703,23 @@ private:
         return ReadIniInt(L"window", L"always_on_top", value) && value != 0;
     }
 
+    bool LoadCloseToTray() const {
+        int value = 1;
+        if (!ReadIniInt(L"window", L"close_to_tray", value)) return true;
+        return value != 0;
+    }
+
+    void SetCloseToTray(bool enabled) {
+        closeToTray_ = enabled;
+        WriteIniInt(L"window", L"close_to_tray", enabled ? 1 : 0);
+        SendCloseToTrayState();
+    }
+
+    void SendCloseToTrayState() {
+        if (!webview_) return;
+        webview_->PostWebMessageAsString(closeToTray_ ? L"close-to-tray:1" : L"close-to-tray:0");
+    }
+
     void SendTopmostState() {
         if (!webview_) return;
         webview_->PostWebMessageAsString(alwaysOnTop_ ? L"topmost:1" : L"topmost:0");
@@ -823,13 +842,11 @@ private:
 
     void InitializeWebView() {
         if (!IsWebView2RuntimeAvailable()) {
-            TraceStartup("webview2_runtime_missing");
             if (!PromptForWebView2Runtime() || !IsWebView2RuntimeAvailable()) {
                 PostMessageW(hwnd_, WM_APP_EXIT, 0, 0);
                 return;
             }
         }
-        TraceStartup("webview2_runtime_ready");
 
         const std::wstring userData = GetWebViewDataPath();
         HRESULT hr = CreateCoreWebView2EnvironmentWithOptions(
@@ -845,7 +862,6 @@ private:
                         return result;
                     }
                     environment_ = environment;
-                    TraceStartup("webview2_environment_ready");
                     return environment_->CreateCoreWebView2Controller(
                         hwnd_,
                         Callback<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler>(
@@ -859,8 +875,6 @@ private:
                                 controller_ = controller;
                                 controller_->get_CoreWebView2(&webview_);
                                 if (!webview_) return E_FAIL;
-
-                                TraceStartup("webview2_controller_ready");
                                 ConfigureWebView();
                                 ResizeWebView();
                                 return S_OK;
@@ -880,7 +894,7 @@ private:
             settings->put_IsScriptEnabled(TRUE);
             settings->put_IsStatusBarEnabled(FALSE);
             settings->put_AreDefaultContextMenusEnabled(FALSE);
-            settings->put_AreDevToolsEnabled(TRUE); // useful for this first desktop prototype
+            settings->put_AreDevToolsEnabled(FALSE);
             settings->put_IsZoomControlEnabled(FALSE);
         }
 
@@ -926,15 +940,14 @@ private:
                         SetAlwaysOnTop(!alwaysOnTop_);
                     } else if (message == L"window:get-topmost") {
                         SendTopmostState();
-                    } else if (message == L"app:ready") {
-                        TraceStartup("tool_ui_ready");
+                    } else if (message == L"window:get-close-to-tray") {
+                        SendCloseToTrayState();
                     }
                     return S_OK;
                 }).Get(),
             &webMessageToken_);
 
         webview_->Navigate(L"https://app.regcalc64.local/desktop.html");
-        TraceStartup("navigation_started");
     }
 
 private:
@@ -947,10 +960,9 @@ private:
     EventRegistrationToken webResourceRequestedToken_{};
     HANDLE singleInstanceMutex_ = nullptr;
     NOTIFYICONDATAW trayIconData_{};
-    ULONGLONG startupTick_ = 0;
     UINT taskbarCreatedMessage_ = 0;
-    std::wstring startupLogPath_;
     bool alwaysOnTop_ = false;
+    bool closeToTray_ = true;
     bool trayIconAdded_ = false;
     bool exiting_ = false;
 };

@@ -17,10 +17,10 @@ def require(cond, msg):
 
 def main():
     # Version bump for the performance/warm-start release.
-    require('project(RegCalc64Desktop VERSION 0.1.5' in CMAKE, 'CMake version is not 0.1.5')
-    require('const DESKTOP_VERSION = "0.1.5";' in JS, 'desktop.js version is not 0.1.5')
-    require('RegCalc64 Desktop v0.1.5 build' in BUILD, 'build.bat version is not 0.1.5')
-    require('v0.1.5-windows-x64.zip' in PACKAGE, 'package.bat version is not 0.1.5')
+    require('project(RegCalc64Desktop VERSION 0.1.6' in CMAKE, 'CMake version is not 0.1.6')
+    require('const DESKTOP_VERSION = "0.1.6";' in JS, 'desktop.js version is not 0.1.6')
+    require('RegCalc64 Desktop v0.1.6 build' in BUILD, 'build.bat version is not 0.1.6')
+    require('v0.1.6-windows-x64.zip' in PACKAGE, 'package.bat version is not 0.1.6')
 
     # Second launch must be cheap: detect an existing instance before COM/WebView2 startup
     # and tell the resident window to show itself.
@@ -45,16 +45,10 @@ def main():
     require('ShutdownWebView' in CPP, 'WebView2 shutdown helper missing')
     require('controller_->Close()' in CPP, 'ICoreWebView2Controller::Close() missing')
 
-    # Startup timing must reach actual tool readiness, not merely process creation.
-    require('startup.log' in CPP and 'TraceStartup' in CPP, 'startup timing log missing')
-    require('hostMessage("app:ready")' in JS, 'tool-ready timing signal missing')
-    require('message == L"app:ready"' in CPP, 'native app-ready timing receiver missing')
-
     # UX should disclose the new close-to-tray behavior.
-    require('Close to tray' in HTML, 'close button does not disclose tray behavior')
-    require('托盘' in README and 'startup.log' in README, 'README lacks warm mode/timing guidance')
+    require('托盘' in README, 'README lacks warm mode/tray guidance')
 
-    print('v0.1.5 warm-start/single-instance/tray contract: PASS')
+    print('v0.1.6 warm-start/single-instance/tray contract: PASS')
 
 
 if __name__ == '__main__':

@@ -1,39 +1,52 @@
-# RegCalc64 Desktop v0.1.5
+# RegCalc64 Desktop v0.1.6
 
 RegCalc64 的 Windows 桌面版。使用 **C++17 + Win32 + Microsoft WebView2**：C++ 负责窗口、置顶、最小化、拖动、缩放、单 EXE 资源宿主和 WebView2 Runtime 引导；寄存器计算继续复用已经验证过的 RegCalc64 HTML/JavaScript。
 
-## v0.1.5：Warm Mode / 秒开优化
+## v0.1.6：窗口激活 / 关闭行为 / 任务栏体验
 
-- 改为**单实例常驻**：第一次启动创建 WebView2；之后再次双击 `RegCalc64.exe` 只唤醒已有窗口，不再重复创建 WebView2。
-- 右上角 Close 现在是 **Close to tray**：关闭窗口时隐藏到系统托盘，计算器现场和 WebView2 都继续保留。
-- 系统托盘菜单提供：**打开 RegCalc64 / 置顶 / 退出**。只有选择“退出”才真正释放 WebView2 并结束进程。
-- 完整退出时先执行 `ICoreWebView2Controller::Close()`，再释放 WebView2 / Controller / Environment，避免旧 WebView2 子进程仍在退出时马上启动新实例。
-- 增加启动阶段性能日志：`%LOCALAPPDATA%\RegCalc64\startup.log`。可以看到 `process_start`、`webview2_environment_ready`、`webview2_controller_ready`、`tool_ui_ready` 等时间点，用于继续定位首次启动耗时。
-- 保留 v0.1.4 的单 Manifest 修复、单 EXE、IconPark 风格按钮、置顶、最小化和 WebView2 自动安装引导。
+- 修复 Warm Mode 下再次双击 `RegCalc64.exe` 后窗口可能出现在文件资源管理器等前台窗口后面的问题。第二实例会授权常驻实例进入前台；常驻实例同时使用 Win32 前台激活和 `AttachThreadInput` fallback。
+- 系统托盘新增可勾选的 **关闭按钮隐藏到托盘 / Close button hides to tray**。默认勾选并持久化到 `settings.ini`。
+- 勾选时：右上角 `×` 隐藏到托盘，WebView2 保持运行，后续快速恢复。
+- 取消勾选时：右上角 `×` 真正退出 RegCalc64，并按正确顺序关闭 WebView2。
+- 无边框窗口补齐标准 `WS_SYSMENU + WS_MINIMIZEBOX` 语义，使任务栏图标按 Windows 标准行为在**显示/激活与最小化/恢复**之间切换。
+- 移除 v0.1.5 临时性能诊断：不再创建临时启动性能日志，不再输出启动 trace，并关闭 WebView2 DevTools。
+- RegCalc64 的核心 `web/tool.html` 不修改。
 
-### Warm Mode 使用方式
+### 托盘与关闭按钮
+
+```text
+托盘右键：
+  打开 RegCalc64
+  ✓ 置顶
+  ✓ 关闭按钮隐藏到托盘
+  --------------------
+  退出
+```
+
+默认情况下 `×` 隐藏到托盘，以保留 Warm Mode 的快速恢复。如果不希望后台常驻，取消“关闭按钮隐藏到托盘”即可；该选择下次启动仍会保留。
+
+### Warm Mode
 
 ```text
 第一次双击 RegCalc64.exe
-    -> 正常启动 WebView2
+    -> 创建 Win32 + WebView2
 
-点右上角 ×
-    -> 隐藏到系统托盘（不退出）
+点 ×（关闭到托盘已勾选）
+    -> 隐藏窗口，不销毁 WebView2
 
 再次双击 RegCalc64.exe
-    -> 直接唤醒已有窗口
+    -> 直接唤醒已有窗口并切到前台
 
-需要真正退出
-    -> 右击系统托盘 RegCalc64 图标 -> 退出
+真正退出
+    -> 托盘 -> 退出
+    或取消“关闭按钮隐藏到托盘”后点 ×
 ```
 
-如果仍感觉**第一次启动**慢，请把下面文件内容发出来：
+## v0.1.5：Warm Mode / 单实例
 
-```text
-%LOCALAPPDATA%\RegCalc64\startup.log
-```
-
-这样可以直接判断耗时是在 Runtime 检测、Environment、Controller 还是页面/UI ready。
+- 引入单实例常驻和系统托盘，第二次双击不再重复创建 WebView2。
+- `ICoreWebView2Controller::Close()` 在完整退出时先于宿主窗口销毁执行。
+- v0.1.5 的启动性能日志仅用于排查，已在 v0.1.6 移除。
 
 ## v0.1.4
 
@@ -159,7 +172,7 @@ package.bat
 生成：
 
 ```text
-RegCalc64-Desktop-v0.1.5-windows-x64.zip
+RegCalc64-Desktop-v0.1.6-windows-x64.zip
 ```
 
 ZIP 中只有 `RegCalc64.exe`。
