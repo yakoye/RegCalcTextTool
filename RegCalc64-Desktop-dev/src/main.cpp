@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cstring>
 #include <filesystem>
+#include <iomanip>
 #include <sstream>
 #include <string>
 
@@ -23,8 +24,16 @@ constexpr int kDefaultWidth = 560;
 constexpr int kDefaultHeight = 610;
 constexpr int kMinWidth = 420;
 constexpr int kMinHeight = 460;
+constexpr wchar_t kSingleInstanceMutex[] = L"Local\\RegCalc64Desktop.SingleInstance";
 constexpr UINT WM_APP_DRAG = WM_APP + 1;
 constexpr UINT WM_APP_RESIZE_BR = WM_APP + 2;
+constexpr UINT WM_APP_SHOW = WM_APP + 3;
+constexpr UINT WM_APP_TRAY = WM_APP + 4;
+constexpr UINT WM_APP_EXIT = WM_APP + 5;
+constexpr UINT ID_TRAY_OPEN = 2001;
+constexpr UINT ID_TRAY_TOPMOST = 2002;
+constexpr UINT ID_TRAY_EXIT = 2003;
+constexpr UINT kTrayIconId = 1;
 
 struct SavedGeometry {
     int x = CW_USEDEFAULT;
@@ -63,6 +72,10 @@ std::wstring GetWebViewDataPath() {
     std::error_code ec;
     std::filesystem::create_directories(path, ec);
     return path.wstring();
+}
+
+std::wstring GetStartupLogPath() {
+    return (std::filesystem::path(GetLocalAppDataDirectory()) / L"startup.log").wstring();
 }
 
 bool ReadIniInt(const wchar_t* section, const wchar_t* key, int& value) {
@@ -161,12 +174,28 @@ class RegCalcApp {
 public:
     int Run(HINSTANCE instance, int showCommand) {
         instance_ = instance;
+        startupTick_ = GetTickCount64();
+        startupLogPath_ = GetStartupLogPath();
+        TraceStartup("process_start");
+
+        singleInstanceMutex_ = CreateMutexW(nullptr, FALSE, kSingleInstanceMutex);
+        if (singleInstanceMutex_ && GetLastError() == ERROR_ALREADY_EXISTS) {
+            TraceStartup("secondary_instance_detected");
+            ActivateExistingInstance();
+            CloseHandle(singleInstanceMutex_);
+            singleInstanceMutex_ = nullptr;
+            return 0;
+        }
+        TraceStartup("primary_instance");
+
         SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
         if (FAILED(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED))) {
             MessageBoxW(nullptr, L"COM initialization failed.", kWindowTitle, MB_ICONERROR | MB_OK);
+            CloseSingleInstanceMutex();
             return 1;
         }
+        TraceStartup("com_initialized");
 
         INITCOMMONCONTROLSEX commonControls{sizeof(commonControls), ICC_STANDARD_CLASSES};
         InitCommonControlsEx(&commonControls);
@@ -181,6 +210,7 @@ public:
         wc.hbrBackground = CreateSolidBrush(RGB(240, 244, 248));
         if (!RegisterClassExW(&wc)) {
             CoUninitialize();
+            CloseSingleInstanceMutex();
             return 1;
         }
 
@@ -198,10 +228,13 @@ public:
 
         if (!hwnd_) {
             CoUninitialize();
+            CloseSingleInstanceMutex();
             return 1;
         }
+        TraceStartup("window_created");
 
         ApplyDwmStyle();
+        AddTrayIcon();
         ShowWindow(hwnd_, showCommand);
         UpdateWindow(hwnd_);
         InitializeWebView();
@@ -212,10 +245,10 @@ public:
             DispatchMessageW(&msg);
         }
 
-        webview_.Reset();
-        controller_.Reset();
-        environment_.Reset();
+        ShutdownWebView();
+        RemoveTrayIcon();
         CoUninitialize();
+        CloseSingleInstanceMutex();
         return static_cast<int>(msg.wParam);
     }
 
@@ -263,15 +296,30 @@ private:
             ReleaseCapture();
             SendMessageW(hwnd_, WM_NCLBUTTONDOWN, HTBOTTOMRIGHT, 0);
             return 0;
+        case WM_APP_SHOW:
+            ShowAndActivateWindow();
+            return 0;
+        case WM_APP_TRAY:
+            HandleTrayMessage(lParam);
+            return 0;
+        case WM_APP_EXIT:
+            RequestExit();
+            return 0;
         case WM_CLOSE:
-            DestroyWindow(hwnd_);
+            HideWindowToTray();
             return 0;
         case WM_DESTROY:
             SaveGeometry(hwnd_);
+            RemoveTrayIcon();
             PostQuitMessage(0);
             return 0;
         case WM_ERASEBKGND:
             return 1;
+        }
+        if (taskbarCreatedMessage_ != 0 && msg == taskbarCreatedMessage_) {
+            trayIconAdded_ = false;
+            AddTrayIcon();
+            return 0;
         }
         return DefWindowProcW(hwnd_, msg, wParam, lParam);
     }
@@ -289,6 +337,186 @@ private:
         auto preference = DWMWCP_ROUND_LOCAL;
         DwmSetWindowAttribute(hwnd_, DWMWA_WINDOW_CORNER_PREFERENCE_LOCAL,
                               &preference, sizeof(preference));
+    }
+
+    void TraceStartup(const char* stage) const {
+        if (!stage) return;
+
+        const ULONGLONG elapsed = GetTickCount64() - startupTick_;
+        SYSTEMTIME now{};
+        GetLocalTime(&now);
+
+        std::ostringstream line;
+        line << std::setfill('0')
+             << now.wYear << '-'
+             << std::setw(2) << now.wMonth << '-'
+             << std::setw(2) << now.wDay << ' '
+             << std::setw(2) << now.wHour << ':'
+             << std::setw(2) << now.wMinute << ':'
+             << std::setw(2) << now.wSecond << '.'
+             << std::setw(3) << now.wMilliseconds
+             << " pid=" << GetCurrentProcessId()
+             << " +" << elapsed << "ms " << stage << "\r\n";
+
+        const std::string text = line.str();
+        OutputDebugStringA(text.c_str());
+
+        if (startupLogPath_.empty()) return;
+        HANDLE file = CreateFileW(
+            startupLogPath_.c_str(),
+            FILE_APPEND_DATA,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            nullptr,
+            OPEN_ALWAYS,
+            FILE_ATTRIBUTE_NORMAL,
+            nullptr);
+        if (file == INVALID_HANDLE_VALUE) return;
+
+        DWORD written = 0;
+        WriteFile(file, text.data(), static_cast<DWORD>(text.size()), &written, nullptr);
+        CloseHandle(file);
+    }
+
+    bool ActivateExistingInstance() const {
+        for (int attempt = 0; attempt < 40; ++attempt) {
+            HWND existing = FindWindowW(kWindowClass, nullptr);
+            if (existing) {
+                PostMessageW(existing, WM_APP_SHOW, 0, 0);
+                return true;
+            }
+            Sleep(25);
+        }
+        return false;
+    }
+
+    void CloseSingleInstanceMutex() {
+        if (!singleInstanceMutex_) return;
+        CloseHandle(singleInstanceMutex_);
+        singleInstanceMutex_ = nullptr;
+    }
+
+    void AddTrayIcon() {
+        if (!hwnd_ || trayIconAdded_) return;
+
+        if (taskbarCreatedMessage_ == 0) {
+            taskbarCreatedMessage_ = RegisterWindowMessageW(L"TaskbarCreated");
+        }
+
+        trayIconData_ = {};
+        trayIconData_.cbSize = sizeof(trayIconData_);
+        trayIconData_.hWnd = hwnd_;
+        trayIconData_.uID = kTrayIconId;
+        trayIconData_.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
+        trayIconData_.uCallbackMessage = WM_APP_TRAY;
+        trayIconData_.hIcon = LoadIconW(instance_, MAKEINTRESOURCEW(IDI_APP_ICON));
+        wcscpy_s(trayIconData_.szTip, L"RegCalc64");
+
+        trayIconAdded_ = Shell_NotifyIconW(NIM_ADD, &trayIconData_) == TRUE;
+    }
+
+    void RemoveTrayIcon() {
+        if (!trayIconAdded_) return;
+        Shell_NotifyIconW(NIM_DELETE, &trayIconData_);
+        trayIconAdded_ = false;
+    }
+
+    void ShowTrayMenu() {
+        if (!hwnd_) return;
+
+        HMENU menu = CreatePopupMenu();
+        if (!menu) return;
+
+        const bool zh = IsChineseUi();
+        AppendMenuW(menu, MF_STRING, ID_TRAY_OPEN, zh ? L"打开 RegCalc64" : L"Open RegCalc64");
+        AppendMenuW(
+            menu,
+            MF_STRING | (alwaysOnTop_ ? MF_CHECKED : MF_UNCHECKED),
+            ID_TRAY_TOPMOST,
+            zh ? L"置顶" : L"Always on top");
+        AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
+        AppendMenuW(menu, MF_STRING, ID_TRAY_EXIT, zh ? L"退出" : L"Exit");
+
+        POINT cursor{};
+        GetCursorPos(&cursor);
+        SetForegroundWindow(hwnd_);
+        const UINT command = TrackPopupMenu(
+            menu,
+            TPM_RETURNCMD | TPM_RIGHTBUTTON | TPM_NONOTIFY,
+            cursor.x,
+            cursor.y,
+            0,
+            hwnd_,
+            nullptr);
+        DestroyMenu(menu);
+        PostMessageW(hwnd_, WM_NULL, 0, 0);
+
+        if (command == ID_TRAY_OPEN) {
+            ShowAndActivateWindow();
+        } else if (command == ID_TRAY_TOPMOST) {
+            SetAlwaysOnTop(!alwaysOnTop_);
+        } else if (command == ID_TRAY_EXIT) {
+            RequestExit();
+        }
+    }
+
+    void HandleTrayMessage(LPARAM lParam) {
+        const UINT event = static_cast<UINT>(lParam);
+        if (event == WM_LBUTTONUP || event == WM_LBUTTONDBLCLK) {
+            ShowAndActivateWindow();
+        } else if (event == WM_RBUTTONUP || event == WM_CONTEXTMENU) {
+            ShowTrayMenu();
+        }
+    }
+
+    void HideWindowToTray() {
+        if (!hwnd_ || exiting_) return;
+        if (!trayIconAdded_) {
+            RequestExit();
+            return;
+        }
+        SaveGeometry(hwnd_);
+        ShowWindow(hwnd_, SW_HIDE);
+        TraceStartup("window_hidden_to_tray");
+    }
+
+    void ShowAndActivateWindow() {
+        if (!hwnd_ || exiting_) return;
+
+        if (IsIconic(hwnd_)) {
+            ShowWindow(hwnd_, SW_RESTORE);
+        } else {
+            ShowWindow(hwnd_, SW_SHOW);
+        }
+
+        if (alwaysOnTop_) {
+            SetWindowPos(
+                hwnd_, HWND_TOPMOST, 0, 0, 0, 0,
+                SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+        }
+        BringWindowToTop(hwnd_);
+        SetForegroundWindow(hwnd_);
+        TraceStartup("window_shown_or_reactivated");
+    }
+
+    void ShutdownWebView() {
+        if (webview_) {
+            webview_->remove_WebMessageReceived(webMessageToken_);
+            webview_->remove_WebResourceRequested(webResourceRequestedToken_);
+        }
+        if (controller_) controller_->Close();
+        webview_.Reset();
+        controller_.Reset();
+        environment_.Reset();
+    }
+
+    void RequestExit() {
+        if (exiting_) return;
+        exiting_ = true;
+        TraceStartup("exit_requested");
+        SaveGeometry(hwnd_);
+        RemoveTrayIcon();
+        ShutdownWebView();
+        if (hwnd_) DestroyWindow(hwnd_);
     }
 
     void ResizeWebView() {
@@ -595,11 +823,13 @@ private:
 
     void InitializeWebView() {
         if (!IsWebView2RuntimeAvailable()) {
+            TraceStartup("webview2_runtime_missing");
             if (!PromptForWebView2Runtime() || !IsWebView2RuntimeAvailable()) {
-                PostMessageW(hwnd_, WM_CLOSE, 0, 0);
+                PostMessageW(hwnd_, WM_APP_EXIT, 0, 0);
                 return;
             }
         }
+        TraceStartup("webview2_runtime_ready");
 
         const std::wstring userData = GetWebViewDataPath();
         HRESULT hr = CreateCoreWebView2EnvironmentWithOptions(
@@ -611,9 +841,11 @@ private:
                     if (FAILED(result) || !environment) {
                         std::wstring message = L"Failed to create WebView2 environment.\n\n" + HResultMessage(result);
                         MessageBoxW(hwnd_, message.c_str(), kWindowTitle, MB_ICONERROR | MB_OK);
+                        PostMessageW(hwnd_, WM_APP_EXIT, 0, 0);
                         return result;
                     }
                     environment_ = environment;
+                    TraceStartup("webview2_environment_ready");
                     return environment_->CreateCoreWebView2Controller(
                         hwnd_,
                         Callback<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler>(
@@ -621,12 +853,14 @@ private:
                                 if (FAILED(controllerResult) || !controller) {
                                     std::wstring message = L"Failed to create WebView2 controller.\n\n" + HResultMessage(controllerResult);
                                     MessageBoxW(hwnd_, message.c_str(), kWindowTitle, MB_ICONERROR | MB_OK);
+                                    PostMessageW(hwnd_, WM_APP_EXIT, 0, 0);
                                     return controllerResult;
                                 }
                                 controller_ = controller;
                                 controller_->get_CoreWebView2(&webview_);
                                 if (!webview_) return E_FAIL;
 
+                                TraceStartup("webview2_controller_ready");
                                 ConfigureWebView();
                                 ResizeWebView();
                                 return S_OK;
@@ -636,6 +870,7 @@ private:
         if (FAILED(hr)) {
             std::wstring message = L"WebView2 initialization failed.\n\n" + HResultMessage(hr);
             MessageBoxW(hwnd_, message.c_str(), kWindowTitle, MB_ICONERROR | MB_OK);
+            PostMessageW(hwnd_, WM_APP_EXIT, 0, 0);
         }
     }
 
@@ -691,12 +926,15 @@ private:
                         SetAlwaysOnTop(!alwaysOnTop_);
                     } else if (message == L"window:get-topmost") {
                         SendTopmostState();
+                    } else if (message == L"app:ready") {
+                        TraceStartup("tool_ui_ready");
                     }
                     return S_OK;
                 }).Get(),
             &webMessageToken_);
 
         webview_->Navigate(L"https://app.regcalc64.local/desktop.html");
+        TraceStartup("navigation_started");
     }
 
 private:
@@ -707,7 +945,14 @@ private:
     ComPtr<ICoreWebView2> webview_;
     EventRegistrationToken webMessageToken_{};
     EventRegistrationToken webResourceRequestedToken_{};
+    HANDLE singleInstanceMutex_ = nullptr;
+    NOTIFYICONDATAW trayIconData_{};
+    ULONGLONG startupTick_ = 0;
+    UINT taskbarCreatedMessage_ = 0;
+    std::wstring startupLogPath_;
     bool alwaysOnTop_ = false;
+    bool trayIconAdded_ = false;
+    bool exiting_ = false;
 };
 
 } // namespace

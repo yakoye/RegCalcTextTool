@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const DESKTOP_VERSION = "0.1.4";
+  const DESKTOP_VERSION = "0.1.5";
   const NATURAL_WIDTH = 588;
   const MIN_SCALE = 0.62;
   const MAX_SCALE = 1.70;
@@ -75,6 +75,7 @@
   frame.addEventListener("load", () => {
     postToTool({ type: "REGCALC64_EXTENSION_META", version: DESKTOP_VERSION });
     postToTool({ type: "REGCALC64_APPLY_STATE", state: loadState() });
+    hostMessage("app:ready");
     scheduleLayout();
     setTimeout(scheduleLayout, 60);
     setTimeout(() => postToTool({ type: "REGCALC64_EXTENSION_META", version: DESKTOP_VERSION }), 80);

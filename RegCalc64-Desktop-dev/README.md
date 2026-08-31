@@ -1,6 +1,39 @@
-# RegCalc64 Desktop v0.1.4
+# RegCalc64 Desktop v0.1.5
 
 RegCalc64 的 Windows 桌面版。使用 **C++17 + Win32 + Microsoft WebView2**：C++ 负责窗口、置顶、最小化、拖动、缩放、单 EXE 资源宿主和 WebView2 Runtime 引导；寄存器计算继续复用已经验证过的 RegCalc64 HTML/JavaScript。
+
+## v0.1.5：Warm Mode / 秒开优化
+
+- 改为**单实例常驻**：第一次启动创建 WebView2；之后再次双击 `RegCalc64.exe` 只唤醒已有窗口，不再重复创建 WebView2。
+- 右上角 Close 现在是 **Close to tray**：关闭窗口时隐藏到系统托盘，计算器现场和 WebView2 都继续保留。
+- 系统托盘菜单提供：**打开 RegCalc64 / 置顶 / 退出**。只有选择“退出”才真正释放 WebView2 并结束进程。
+- 完整退出时先执行 `ICoreWebView2Controller::Close()`，再释放 WebView2 / Controller / Environment，避免旧 WebView2 子进程仍在退出时马上启动新实例。
+- 增加启动阶段性能日志：`%LOCALAPPDATA%\RegCalc64\startup.log`。可以看到 `process_start`、`webview2_environment_ready`、`webview2_controller_ready`、`tool_ui_ready` 等时间点，用于继续定位首次启动耗时。
+- 保留 v0.1.4 的单 Manifest 修复、单 EXE、IconPark 风格按钮、置顶、最小化和 WebView2 自动安装引导。
+
+### Warm Mode 使用方式
+
+```text
+第一次双击 RegCalc64.exe
+    -> 正常启动 WebView2
+
+点右上角 ×
+    -> 隐藏到系统托盘（不退出）
+
+再次双击 RegCalc64.exe
+    -> 直接唤醒已有窗口
+
+需要真正退出
+    -> 右击系统托盘 RegCalc64 图标 -> 退出
+```
+
+如果仍感觉**第一次启动**慢，请把下面文件内容发出来：
+
+```text
+%LOCALAPPDATA%\RegCalc64\startup.log
+```
+
+这样可以直接判断耗时是在 Runtime 检测、Environment、Controller 还是页面/UI ready。
 
 ## v0.1.4
 
@@ -99,7 +132,7 @@ WebView2 Runtime 是 Microsoft 提供的 Windows Web UI 运行组件。RegCalc64
 - Help：帮助 / About。
 - Pin：切换 Always on Top；启用后变绿，并记住状态。
 - Minimize：最小化到任务栏。
-- Close：关闭。
+- Close：隐藏到系统托盘，保持 Warm Mode；真正退出请右击托盘图标选择“退出”。
 - 标题区域：拖动窗口。
 - 右下角：调整窗口大小。
 
@@ -126,7 +159,7 @@ package.bat
 生成：
 
 ```text
-RegCalc64-Desktop-v0.1.4-windows-x64.zip
+RegCalc64-Desktop-v0.1.5-windows-x64.zip
 ```
 
 ZIP 中只有 `RegCalc64.exe`。
@@ -138,6 +171,8 @@ python tests\test_contract.py
 python tests\test_msvc_geometry_types.py
 python tests\test_v012_single_exe_and_window_controls.py
 python tests\test_v013_iconpark_webview2_runtime.py
+python tests\test_v014_manifest_single_source.py
+python tests\test_v015_warm_start_single_instance_tray.py
 ```
 
 ## 设计原则

@@ -15,7 +15,7 @@ def check(cond, msg):
 
 def main():
     # Desktop shell contract.
-    check('const DESKTOP_VERSION = "0.1.4";' in DESKTOP_JS, "desktop version missing")
+    check('const DESKTOP_VERSION = "0.1.5";' in DESKTOP_JS, "desktop version missing")
     check('const NATURAL_WIDTH = 588;' in DESKTOP_JS, "natural width changed")
     check('REGCALC64_APPLY_STATE' in DESKTOP_JS, "state restore bridge missing")
     check('REGCALC64_STATE_CHANGED' in DESKTOP_JS, "state save bridge missing")
@@ -56,7 +56,7 @@ def main():
     check("version" in CMAKE, "version.lib link missing")
     check("copy_directory" not in CMAKE, "single-exe build must not copy web assets")
 
-    print("RegCalc64 Desktop v0.1.4 contract: PASS")
+    print("RegCalc64 Desktop v0.1.5 contract: PASS")
 
 
 if __name__ == "__main__":
