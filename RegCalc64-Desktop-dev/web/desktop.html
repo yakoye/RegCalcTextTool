@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>RegCalc64 Desktop</title>
+  <link rel="stylesheet" href="desktop.css" />
+</head>
+<body>
+  <div id="desktop-root">
+    <iframe id="regcalc-frame" src="tool.html" title="RegCalc64"></iframe>
+
+    <!-- IconPark outline convention: 48x48 grid, 4px stroke, round caps/joins. -->
+    <button id="help-btn" class="window-action" type="button" title="Help / About" aria-label="Help / About">
+      <svg class="iconpark-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+        <circle cx="24" cy="24" r="20"></circle>
+        <path d="M18.5 18a6 6 0 0 1 11.4 2.6c0 4.4-5.9 4.9-5.9 9.4"></path>
+        <path d="M24 36h.01"></path>
+      </svg>
+    </button>
+
+    <button id="topmost-btn" class="window-action" type="button" title="Always on top" aria-label="Always on top" aria-pressed="false">
+      <svg class="iconpark-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+        <path d="M17 6h14l-2 14 7 7v3H12v-3l7-7-2-14Z"></path>
+        <path d="M24 30v14"></path>
+      </svg>
+    </button>
+
+    <button id="minimize-btn" class="window-action" type="button" title="Minimize" aria-label="Minimize">
+      <svg class="iconpark-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+        <path d="M10 24h28"></path>
+      </svg>
+    </button>
+
+    <button id="close-btn" class="window-action" type="button" title="Close" aria-label="Close">
+      <svg class="iconpark-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+        <path d="M12 12l24 24"></path>
+        <path d="M36 12L12 36"></path>
+      </svg>
+    </button>
+
+    <div id="resize-handle" title="Resize"></div>
+  </div>
+  <script src="desktop.js"></script>
+</body>
+</html>

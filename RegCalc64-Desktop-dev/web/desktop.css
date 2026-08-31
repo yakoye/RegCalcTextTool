@@ -1,0 +1,106 @@
+:root {
+  --page: #f0f4f8;
+  --accent: #16a34a;
+  --muted: rgba(100, 116, 139, .72);
+}
+
+* { box-sizing: border-box; }
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: var(--page);
+}
+body {
+  font-family: "JetBrains Mono", "Cascadia Mono", "Consolas", "Microsoft YaHei UI", "Microsoft YaHei", monospace;
+}
+#desktop-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+}
+#regcalc-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+#help-btn,
+#topmost-btn,
+#minimize-btn,
+#close-btn {
+  position: absolute;
+  top: 8px;
+  z-index: 10;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  padding: 4px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: color .12s ease, background-color .12s ease;
+}
+.iconpark-icon {
+  display: block;
+  width: 16px;
+  height: 16px;
+  overflow: visible;
+  pointer-events: none;
+}
+#help-btn { right: 104px; }
+#topmost-btn { right: 76px; }
+#minimize-btn { right: 48px; }
+#close-btn { right: 20px; }
+
+#help-btn:hover {
+  color: var(--accent);
+  background: rgba(34, 197, 94, .08);
+}
+#topmost-btn:hover,
+#minimize-btn:hover {
+  color: #334155;
+  background: rgba(148, 163, 184, .12);
+}
+#topmost-btn.is-active {
+  color: var(--accent);
+  background: rgba(34, 197, 94, .10);
+}
+#close-btn:hover {
+  color: #b91c1c;
+  background: rgba(239, 68, 68, .14);
+}
+#resize-handle {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  z-index: 11;
+  width: 20px;
+  height: 20px;
+  cursor: nwse-resize;
+  user-select: none;
+  touch-action: none;
+}
+#resize-handle::after {
+  content: "";
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 9px;
+  height: 9px;
+  border-right: 1.5px solid rgba(100, 116, 139, .46);
+  border-bottom: 1.5px solid rgba(100, 116, 139, .46);
+  border-radius: 0 0 3px 0;
+}
+#resize-handle:hover::after { border-color: rgba(71, 85, 105, .82); }

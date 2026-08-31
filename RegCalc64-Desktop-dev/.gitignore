@@ -1,0 +1,172 @@
+# ============================================================
+# RegCalc64 Desktop
+# C++ / CMake / Visual Studio / WebView2
+# ============================================================
+
+
+# ------------------------------------------------------------
+# Build output
+# ------------------------------------------------------------
+build/
+build-*/
+out/
+dist/
+bin/
+obj/
+
+
+# ------------------------------------------------------------
+# CMake
+# ------------------------------------------------------------
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+install_manifest.txt
+CTestTestfile.cmake
+Makefile
+
+CMakeUserPresets.json
+CMakeSettings.json
+
+
+# ------------------------------------------------------------
+# Visual Studio
+# ------------------------------------------------------------
+.vs/
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+
+*.user
+*.suo
+*.ncb
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.VC.opendb
+
+
+# ------------------------------------------------------------
+# Compiler / linker output
+# ------------------------------------------------------------
+*.obj
+*.o
+*.lo
+
+*.exe
+*.dll
+*.lib
+*.exp
+*.pdb
+*.ilk
+*.idb
+*.ipdb
+*.iobj
+*.pch
+*.res
+
+*.tlog
+*.lastbuildstate
+
+
+# ------------------------------------------------------------
+# Visual Studio build directories
+# ------------------------------------------------------------
+Debug/
+Release/
+RelWithDebInfo/
+MinSizeRel/
+
+x64/
+x86/
+Win32/
+ARM64/
+
+
+# ------------------------------------------------------------
+# WebView2 / downloaded dependencies
+#
+# build.bat downloads these automatically.
+# Do not commit Microsoft SDK / bootstrapper binaries.
+# ------------------------------------------------------------
+third_party/
+
+MicrosoftEdgeWebview2Setup.exe
+Microsoft.Web.WebView2.*
+
+
+# ------------------------------------------------------------
+# Release / package artifacts
+# ------------------------------------------------------------
+*.zip
+*.7z
+*.rar
+
+RegCalc64-Desktop-*-windows-x64.zip
+RegCalc64-Desktop-*-dev.zip
+
+
+# ------------------------------------------------------------
+# Temporary files
+# ------------------------------------------------------------
+*.tmp
+*.temp
+*.bak
+*.old
+*.orig
+*.log
+
+*~
+~$*
+
+
+# ------------------------------------------------------------
+# Windows
+# ------------------------------------------------------------
+Thumbs.db
+Thumbs.db:encryptable
+Desktop.ini
+$RECYCLE.BIN/
+
+
+# ------------------------------------------------------------
+# Editors / IDE
+# ------------------------------------------------------------
+.vscode/
+.idea/
+
+*.code-workspace
+
+
+# ------------------------------------------------------------
+# Python test cache
+# ------------------------------------------------------------
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+
+# ------------------------------------------------------------
+# PowerShell temporary/download files
+# ------------------------------------------------------------
+*.download
+*.part
+
+
+# ------------------------------------------------------------
+# Keep project source/resources
+# ------------------------------------------------------------
+!src/
+!web/
+!resources/
+!tests/
+!tools/
+
+!CMakeLists.txt
+!build.bat
+!package.bat
+
+!README.md
+!USER-GUIDE.md
+!THIRD_PARTY_NOTICES.md

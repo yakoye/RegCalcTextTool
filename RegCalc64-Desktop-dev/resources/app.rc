@@ -1,0 +1,10 @@
+#include <windows.h>
+#include "resource.h"
+
+IDI_APP_ICON ICON "app.ico"
+IDR_DESKTOP_HTML RCDATA "../web/desktop.html"
+IDR_DESKTOP_CSS  RCDATA "../web/desktop.css"
+IDR_DESKTOP_JS   RCDATA "../web/desktop.js"
+IDR_TOOL_HTML    RCDATA "../web/tool.html"
+IDR_WEBVIEW2_BOOTSTRAPPER RCDATA "../third_party/webview2-bootstrapper/MicrosoftEdgeWebview2Setup.exe"
+1 RT_MANIFEST "app.manifest"
